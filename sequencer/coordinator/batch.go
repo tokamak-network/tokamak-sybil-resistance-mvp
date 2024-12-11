@@ -1,7 +1,11 @@
 package coordinator
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/big"
+	"os"
+	"path"
 	"time"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/coordinator/prover"
@@ -98,4 +102,22 @@ type BatchInfo struct {
 	// - A previous parent batch is failed
 	Fail  bool
 	Debug Debug
+}
+
+// DebugStore is a debug function to store the BatchInfo as a json text file in
+// storePath.  The filename contains the batchNumber followed by a timestamp of
+// batch start.
+func (b *BatchInfo) DebugStore(storePath string) error {
+	batchJSON, err := json.MarshalIndent(b, "", "  ")
+	if err != nil {
+		return err
+	}
+	// nolint reason: hardcoded 1_000_000 is the number of nanoseconds in a
+	// millisecond
+	//nolint:gomnd
+	filename := fmt.Sprintf("%08d-%v.%03d.json", b.BatchNum,
+		b.Debug.StartTimestamp.Unix(), b.Debug.StartTimestamp.Nanosecond()/1_000_000)
+	// nolint reason: 0640 allows rw to owner and r to group
+	//nolint:gosec
+	return os.WriteFile(path.Join(storePath, filename), batchJSON, 0640)
 }

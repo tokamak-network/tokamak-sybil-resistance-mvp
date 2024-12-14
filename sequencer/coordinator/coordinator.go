@@ -522,7 +522,8 @@ func (c *Coordinator) handleReorg(ctx context.Context, msg *MsgSyncReorg) error 
 		c.pipeline.SetSyncStatsVars(ctx, &msg.Stats, &msg.Vars)
 	}
 
-	// TODO: implement other state roots (also figure out what's sync.LastBatch)
+	// TODO: implement other state roots
+	// A pipeline keeps a record of the last batch info from the rollup contract
 	if c.stats.Sync.LastBatch.StateRoot == nil ||
 		c.pipelineFromBatch.StateRoot == nil ||
 		c.stats.Sync.LastBatch.StateRoot.Cmp(c.pipelineFromBatch.StateRoot) != 0 {

@@ -338,3 +338,15 @@ func (p *Pipeline) Start(
 	}()
 	return nil
 }
+
+// SetSyncStatsVars is a thread safe method to set the synchronizer Stats
+func (p *Pipeline) SetSyncStatsVars(
+	ctx context.Context,
+	stats *synchronizer.Stats,
+	vars *common.SCVariablesPtr,
+) {
+	select {
+	case p.statsVarsCh <- statsVars{Stats: *stats, Vars: *vars}:
+	case <-ctx.Done():
+	}
+}

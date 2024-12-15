@@ -12,6 +12,8 @@ import (
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/synchronizer"
 	"tokamak-sybil-resistance/txselector"
+
+	"github.com/hermeznetwork/tracerr"
 )
 
 type statsVars struct {
@@ -146,57 +148,192 @@ func (p *Pipeline) getErrAtBatchNum() common.BatchNum {
 	return p.errAtBatchNum
 }
 
-// TODO: implement
 // handleForgeBatch waits for an available proof server, calls p.forgeBatch to
 // forge the batch and get the zkInputs, and then  sends the zkInputs to the
 // selected proof server so that the proof computation begins.
-func (p *Pipeline) handleForgeBatch(ctx context.Context,
-	batchNum common.BatchNum) (batchInfo *BatchInfo, err error) {
+func (p *Pipeline) handleForgeBatch(
+	ctx context.Context,
+	batchNum common.BatchNum,
+) (batchInfo *BatchInfo, err error) {
 	// 1. Wait for an available serverProof (blocking call)
-	// serverProof, err := p.proversPool.Get(ctx)
-	// if ctx.Err() != nil {
-	// 	return nil, ctx.Err()
-	// } else if err != nil {
-	// 	log.Errorw("proversPool.Get", "err", err)
-	// 	return nil, tracerr.Wrap(err)
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	// 2. Forge the batch internally (make a selection of txs and prepare
+	// all the smart contract arguments)
+	var skipReason *string
+	batchInfo, skipReason, err = p.forgeBatch(batchNum)
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	} else if err != nil {
+		log.Errorw("forgeBatch", "err", err)
+		return nil, common.Wrap(err)
+	} else if skipReason != nil {
+		log.Debugw("skipping batch", "batch", batchNum, "reason", *skipReason)
+		return nil, common.Wrap(errSkipBatchByPolicy)
+	}
+
+	// 3. Send the ZKInputs to the proof server
+	batchInfo.ServerProof = p.prover
+	batchInfo.ProofStart = time.Now()
+	if err := p.sendServerProof(ctx, batchInfo); ctx.Err() != nil {
+		return nil, ctx.Err()
+	} else if err != nil {
+		log.Errorw("sendServerProof", "err", err)
+		return nil, common.Wrap(err)
+	}
+	return batchInfo, nil
+}
+
+// sendServerProof sends the circuit inputs to the proof server
+func (p *Pipeline) sendServerProof(ctx context.Context, batchInfo *BatchInfo) error {
+	// p.cfg.debugBatchStore(batchInfo)
+
+	// Call the selected idle server proof with BatchBuilder output,
+	// save server proof info for batchNum
+	if err := batchInfo.ServerProof.CalculateProof(ctx, batchInfo.ZKInputs); err != nil {
+		return tracerr.Wrap(err)
+	}
+	return nil
+}
+
+// forgeBatch forges the batchNum batch.
+func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
+	batchInfo *BatchInfo,
+	skipReason *string,
+	err error,
+) {
+	// TODO: investigate if we need this for L2Txs
+	// remove transactions from the pool that have been there for too long
+	// _, err = p.purger.InvalidateMaybe(
+	// 	p.l2DB,
+	// 	p.txSelector.LocalAccountsDB(),
+	// 	p.stats.Sync.LastBlock.Num,
+	// 	int64(batchNum),
+	// )
+	// if err != nil {
+	// 	return nil, nil, tracerr.Wrap(err)
 	// }
-	// defer func() {
-	// 	// If we encounter any error (notice that this function returns
-	// 	// errors to notify that a batch is not forged not only because
-	// 	// of unexpected errors but also due to benign causes), add the
-	// 	// serverProof back to the pool
+	// _, err = p.purger.PurgeMaybe(p.l2DB, p.stats.Sync.LastBlock.Num, int64(batchNum))
+	// if err != nil {
+	// 	return nil, nil, tracerr.Wrap(err)
+	// }
+
+	// Structure to accumulate data and metadata of the batch
+	now := time.Now()
+	batchInfo = &BatchInfo{PipelineNum: p.num, BatchNum: batchNum}
+	batchInfo.Debug.StartTimestamp = now
+	batchInfo.Debug.StartBlockNum = p.stats.Eth.LastBlock.Num + 1
+
+	// var poolL2Txs []common.PoolL2Tx
+	// var discardedL2Txs []common.PoolL2Tx
+	var l1UserTxs, l1CoordTxs []common.L1Tx
+	var auths [][]byte
+	var coordIdxs []common.AccountIdx
+
+	// 1. Decide if we forge L2Tx or L1+L2Tx
+	// if p.shouldL1L2Batch(batchInfo) {
+	batchInfo.L1Batch = true
+	// 2a: L1+L2 txs
+	_l1UserTxs, err := p.historyDB.GetUnforgedL1UserTxs(p.state.lastForgeL1TxsNum + 1)
+	if err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+	// l1UserFutureTxs are the l1UserTxs that are not being forged
+	// in the next batch, but that are also in the queue for the
+	// future batches
+	l1UserFutureTxs, err := p.historyDB.GetUnforgedL1UserFutureTxs(p.state.lastForgeL1TxsNum + 1)
+	if err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+
+	coordIdxs, auths, l1UserTxs, l1CoordTxs, poolL2Txs, discardedL2Txs, err =
+		p.txSelector.GetL1L2TxSelection(p.cfg.TxProcessorConfig, _l1UserTxs, l1UserFutureTxs)
+	if err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+	// }
+	// else {
+	// 	// get l1UserFutureTxs which are all the l1 pending in all the
+	// 	// queues
+	// 	l1UserFutureTxs, err := p.historyDB.GetUnforgedL1UserFutureTxs(p.state.lastForgeL1TxsNum) //nolint:gomnd
 	// 	if err != nil {
-	// 		p.proversPool.Add(ctx, serverProof)
+	// 		return nil, nil, tracerr.Wrap(err)
 	// 	}
-	// }()
 
-	// // 2. Forge the batch internally (make a selection of txs and prepare
-	// // all the smart contract arguments)
-	// var skipReason *string
-	// p.mutexL2DBUpdateDelete.Lock()
-	// batchInfo, skipReason, err = p.forgeBatch(batchNum)
-	// p.mutexL2DBUpdateDelete.Unlock()
-	// if ctx.Err() != nil {
-	// 	return nil, ctx.Err()
-	// } else if err != nil {
-	// 	log.Errorw("forgeBatch", "err", err)
-	// 	return nil, tracerr.Wrap(err)
-	// } else if skipReason != nil {
-	// 	log.Debugw("skipping batch", "batch", batchNum, "reason", *skipReason)
-	// 	return nil, tracerr.Wrap(errSkipBatchByPolicy)
+	// 	// 2b: only L2 txs
+	// 	coordIdxs, auths, l1CoordTxs, poolL2Txs, discardedL2Txs, err =
+	// 		p.txSelector.GetL2TxSelection(p.cfg.TxProcessorConfig, l1UserFutureTxs)
+	// 	if err != nil {
+	// 		return nil, nil, tracerr.Wrap(err)
+	// 	}
+	// 	l1UserTxs = nil
 	// }
 
-	// // 3. Send the ZKInputs to the proof server
-	// batchInfo.ServerProof = serverProof
-	// batchInfo.ProofStart = time.Now()
-	// if err := p.sendServerProof(ctx, batchInfo); ctx.Err() != nil {
-	// 	return nil, ctx.Err()
-	// } else if err != nil {
-	// 	log.Errorw("sendServerProof", "err", err)
-	// 	return nil, tracerr.Wrap(err)
-	// }
-	// return batchInfo, nil
-	return &BatchInfo{}, nil
+	if skip, reason, err := p.forgePolicySkipPostSelection(now,
+		l1UserTxs, l1CoordTxs, poolL2Txs, batchInfo); err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	} else if skip {
+		if err := p.txSelector.Reset(batchInfo.BatchNum-1, false); err != nil {
+			return nil, nil, tracerr.Wrap(err)
+		}
+		return nil, &reason, tracerr.Wrap(err)
+	}
+
+	if batchInfo.L1Batch {
+		p.state.lastScheduledL1BatchBlockNum = p.stats.Eth.LastBlock.Num + 1
+		p.state.lastForgeL1TxsNum++
+	}
+
+	// 3.  Save metadata from TxSelector output for BatchNum
+	batchInfo.L1UserTxs = l1UserTxs
+	batchInfo.L1CoordTxs = l1CoordTxs
+	batchInfo.L1CoordinatorTxsAuths = auths
+	batchInfo.CoordIdxs = coordIdxs
+	batchInfo.VerifierIdx = p.cfg.VerifierIdx
+
+	if err := p.l2DB.StartForging(common.TxIDsFromPoolL2Txs(poolL2Txs),
+		batchInfo.BatchNum); err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+	if err := p.l2DB.UpdateTxsInfo(discardedL2Txs, batchInfo.BatchNum); err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+
+	// Invalidate transactions that become invalid because of
+	// the poolL2Txs selected.  Will mark as invalid the txs that have a
+	// (fromIdx, nonce) which already appears in the selected txs (includes
+	// all the nonces smaller than the current one)
+	err = p.l2DB.InvalidateOldNonces(idxsNonceFromPoolL2Txs(poolL2Txs), batchInfo.BatchNum)
+	if err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+
+	// 4. Call BatchBuilder with TxSelector output
+	configBatch := &batchbuilder.ConfigBatch{
+		TxProcessorConfig: p.cfg.TxProcessorConfig,
+	}
+	zkInputs, err := p.batchBuilder.BuildBatch(coordIdxs, configBatch, l1UserTxs,
+		l1CoordTxs, poolL2Txs)
+	if err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+	l2Txs, err := common.PoolL2TxsToL2Txs(poolL2Txs) // NOTE: This is a big uggly, find a better way
+	if err != nil {
+		return nil, nil, tracerr.Wrap(err)
+	}
+	batchInfo.L2Txs = l2Txs
+
+	// 5. Save metadata from BatchBuilder output for BatchNum
+	batchInfo.ZKInputs = zkInputs
+	batchInfo.Debug.Status = StatusForged
+	p.cfg.debugBatchStore(batchInfo)
+	log.Infow("Pipeline: batch forged internally", "batch", batchInfo.BatchNum)
+
+	p.state.lastSlotForged = p.stats.Sync.Auction.CurrentSlot.SlotNum
+
+	return batchInfo, nil, nil
 }
 
 func (p *Pipeline) setErrAtBatchNum(batchNum common.BatchNum) {
@@ -214,7 +351,7 @@ func (p *Pipeline) waitServerProof(ctx context.Context, batchInfo *BatchInfo) er
 	// proof, pubInputs, err := batchInfo.ServerProof.GetProof(ctx) // blocking call,
 	// // until not resolved don't continue. Returns when the proof server has calculated the proof
 	// if err != nil {
-	// 	return tracerr.Wrap(err)
+	// 	return common.Wrap(err)
 	// }
 	// batchInfo.Proof = proof
 	// batchInfo.PublicInputs = pubInputs
@@ -250,7 +387,7 @@ func (p *Pipeline) Start(
 		for {
 			select {
 			case <-p.ctx.Done():
-				log.Info("Pipeline forgeBatch loop done")
+				log.Infow("Pipeline forgeBatch loop done")
 				p.wg.Done()
 				return
 			case statsVars := <-p.statsVarsCh:

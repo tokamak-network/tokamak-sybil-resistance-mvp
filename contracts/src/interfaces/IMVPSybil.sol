@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 interface IMVPSybil {
     error InvalidVerifierAddress();
     error BatchTimeoutExceeded();
+    error LoadAmountExceedsLimit();
     error LoadAmountDoesNotMatch();
     error AmountExceedsLimit();
     error WithdrawAlreadyDone();
@@ -18,7 +19,7 @@ interface IMVPSybil {
         address[] memory verifiers,
         uint256[] memory maxTxs,
         uint256[] memory nLevels,
-        uint8 _forgeL1L2BatchTimeout,
+        uint8 _forgeBatchTimeout,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _poseidon4Elements

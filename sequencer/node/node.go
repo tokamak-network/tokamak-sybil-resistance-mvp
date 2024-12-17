@@ -681,13 +681,6 @@ func (n *Node) StartSynchronizer() {
 						log.Errorw("Synchronizer.Sync", "err", err)
 					}
 				}
-			case msg := <-n.msgCh:
-				if err := n.coord.HandleMsg(n.ctx, msg); n.ctx.Err() != nil { // We will use forger here to handle the message
-					continue
-				} else if err != nil {
-					log.Fatal("Coordinator.handleMsg", "err", err)
-					continue
-				}
 			}
 		}
 	}()

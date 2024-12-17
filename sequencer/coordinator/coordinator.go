@@ -513,22 +513,6 @@ func (c *Coordinator) SendMsg(ctx context.Context, msg interface{}) {
 	}
 }
 
-func (c *Coordinator) HandleMsg(ctx context.Context, msg interface{}) error {
-	switch msg := msg.(type) {
-	case MsgSyncBlock:
-		if err := c.handleMsgSyncBlock(ctx, &msg); err != nil {
-			return fmt.Errorf("Coordinator.handleMsgSyncBlock error: %w", err)
-		}
-	// case MsgSyncReorg:
-	// 	if err := c.handleReorg(ctx, &msg); err != nil {
-	// 		return fmt.Errorf("Coordinator.handleReorg error: %w", err)
-	// 	}
-	default:
-		log.Fatalf("Coordinator Unexpected Coordinator msg of type %T: %+v", msg, msg)
-	}
-	return nil
-}
-
 // TODO: implement
 func (c *Coordinator) handleReorg(ctx context.Context, msg *MsgSyncReorg) error {
 	// c.stats = msg.Stats

@@ -271,5 +271,57 @@ contract MvpTest is Test, TransactionTypeHelper {
         emit Sybil.Initialize(120);
     }
 
+        // CreateAccount transactions tests
+    function testCreateDepositAccountTransaction() public {
+        TxParams memory params = validCreateAccountDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        vm.prank(address(this));
+        sybil.createAccountDeposit {
+            value: loadAmount
+        }(params.loadAmountF);
+    }
+
+    function testInvalidCreateDepositAccountTransaction() public {
+        TxParams memory params = invalidCreateAccountDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.LoadAmountDoesNotMatch.selector);
+        sybil.createAccountDeposit {
+            value: 2*loadAmount
+        }(params.loadAmountF);
+    }
+
+    function testDepositTransaction() public {
+        TxParams memory params = validDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        sybil.deposit {
+            value: loadAmount
+        }(params.fromIdx, params.loadAmountF);
+    }
+
     receive() external payable { }
 }

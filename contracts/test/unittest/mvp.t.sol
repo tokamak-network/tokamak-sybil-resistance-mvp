@@ -699,5 +699,127 @@ contract MvpTest is Test, TransactionTypeHelper {
         sybil.explodeMultiple(fromIdx, toIdxs); 
     }
 
+            function testExplodeMultipleWithInvalidFromIdx() public {
+        TxParams memory params = invalidToIdxForceExplode();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+        uint48 initialLastIdx = 256;
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,  
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        uint48 fromIdx = params.fromIdx;
+
+        uint48[] memory toIdxs = new uint48[](1);
+        toIdxs[0] = params.toIdx;
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidToIdx.selector);
+        sybil.explodeMultiple(fromIdx, toIdxs); 
+    }
+
+    function testInitializeWithInvalidPoseidonAddresses() public {
+        PoseidonUnit2 mockPoseidon2 = new PoseidonUnit2();
+        PoseidonUnit3 mockPoseidon3 = new PoseidonUnit3();
+        PoseidonUnit4 mockPoseidon4 = new PoseidonUnit4();
+        // Deploy verifier stub
+        VerifierRollupStub verifierStub = new VerifierRollupStub(); 
+        
+        address[] memory verifiers = new address[](1);
+        uint256[] memory maxTx = new uint256[](1);
+        uint256[] memory nLevels = new uint256[](1);
+
+        verifiers[0] = address(verifierStub);
+        maxTx[0] = uint(256);
+        nLevels[0] = uint(1);
+
+
+        address invalidAddress = address(0);
+
+        // Expect revert for invalid poseidon2Elements address
+        Sybil newSybil = new Sybil();
+        vm.expectRevert();
+        newSybil.initialize(
+            verifiers, 
+            maxTx, 
+            nLevels, 
+            120, 
+            invalidAddress, 
+            address(mockPoseidon3), 
+            address(mockPoseidon4)
+        );
+
+        // Expect revert for invalid poseidon3Elements address
+        vm.expectRevert();
+        newSybil.initialize(
+            verifiers, 
+            maxTx, 
+            nLevels, 
+            120, 
+            address(mockPoseidon2), 
+            invalidAddress, 
+            address(mockPoseidon4)
+        );
+
+        // Expect revert for invalid poseidon4Elements address
+        vm.expectRevert();
+        newSybil.initialize(
+            verifiers, 
+            maxTx, 
+            nLevels, 
+            120, 
+            address(mockPoseidon2), 
+            address(mockPoseidon3),
+            invalidAddress
+        );
+    }
+
+        // Test initializing with invalid verifier address
+    function testInitializeWithInvalidVerifierAddresses() public {
+        PoseidonUnit2 mockPoseidon2 = new PoseidonUnit2();
+        PoseidonUnit3 mockPoseidon3 = new PoseidonUnit3();
+        PoseidonUnit4 mockPoseidon4 = new PoseidonUnit4();
+        // Deploy verifier stub
+        VerifierRollupStub verifierStub = new VerifierRollupStub(); 
+        
+        address[] memory verifiers = new address[](1);
+        uint256[] memory maxTx = new uint256[](1);
+        uint256[] memory nLevels = new uint256[](1);
+
+        verifiers[0] = address(0);
+        maxTx[0] = uint(256);
+        nLevels[0] = uint(1);
+
+
+        address invalidAddress = address(0);
+
+        // Expect revert for invalid verifier address
+        Sybil newSybil = new Sybil();
+        vm.expectRevert(IMVPSybil.InvalidVerifierAddress.selector);
+        newSybil.initialize(
+            verifiers, 
+            maxTx, 
+            nLevels, 
+            120, 
+            invalidAddress, 
+            address(mockPoseidon3), 
+            address(mockPoseidon4)
+        );
+    }
+    
     receive() external payable { }
 }

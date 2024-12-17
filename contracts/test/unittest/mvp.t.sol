@@ -127,5 +127,82 @@ contract MvpTest is Test, TransactionTypeHelper {
         assertEq(txData, expectedTxData);
     }
 
+    function testGetQueueLength() public {
+        uint32 queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 1);
+
+        TxParams memory params = validCreateAccountDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        vm.prank(address(this));
+        sybil.createAccountDeposit {
+            value: loadAmount
+        }(params.loadAmountF);
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            256, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 0);
+    }
+
+    function testSetForgeL1BatchTimeout() public {
+        uint8 newTimeout = 255;
+        vm.expectRevert(IMVPSybil.BatchTimeoutExceeded.selector);
+        sybil.setForgeL1BatchTimeout(newTimeout);
+    }
+
+    function testClearQueue() public {
+        TxParams memory params = validCreateAccountDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        vm.prank(address(this));
+        sybil.createAccountDeposit {
+            value: loadAmount
+        }(params.loadAmountF);
+    
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            256, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        uint32 queueAfter = sybil.getQueueLength();
+        assertEq(queueAfter, 0);
+
+        queueAfter = sybil.getQueueLength();
+        assertEq(sybil.getLastForgedBatch(),1);
+        assertEq(queueAfter, 0);
+    }
+    
     receive() external payable { }
 }

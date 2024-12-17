@@ -28,12 +28,10 @@ CREATE TABLE batch (
     forger_addr BYTEA NOT NULL, -- fake foreign key for coordinator
     -- fees_collected BYTEA NOT NULL,
     -- fee_idxs_coordinator BYTEA NOT NULL,
-    
     account_root DECIMAL(78,0) NOT NULL,
     vouch_root DECIMAL(78,0) NOT NULL,
     score_root DECIMAL(78,0) NOT NULL,
     exit_root DECIMAL(78,0) NOT NULL,
-
     num_accounts BIGINT NOT NULL,
     last_idx BIGINT NOT NULL,
     forge_l1_txs_num BIGINT,

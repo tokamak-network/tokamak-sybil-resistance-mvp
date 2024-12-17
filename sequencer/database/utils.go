@@ -121,7 +121,7 @@ func InitTestSQLDB() (*sqlx.DB, error) {
 	}
 	dbname := os.Getenv("PGDATABASE")
 	if dbname == "" {
-		dbname = "hermez"
+		dbname = "tokamak"
 	}
 	return InitSQLDB(port, host, user, pass, dbname)
 }

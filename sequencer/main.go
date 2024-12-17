@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/config"
+	"tokamak-sybil-resistance/database"
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/node"
 
@@ -98,7 +100,7 @@ func cmdRun(c *cli.Context) error {
 	}
 	// TODO: Initialize lof library
 	// log.Init(cfg.node.Log.Level, cfg.node.Log.Out)
-	innerNode, err := node.NewNode( /*cfg.mode, */ cfg.node, c.App.Version)
+	innerNode, err := node.NewNode(cfg.node, c.App.Version)
 	if err != nil {
 		return common.Wrap(fmt.Errorf("error starting node: %w", err))
 	}
@@ -109,17 +111,54 @@ func cmdRun(c *cli.Context) error {
 	return nil
 }
 
+func runMigrations(c *cli.Context) error {
+	fmt.Println("Running migrations")
+	host := os.Getenv("PGHOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port, _ := strconv.Atoi(os.Getenv("PGPORT"))
+	if port == 0 {
+		port = 5432
+	}
+	user := os.Getenv("PGUSER")
+	if user == "" {
+		user = "hermez"
+	}
+	pass := os.Getenv("PGPASSWORD")
+	if pass == "" {
+		return common.Wrap(fmt.Errorf("PGPASSWORD is not set"))
+	}
+	dbname := os.Getenv("PGDATABASE")
+	if dbname == "" {
+		dbname = "tokamak"
+	}
+
+	db, err := database.ConnectSQLDB(port, host, user, pass, dbname)
+	if err != nil {
+		return common.Wrap(fmt.Errorf("error running migrations: %w", err))
+	}
+	defer db.Close()
+
+	if err := database.MigrationsDown(db.DB, 0); err != nil {
+		return common.Wrap(fmt.Errorf("error running migrations: %w", err))
+	}
+
+	if err := database.MigrationsUp(db.DB); err != nil {
+		return common.Wrap(fmt.Errorf("error running migrations: %w", err))
+	}
+
+	os.Exit(0)
+
+	return nil
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "tokamak-node"
 	app.Version = "v1"
 
 	flags := []cli.Flag{
-		// &cli.StringFlag{
-		// 	Name:     flagMode,
-		// 	Usage:    fmt.Sprintf("Set node `MODE` (can be \"%v\" or \"%v\")", modeSync, modeCoord),
-		// 	Required: true,
-		// },
 		&cli.StringFlag{
 			Name:     flagCfg,
 			Usage:    "Node configuration `FILE`",
@@ -131,9 +170,15 @@ func main() {
 		{
 			Name:    "run",
 			Aliases: []string{},
-			Usage:   "Run the tokamak-node", // in the indicated mode",
+			Usage:   "Run the tokamak-node",
 			Action:  cmdRun,
 			Flags:   flags,
+		},
+		{
+			Name:    "migrate",
+			Aliases: []string{},
+			Usage:   "Run the migrations down & up",
+			Action:  runMigrations,
 		},
 	}
 

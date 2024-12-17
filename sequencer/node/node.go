@@ -136,7 +136,7 @@ func isDirectoryEmpty(path string) (bool, error) {
 }
 
 // NewNode creates a Node
-func NewNode( /*mode Mode, */ cfg *config.Node, version string) (*Node, error) {
+func NewNode(cfg *config.Node, version string) (*Node, error) {
 	meddler.Debug = cfg.Debug.MeddlerLogs
 	// Stablish DB connection
 	dbWrite, err := dbUtils.InitSQLDB(

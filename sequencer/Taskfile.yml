@@ -6,6 +6,11 @@ tasks:
     cmds:
       - go run main.go run --cfg cfg.toml
 
+  run-migrate:
+    dotenv: [".env"]
+    cmds:
+      - go run main.go migrate
+
   test-historydb:
     dotenv: [".env"]
     cmds:

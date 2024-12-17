@@ -323,5 +323,97 @@ contract MvpTest is Test, TransactionTypeHelper {
         }(params.fromIdx, params.loadAmountF);
     }
 
+    function testInvalidDepositTransactionWithLoadAmountDoesNotMatch() public {
+        TxParams memory params = validDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.LoadAmountDoesNotMatch.selector);
+        sybil.deposit {
+            value: 2*loadAmount
+        }(params.fromIdx, params.loadAmountF);
+    }
+
+    function testInvalidDepositTransactionWithInvalidFromIdx() public {
+        TxParams memory params = invalidDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 255;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidFromIdx.selector);
+        sybil.deposit {
+            value: loadAmount
+        }(params.fromIdx, params.loadAmountF);
+    }
+
+    function testVouch() public {
+        TxParams memory params = validVouch();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+
+        // forging to set the lastIdx
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        sybil.vouch(params.fromIdx, params.toIdx);
+    }
+
     receive() external payable { }
 }

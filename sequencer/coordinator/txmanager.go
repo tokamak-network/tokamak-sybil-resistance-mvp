@@ -24,7 +24,7 @@ import (
 // call to forge, waits for transaction confirmation, and keeps checking them
 // until a number of confirmed blocks have passed.
 type TxManager struct {
-	cfg Config
+	cfg              Config
 	ethClient        eth.ClientInterface
 	etherscanService *etherscan.Service
 	// l2DB    *l2db.L2DB   // Used only to mark forged txs as forged in the L2DB
@@ -53,6 +53,8 @@ type TxManager struct {
 
 	lastSentL1BatchBlockNum int64
 }
+
+const waitIntervalBeforeWritingBatchToChannel = 500
 
 // Queue of BatchInfos
 type Queue struct {
@@ -96,9 +98,9 @@ func NewTxManager(
 	}
 	log.Infow("TxManager started", "nonce", accNonce)
 	return &TxManager{
-		cfg: *cfg,
-		ethClient:         ethClient,
-		etherscanService:  etherscanService,
+		cfg:              *cfg,
+		ethClient:        ethClient,
+		etherscanService: etherscanService,
 		// l2DB:              l2DB,
 		coord:             coord,
 		batchCh:           make(chan *BatchInfo, queueLen),
@@ -128,7 +130,6 @@ func (t *TxManager) SetSyncStatsVars(ctx context.Context, stats *synchronizer.St
 	}
 }
 
-
 // AddBatch is a thread safe method to pass a new batch TxManager to be sent to
 // the smart contract via the forge call
 func (t *TxManager) AddBatch(ctx context.Context, batchInfo *BatchInfo) {
@@ -136,7 +137,7 @@ func (t *TxManager) AddBatch(ctx context.Context, batchInfo *BatchInfo) {
 	case t.batchCh <- batchInfo:
 	case <-ctx.Done():
 	}
-}	
+}
 
 func (t *TxManager) syncSCVars(vars common.SCVariablesPtr) {
 	updateSCVars(&t.vars, vars)
@@ -445,6 +446,8 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 			return fmt.Errorf("calculated gasPrice (%v) > maxGasPrice (%v)",
 				auth.GasPrice, t.cfg.MaxGasPrice)
 		}
+
+		// TODO: Implement
 		// RollupForgeBatch() calls ethclient.SendTransaction()
 		// ethTx, err = t.ethClient.RollupForgeBatch(batchInfo.ForgeBatchArgs, auth)
 		// We check the errors via strings because we match the
@@ -562,7 +565,6 @@ func (t *TxManager) Run(ctx context.Context) {
 		case batchInfo := <-t.batchCh:
 			if batchInfo.BatchNum > t.lastSuccessBatch+1 && t.lastSuccessBatch != 0 {
 				go func(t *TxManager, batchInfo *BatchInfo) {
-					const waitIntervalBeforeWritingBatchToChannel = 500
 					time.Sleep(waitIntervalBeforeWritingBatchToChannel * time.Millisecond)
 					t.batchCh <- batchInfo
 				}(t, batchInfo)

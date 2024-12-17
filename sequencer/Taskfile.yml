@@ -30,9 +30,15 @@ tasks:
     dotenv: [".env"]
     cmds:
       - go test ./database/statedb -v
-  
-  test-sequencer:
+
+  test-node:
+    dotenv: [".env"]
     cmds:
+      - go test ./ -v -count=1
+  
+  test-seq:
+    cmds:
+      - task: test-node
       - task: test-synchronizer
       - task: test-historydb
       - task: test-til

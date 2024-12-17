@@ -44,7 +44,7 @@ func setup(db *HistoryDB, t *testing.T) {
 
 func TestMain(m *testing.M) {
 	// init DB
-	db, err := database.InitTestSQLDB()
+	db, err := database.InitSQLDB()
 	if err != nil {
 		panic(err)
 	}

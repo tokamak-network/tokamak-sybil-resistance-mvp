@@ -257,7 +257,7 @@ func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB /*, *l
 	require.NoError(t, err)
 
 	// Init History DB
-	db, err := dbUtils.InitTestSQLDB()
+	db, err := dbUtils.InitSQLDB()
 	require.NoError(t, err)
 	historyDB := historydb.NewHistoryDB(db, db /*, nil*/)
 

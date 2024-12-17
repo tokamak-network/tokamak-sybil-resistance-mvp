@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/config"
 	"tokamak-sybil-resistance/database"
@@ -112,29 +111,7 @@ func cmdRun(c *cli.Context) error {
 }
 
 func runMigrations(c *cli.Context) error {
-	fmt.Println("Running migrations")
-	host := os.Getenv("PGHOST")
-	if host == "" {
-		host = "localhost"
-	}
-	port, _ := strconv.Atoi(os.Getenv("PGPORT"))
-	if port == 0 {
-		port = 5432
-	}
-	user := os.Getenv("PGUSER")
-	if user == "" {
-		user = "hermez"
-	}
-	pass := os.Getenv("PGPASSWORD")
-	if pass == "" {
-		return common.Wrap(fmt.Errorf("PGPASSWORD is not set"))
-	}
-	dbname := os.Getenv("PGDATABASE")
-	if dbname == "" {
-		dbname = "tokamak"
-	}
-
-	db, err := database.ConnectSQLDB(port, host, user, pass, dbname)
+	db, err := database.ConnectSQLDB()
 	if err != nil {
 		return common.Wrap(fmt.Errorf("error running migrations: %w", err))
 	}
@@ -153,7 +130,7 @@ func runMigrations(c *cli.Context) error {
 	return nil
 }
 
-func main() {
+func RunApp() error {
 	app := cli.NewApp()
 	app.Name = "tokamak-node"
 	app.Version = "v1"
@@ -184,13 +161,20 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Printf("\nError: %v\n", common.Wrap(err))
-		os.Exit(1)
+		return common.Wrap(err)
 	}
 
 	router := gin.Default()
 	err = router.Run("localhost:8080")
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
+	}
+	return nil
+}
+
+func main() {
+	if err := RunApp(); err != nil {
+		fmt.Printf("\nError: %v\n", common.Wrap(err))
+		os.Exit(1)
 	}
 }

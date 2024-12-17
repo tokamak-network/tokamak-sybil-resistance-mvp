@@ -138,45 +138,14 @@ func isDirectoryEmpty(path string) (bool, error) {
 // NewNode creates a Node
 func NewNode(cfg *config.Node, version string) (*Node, error) {
 	meddler.Debug = cfg.Debug.MeddlerLogs
-	// Stablish DB connection
-	dbWrite, err := dbUtils.InitSQLDB(
-		cfg.PostgreSQL.PortWrite,
-		cfg.PostgreSQL.HostWrite,
-		cfg.PostgreSQL.UserWrite,
-		cfg.PostgreSQL.PasswordWrite,
-		cfg.PostgreSQL.NameWrite,
-	)
+
+	// Establish DB connection
+	db, err := dbUtils.InitSQLDB()
 	if err != nil {
 		return nil, common.Wrap(fmt.Errorf("dbUtils.InitSQLDB: %w", err))
 	}
-	var dbRead *sqlx.DB
-	if cfg.PostgreSQL.HostRead == "" {
-		dbRead = dbWrite
-	} else if cfg.PostgreSQL.HostRead == cfg.PostgreSQL.HostWrite {
-		return nil, common.Wrap(fmt.Errorf(
-			"PostgreSQL.HostRead and PostgreSQL.HostWrite must be different",
-		))
-	} else {
-		dbRead, err = dbUtils.InitSQLDB(
-			cfg.PostgreSQL.PortRead,
-			cfg.PostgreSQL.HostRead,
-			cfg.PostgreSQL.UserRead,
-			cfg.PostgreSQL.PasswordRead,
-			cfg.PostgreSQL.NameRead,
-		)
-		if err != nil {
-			return nil, common.Wrap(fmt.Errorf("dbUtils.InitSQLDB: %w", err))
-		}
-	}
-	// var apiConnCon *dbUtils.APIConnectionController
-	// if cfg.API.Explorer || mode == ModeCoordinator {
-	// 	apiConnCon = dbUtils.NewAPIConnectionController(
-	// 		cfg.API.MaxSQLConnections,
-	// 		cfg.API.SQLConnectionTimeout.Duration,
-	// 	)
-	// }
 
-	historyDB := historydb.NewHistoryDB(dbRead, dbWrite /*apiConnCon*/)
+	historyDB := historydb.NewHistoryDB(db, db)
 
 	ethClient, err := ethclient.Dial(cfg.Web3.URL)
 	if err != nil {
@@ -578,15 +547,11 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	// }
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Node{
-		// stateAPIUpdater: stateAPIUpdater,
-		// nodeAPI:         nodeAPI,
-		// debugAPI:        nil, //debugAPI
-		coord: coord,
-		sync:  sync,
-		cfg:   cfg,
-		// mode:            mode,
-		sqlConnRead:  dbRead,
-		sqlConnWrite: dbWrite,
+		coord:        coord,
+		sync:         sync,
+		cfg:          cfg,
+		sqlConnRead:  db,
+		sqlConnWrite: db,
 		historyDB:    historyDB,
 		ctx:          ctx,
 		cancel:       cancel,

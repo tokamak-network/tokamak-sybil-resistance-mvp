@@ -203,6 +203,73 @@ contract MvpTest is Test, TransactionTypeHelper {
         assertEq(sybil.getLastForgedBatch(),1);
         assertEq(queueAfter, 0);
     }
-    
+
+    // Events tests
+    function testForgeBatchEventEmission() public {
+        vm.expectEmit(true, true, true, true);
+        emit Sybil.ForgeBatch(1, 0);
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            256, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+    }
+
+    function testL1UserTxEventEmission() public {
+        TxParams memory params = validCreateAccountDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        vm.expectEmit(true, true, true, true);
+        emit Sybil.L1UserTxEvent(1, 0, abi.encodePacked(address(this), params.fromIdx, params.loadAmountF, params.amountF, params.toIdx));
+
+        vm.prank(address(this));
+        sybil.createAccountDeposit {
+            value: loadAmount
+        }(params.loadAmountF);
+    }
+
+    function testInitializeEventEmission() public {
+        PoseidonUnit2 mockPoseidon2 = new PoseidonUnit2();
+        PoseidonUnit3 mockPoseidon3 = new PoseidonUnit3();
+        PoseidonUnit4 mockPoseidon4 = new PoseidonUnit4();
+
+        // Deploy verifier stub
+        VerifierRollupStub verifierStub = new VerifierRollupStub(); 
+        
+        address[] memory verifiers = new address[](1);
+        uint256[] memory maxTx = new uint256[](1);
+        uint256[] memory nLevels = new uint256[](1);
+
+        verifiers[0] = address(verifierStub);
+        maxTx[0] = uint(256);
+        nLevels[0] = uint(1);
+
+        Sybil newSybil = new Sybil();
+        newSybil.initialize(
+            verifiers, 
+            maxTx, 
+            nLevels, 
+            120, 
+            address(mockPoseidon2), 
+            address(mockPoseidon3), 
+            address(mockPoseidon4)
+        );
+        emit Sybil.Initialize(120);
+    }
+
     receive() external payable { }
 }

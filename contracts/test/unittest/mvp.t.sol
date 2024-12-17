@@ -603,5 +603,101 @@ contract MvpTest is Test, TransactionTypeHelper {
         sybil.exit(params.fromIdx, params.amountF);
     }
 
+        function testInvalidForceExitTransactionWithInvalidFromIdx() public {
+        TxParams memory params = invalidForceExit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+        uint48 initialLastIdx = 256;
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidFromIdx.selector);
+        sybil.exit(params.fromIdx, params.amountF);
+    }
+
+    // ForceExplode transactions tests
+    function testExplodeMultiple() public {
+        TxParams memory params = validForceExplode();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+        uint48 initialLastIdx = 256;
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,  
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        uint48 fromIdx = params.fromIdx;
+
+        uint48[] memory toIdxs = new uint48[](1);
+        toIdxs[0] = params.toIdx;
+        vm.prank(address(this));
+        sybil.explodeMultiple(fromIdx, toIdxs);
+        
+    }
+
+    function testExplodeMultipleWithInvalidToIdx() public {
+        TxParams memory params = invalidFromIdxForceExplode();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+        uint48 initialLastIdx = 256;
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,  
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        uint48 fromIdx = params.fromIdx;
+
+        uint48[] memory toIdxs = new uint48[](1);
+        toIdxs[0] = params.toIdx;
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidFromIdx.selector);
+        sybil.explodeMultiple(fromIdx, toIdxs); 
+    }
+
     receive() external payable { }
 }

@@ -513,7 +513,6 @@ func (c *Coordinator) SendMsg(ctx context.Context, msg interface{}) {
 	}
 }
 
-// TODO: implement
 func (c *Coordinator) handleReorg(ctx context.Context, msg *MsgSyncReorg) error {
 	c.stats = msg.Stats
 	c.syncSCVars(msg.Vars)
@@ -522,11 +521,11 @@ func (c *Coordinator) handleReorg(ctx context.Context, msg *MsgSyncReorg) error 
 		c.pipeline.SetSyncStatsVars(ctx, &msg.Stats, &msg.Vars)
 	}
 
-	// TODO: implement other state roots
+	// TODO: discuss if implementing other roots (vouch and score) is necessary
 	// A pipeline keeps a record of the last batch info from the rollup contract
-	if c.stats.Sync.LastBatch.StateRoot == nil ||
-		c.pipelineFromBatch.StateRoot == nil ||
-		c.stats.Sync.LastBatch.StateRoot.Cmp(c.pipelineFromBatch.StateRoot) != 0 {
+	if c.stats.Sync.LastBatch.AccountRoot == nil ||
+		c.pipelineFromBatch.AccountRoot == nil ||
+		c.stats.Sync.LastBatch.AccountRoot.Cmp(c.pipelineFromBatch.AccountRoot) != 0 {
 		// There's been a reorg and the batch state root from which the
 		// pipeline was started has changed (probably because it was in
 		// a block that was discarded), and it was sent by a different
@@ -534,9 +533,9 @@ func (c *Coordinator) handleReorg(ctx context.Context, msg *MsgSyncReorg) error 
 		// chain, so we stop the pipeline  (it will be started again
 		// once the node is in sync).
 		log.Infow("Coordinator.handleReorg StopPipeline sync.LastBatch.ForgerAddr != cfg.ForgerAddr "+
-			"& sync.LastBatch.StateRoot != pipelineFromBatch.StateRoot",
-			"sync.LastBatch.StateRoot", c.stats.Sync.LastBatch.StateRoot,
-			"pipelineFromBatch.StateRoot", c.pipelineFromBatch.StateRoot)
+			"& sync.LastBatch.AccountRoot != pipelineFromBatch.AccountRoot",
+			"sync.LastBatch.AccountRoot", c.stats.Sync.LastBatch.AccountRoot,
+			"pipelineFromBatch.AccountRoot", c.pipelineFromBatch.AccountRoot)
 		// c.txManager.DiscardPipeline(ctx, c.pipelineNum)
 		if err := c.handleStopPipeline(ctx, "reorg", 0); err != nil {
 			return common.Wrap(err)

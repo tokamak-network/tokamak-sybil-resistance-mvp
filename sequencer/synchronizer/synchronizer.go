@@ -753,7 +753,7 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 			l2Txs[i].Position = position
 			position++
 		}
-		batchData.L2Txs = l2Txs
+		// batchData.L2Txs = l2Txs
 
 		// Set the BatchNum in the forged L1UserTxs
 		for i := range l1UserTxs {

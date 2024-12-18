@@ -64,24 +64,24 @@ func (bn BatchNum) BigInt() *big.Int {
 type BatchData struct {
 	L1Batch bool
 	// L1UserTxs that were forged in the batch
-	L1UserTxs        []L1Tx
-	L1CoordinatorTxs []L1Tx
-	L2Txs            []L2Tx
-	CreatedAccounts  []Account
-	UpdatedAccounts  []AccountUpdate
-	ExitTree         []ExitInfo
-	Batch            Batch
+	L1UserTxs []L1Tx
+	// L1CoordinatorTxs []L1Tx
+	// L2Txs            []L2Tx
+	CreatedAccounts []Account
+	UpdatedAccounts []AccountUpdate
+	ExitTree        []ExitInfo
+	Batch           Batch
 }
 
 // NewBatchData creates an empty BatchData with the slices initialized.
 func NewBatchData() *BatchData {
 	return &BatchData{
-		L1Batch: false,
-		// L1UserTxs:        make([]common.L1Tx, 0),
-		L1CoordinatorTxs: make([]L1Tx, 0),
-		L2Txs:            make([]L2Tx, 0),
-		CreatedAccounts:  make([]Account, 0),
-		ExitTree:         make([]ExitInfo, 0),
-		Batch:            Batch{},
+		L1Batch:   false,
+		L1UserTxs: make([]L1Tx, 0),
+		// L1CoordinatorTxs: make([]L1Tx, 0),
+		// L2Txs:            make([]L2Tx, 0),
+		CreatedAccounts: make([]Account, 0),
+		ExitTree:        make([]ExitInfo, 0),
+		Batch:           Batch{},
 	}
 }

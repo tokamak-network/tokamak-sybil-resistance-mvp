@@ -585,6 +585,7 @@ func (c *RollupClient) RollupForgeBatch(args *RollupForgeBatchArgs, auth *bind.T
 	// 	l1TxData = append(l1TxData, bytesl1User[:]...)
 	// }
 
+	// TODO: Need to send ZK Proof here on last param
 	tx, err = c.sybil.ForgeBatch(auth, newLastIdx, args.NewAccountRoot, args.NewVouchRoot, args.NewScoreRoot, args.NewExitRoot,
 		args.VerifierIdx, args.ProofA, args.ProofB, args.ProofC, args.NewScoreRoot)
 	if err != nil {

@@ -450,6 +450,7 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 		// TODO: Implement
 		// RollupForgeBatch() calls ethclient.SendTransaction()
 		// ethTx, err = t.ethClient.RollupForgeBatch(batchInfo.ForgeBatchArgs, auth)
+
 		// We check the errors via strings because we match the
 		// definition of the error from geth, with the string returned
 		// via RPC obtained by the client.
@@ -465,12 +466,18 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 				"err", err, "nonce", auth.Nonce, "batchNum", batchInfo.BatchNum)
 			auth.Nonce.Sub(auth.Nonce, big.NewInt(1))
 			attempt--
-		} else if strings.Contains(err.Error(), core.ErrReplaceUnderpriced.Error()) {
+			// TODO: hermez uses ErrReplaceUnderpriced instead of ErrFeeCapTooLow but
+			// ErrReplaceUnderpriced doesn't currently exist in go-ethereum. Need to
+			// double check if this replacement is correct.
+		} else if strings.Contains(err.Error(), core.ErrFeeCapTooLow.Error()) {
 			log.Warnw("TxManager ethClient.RollupForgeBatch incrementing gasPrice",
 				"err", err, "gasPrice", auth.GasPrice, "batchNum", batchInfo.BatchNum)
 			auth.GasPrice = addPerc(auth.GasPrice, 10)
 			attempt--
-		} else if strings.Contains(err.Error(), core.ErrUnderpriced.Error()) {
+			// TODO: hermez uses ErrUnderpriced instead of ErrIntrinsicGas but
+			// ErrUnderpriced doesn't currently exist in go-ethereum. Need to
+			// double check if this replacement is correct.
+		} else if strings.Contains(err.Error(), core.ErrIntrinsicGas.Error()) {
 			log.Warnw("TxManager ethClient.RollupForgeBatch incrementing gasPrice",
 				"err", err, "gasPrice", auth.GasPrice, "batchNum", batchInfo.BatchNum)
 			auth.GasPrice = addPerc(auth.GasPrice, 10)

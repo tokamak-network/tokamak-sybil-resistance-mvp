@@ -134,12 +134,12 @@ func TestBatches(t *testing.T) {
 		> batchL1
 		CreateVouch A-B
 		CreateVouch B-A
-		> batch   // batchNum=2, L2 only batch, forges createVouches
+		> batchL1   // batchNum=2, L2 only batch, forges createVouches
 		> block
 		DeleteVouch A-B
-		> batch   // batchNum=3, L2 only batch, forges deleteVouch
+		> batchL1   // batchNum=3, L2 only batch, forges deleteVouch
 		DeleteVouch B-A
-		> batch   // batchNum=4, L2 only batch, forges delteVouch
+		> batchL1   // batchNum=4, L2 only batch, forges delteVouch
 		> block
 	`
 	tc := til.NewContext(uint64(0), common.RollupConstMaxL1UserTx)
@@ -265,7 +265,7 @@ func TestTxs(t *testing.T) {
 
 	CreateVouch A-B		// L1Tx 3
 	CreateVouch B-A		// L1Tx 4
-	> batch				// batch 3
+	> batchL1				// batch 3
 	> block  			// block 1
 	
 	Deposit B: 10	// L1Tx 5
@@ -390,8 +390,8 @@ func TestTxs(t *testing.T) {
 	assert.Equal(t, "0x00af9bf96eb60f2d618519402a2f6b07057a034fa2baefd379fe8e1c969f1c5cf4", dbL1Txs[1].TxID.String())
 	assert.Equal(t, "0x00a256ee191905243320ea830840fd666a73c7b4e6f89ce4bd47ddf998dfee627a", dbL1Txs[2].TxID.String())
 	assert.Equal(t, "0x007f5383186254f364bfe82ef3ccff4b1bf532bfb1d424fe3858e492b61b0262fe", dbL1Txs[3].TxID.String())
-	assert.Equal(t, "0x0012b7fa2a0c881bd541693d28e85e671a68b21c8f467f2dc2270c83db1a72546a", dbL1Txs[4].TxID.String())
-	assert.Equal(t, "0x005d7ee63390a6c95f23a97607f0b66edd44b7999f9a14a16d92107c02baee0700", dbL1Txs[5].TxID.String())
+	assert.Equal(t, "0x005d7ee63390a6c95f23a97607f0b66edd44b7999f9a14a16d92107c02baee0700", dbL1Txs[4].TxID.String())
+	assert.Equal(t, "0x00930696d03ae0a1e6150b6ccb88043cb539a4e06a7f8baf213029ce9a0600197e", dbL1Txs[5].TxID.String())
 
 	// Tx From IDx
 	assert.Equal(t, common.AccountIdx(0), dbL1Txs[0].FromIdx)
@@ -412,12 +412,9 @@ func TestTxs(t *testing.T) {
 	assert.Equal(t, &bn, dbL1Txs[0].BatchNum)
 	assert.Equal(t, &bn, dbL1Txs[1].BatchNum)
 
-	bn = common.BatchNum(5)
+	bn = common.BatchNum(4)
 	assert.Equal(t, bn, *dbL1Txs[2].BatchNum)
 	assert.Equal(t, bn, *dbL1Txs[3].BatchNum)
-
-	bn = common.BatchNum(5)
-	assert.Equal(t, &bn, dbL1Txs[4].BatchNum)
 
 	bn = common.BatchNum(6)
 	assert.Equal(t, &bn, dbL1Txs[5].BatchNum)
@@ -867,13 +864,13 @@ func TestGetFirstBatchBlockNumBySlot(t *testing.T) {
 
 		> block // 6
 		> block // 7
-		> batch
+		> batchL1
 		> block // 8
 		> block // 9
 
 		// Slot = 2
 
-		> batch
+		> batchL1
 		> block // 10
 		> block // 11
 		> block // 12

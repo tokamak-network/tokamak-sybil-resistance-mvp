@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	ethCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -215,7 +216,7 @@ type RollupInterface interface {
 
 	// Public Functions
 
-	// RollupForgeBatch(*RollupForgeBatchArgs, *bind.TransactOpts) (*types.Transaction, error)
+	RollupForgeBatch(*RollupForgeBatchArgs, *bind.TransactOpts) (*types.Transaction, error)
 
 	// RollupWithdrawMerkleProof(babyPubKey babyjub.PublicKeyComp, tokenID uint32, numExitRoot,
 	// 	idx int64, amount *big.Int, siblings []*big.Int, instantWithdraw bool) (*types.Transaction,
@@ -558,6 +559,38 @@ func (c *RollupClient) RollupEventsByBlock(blockNum int64,
 		}
 	}
 	return &rollupEvents, nil
+}
+
+// RollupForgeBatch is the interface to call the smart contract function
+func (c *RollupClient) RollupForgeBatch(args *RollupForgeBatchArgs, auth *bind.TransactOpts) (tx *types.Transaction, err error) {
+	if auth == nil {
+		auth, err = c.client.NewAuth()
+		if err != nil {
+			return nil, err
+		}
+		auth.GasLimit = 1000000
+	}
+
+	// nLevels := c.consts.Verifiers[args.VerifierIdx].NLevels //check verifiers
+
+	newLastIdx := big.NewInt(int64(args.NewLastIdx))
+
+	// var l1TxData []byte
+	// for i := 0; i < len(args.L1UserTxs); i++ {
+	// 	l1User := args.L1UserTxs[i]
+	// 	bytesl1User, err := l1User.BytesDataAvailability(uint32(nLevels))
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	l1TxData = append(l1TxData, bytesl1User[:]...)
+	// }
+
+	tx, err = c.sybil.ForgeBatch(auth, newLastIdx, args.NewAccountRoot, args.NewVouchRoot, args.NewScoreRoot, args.NewExitRoot,
+		args.VerifierIdx, args.ProofA, args.ProofB, args.ProofC, args.NewScoreRoot)
+	if err != nil {
+		return nil, fmt.Errorf("Sybil.ForgeBatch: %w", err)
+	}
+	return tx, nil
 }
 
 // RollupForgeBatchArgs returns the arguments used in a ForgeBatch call in the

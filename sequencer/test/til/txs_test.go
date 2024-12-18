@@ -66,7 +66,7 @@ func TestGenerateBlocksWithBatches(t *testing.T) {
 		DeleteVouch A-B
 
 		// set new batch
-		> batch // batchNum = 3
+		> batchL1 // batchNum = 3
 
 		> block
 
@@ -74,7 +74,7 @@ func TestGenerateBlocksWithBatches(t *testing.T) {
 		CreateVouch C-D
 		// Exit A: 5
 
-		> batch // batchNum = 4
+		> batchL1 // batchNum = 4
 		> block
 	`
 	tc := NewContext(0, common.RollupConstMaxL1UserTx)
@@ -205,18 +205,18 @@ func TestGenerateErrors(t *testing.T) {
 		CreateAccountDeposit A: 10
 		> batchL1
 		CreateAccountDeposit B
-		> batch
+		> batchL1
 	`
 	tc := NewContext(0, common.RollupConstMaxL1UserTx)
 	_, err := tc.GenerateBlocks(set)
-	require.Equal(t, "line 4: CreateAccountDepositB> batch\n, err: "+
+	require.Equal(t, "line 4: CreateAccountDepositB> batchL1\n, err: "+
 		"expected ':', found '>'", err.Error())
 
 	set = `
 		Type: Blockchain
 		CreateAccountDeposit A: 10
 		> batchL1
-		> batch
+		> batchL1
 	`
 	tc = NewContext(0, common.RollupConstMaxL1UserTx)
 	_, err = tc.GenerateBlocks(set)
@@ -228,7 +228,7 @@ func TestGenerateErrors(t *testing.T) {
 		CreateAccountDeposit A: 10
 		> batchL1
 		// Exit A: 3
-		> batch
+		> batchL1
 	`
 	tc = NewContext(0, common.RollupConstMaxL1UserTx)
 	_, err = tc.GenerateBlocks(set)
@@ -240,11 +240,11 @@ func TestGenerateErrors(t *testing.T) {
 	set = `
 		Type: Blockchain
 		CreateVouch A
-		> batch
+		> batchL1
 	`
 	tc = NewContext(0, common.RollupConstMaxL1UserTx)
 	_, err = tc.GenerateBlocks(set)
-	require.Equal(t, "line 2: CreateVouchA> batch\n, err: expected '-', found '>'", err.Error())
+	require.Equal(t, "line 2: CreateVouchA> batchL1\n, err: expected '-', found '>'", err.Error())
 
 	set = `
 		Type: Blockchain
@@ -365,7 +365,7 @@ func TestGenerateBlocksFromInstructions(t *testing.T) {
 	setInst = append(setInst, Instruction{
 		LineNum: i,
 		// Literal: "> batch",
-		Typ: TypeNewBatch,
+		Typ: TypeNewBatchL1,
 	})
 
 	i++
@@ -390,7 +390,7 @@ func TestGenerateBlocksFromInstructions(t *testing.T) {
 		> batchL1
 		// Exit A: 3
 		DeleteVouch A-B
-		> batch
+		> batchL1
 		> block
 	`
 	tc = NewContext(0, common.RollupConstMaxL1UserTx)

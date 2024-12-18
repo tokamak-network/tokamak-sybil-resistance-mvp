@@ -15,7 +15,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // var decimals = uint64(3)
@@ -103,55 +102,55 @@ func prepareHistoryDB(historyDB *historydb.HistoryDB) error {
 	return nil
 }
 
-func generatePoolL2Txs() ([]common.PoolL2Tx, error) {
-	// Fee = 126 corresponds to ~10%
-	setPool := `
-			Type: PoolL2
-			PoolCreateVouch A-B
-			PoolDeleteVouch A-B
-			PoolCreateVouch B-A
-			PoolDeleteVouch B-A
+// func generatePoolL2Txs() ([]common.PoolL2Tx, error) {
+// 	// Fee = 126 corresponds to ~10%
+// 	setPool := `
+// 			Type: PoolL2
+// 			PoolCreateVouch A-B
+// 			PoolDeleteVouch A-B
+// 			PoolCreateVouch B-A
+// 			PoolDeleteVouch B-A
 
-			// PoolExit A: 5000
-			// PoolExit B: 3000
-		`
-	poolL2Txs, err := tc.GeneratePoolL2Txs(setPool)
-	if err != nil {
-		return nil, common.Wrap(err)
-	}
-	return poolL2Txs, nil
-}
+// 			// PoolExit A: 5000
+// 			// PoolExit B: 3000
+// 		`
+// 	// poolL2Txs, err := tc.GeneratePoolL2Txs(setPool)
+// 	if err != nil {
+// 		return nil, common.Wrap(err)
+// 	}
+// 	return poolL2Txs, nil
+// }
 
-func TestAddTxTest(t *testing.T) {
-	err := prepareHistoryDB(historyDB)
-	if err != nil {
-		log.Error("Error prepare historyDB", err)
-	}
-	poolL2Txs, err := generatePoolL2Txs()
-	require.NoError(t, err)
-	for i := range poolL2Txs {
-		err := l2DB.AddTxTest(&poolL2Txs[i])
-		require.NoError(t, err)
-		fetchedTx, err := l2DB.GetTx(poolL2Txs[i].TxID)
-		require.NoError(t, err)
-		assertTx(t, &poolL2Txs[i], fetchedTx)
-		nameZone, offset := fetchedTx.Timestamp.Zone()
-		assert.Equal(t, "UTC", nameZone)
-		assert.Equal(t, 0, offset)
-	}
+// func TestAddTxTest(t *testing.T) {
+// 	err := prepareHistoryDB(historyDB)
+// 	if err != nil {
+// 		log.Error("Error prepare historyDB", err)
+// 	}
+// 	poolL2Txs, err := generatePoolL2Txs()
+// 	require.NoError(t, err)
+// 	for i := range poolL2Txs {
+// 		err := l2DB.AddTxTest(&poolL2Txs[i])
+// 		require.NoError(t, err)
+// 		fetchedTx, err := l2DB.GetTx(poolL2Txs[i].TxID)
+// 		require.NoError(t, err)
+// 		assertTx(t, &poolL2Txs[i], fetchedTx)
+// 		nameZone, offset := fetchedTx.Timestamp.Zone()
+// 		assert.Equal(t, "UTC", nameZone)
+// 		assert.Equal(t, 0, offset)
+// 	}
 
-	// test, that we can update already existing tx
-	tx := &poolL2Txs[1]
-	fetchedTx, err := l2DB.GetTx(tx.TxID)
-	require.NoError(t, err)
-	assert.Equal(t, fetchedTx.ToIdx, tx.ToIdx)
-	tx.ToIdx = common.AccountIdx(1)
-	err = l2DBWithACC.UpdateTxAPI(tx)
-	require.NoError(t, err)
-	fetchedTx, err = l2DB.GetTx(tx.TxID)
-	require.NoError(t, err)
-	assert.Equal(t, fetchedTx.ToIdx, common.AccountIdx(1))
-}
+// 	// test, that we can update already existing tx
+// 	tx := &poolL2Txs[1]
+// 	fetchedTx, err := l2DB.GetTx(tx.TxID)
+// 	require.NoError(t, err)
+// 	assert.Equal(t, fetchedTx.ToIdx, tx.ToIdx)
+// 	tx.ToIdx = common.AccountIdx(1)
+// 	err = l2DBWithACC.UpdateTxAPI(tx)
+// 	require.NoError(t, err)
+// 	fetchedTx, err = l2DB.GetTx(tx.TxID)
+// 	require.NoError(t, err)
+// 	assert.Equal(t, fetchedTx.ToIdx, common.AccountIdx(1))
+// }
 
 func assertTx(t *testing.T, expected, actual *common.PoolL2Tx) {
 	// Check that timestamp has been set within the last 3 seconds

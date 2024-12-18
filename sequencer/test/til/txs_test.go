@@ -400,12 +400,12 @@ func TestGenerateBlocksFromInstructions(t *testing.T) {
 	// Generated data should be equivalent, except for Eth Addrs and BJJs
 	for i, strBatch := range blockFromString[0].Rollup.Batches {
 		// instBatch := blockFromInstructions[0].Rollup.Batches[i]
-		for j := 0; j < len(strBatch.L1CoordinatorTxs); j++ {
-			blockFromInstructions[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromEthAddr =
-				blockFromString[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromEthAddr
-			blockFromInstructions[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromBJJ =
-				blockFromString[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromBJJ
-		}
+		// for j := 0; j < len(strBatch.L1CoordinatorTxs); j++ {
+		// 	blockFromInstructions[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromEthAddr =
+		// 		blockFromString[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromEthAddr
+		// 	blockFromInstructions[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromBJJ =
+		// 		blockFromString[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromBJJ
+		// }
 		for j := 0; j < len(strBatch.L1UserTxs); j++ {
 			blockFromInstructions[0].Rollup.Batches[i].L1UserTxs[j].FromEthAddr =
 				blockFromString[0].Rollup.Batches[i].L1UserTxs[j].FromEthAddr

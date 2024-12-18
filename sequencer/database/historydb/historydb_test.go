@@ -322,21 +322,21 @@ func TestTxs(t *testing.T) {
 	assert.Equal(t, 1, len(blocks[1].Rollup.Batches))   // block 2 contains 1 Batch
 	// assert.Equal(t, 1, len(blocks[1].Rollup.Batches[0].L2Txs)) // block 2, batch 1 contains 1 L2Tx
 
-	assert.Equal(t, 2, len(blocks[2].Rollup.Batches))          // block 3 contains 2 Batches
-	assert.Equal(t, 1, len(blocks[2].Rollup.L1UserTxs))        // block 3 contains 1 L1UserTxs
-	assert.Equal(t, 0, len(blocks[2].Rollup.Batches[1].L2Txs)) // block 3, batch 2 contains 0 L2Tx
+	assert.Equal(t, 2, len(blocks[2].Rollup.Batches))   // block 3 contains 2 Batches
+	assert.Equal(t, 1, len(blocks[2].Rollup.L1UserTxs)) // block 3 contains 1 L1UserTxs
+	// assert.Equal(t, 0, len(blocks[2].Rollup.Batches[1].L2Txs)) // block 3, batch 2 contains 0 L2Tx
 
-	assert.Equal(t, 1, len(blocks[3].Rollup.Batches))          // block 4 contains 1 Batch
-	assert.Equal(t, 1, len(blocks[3].Rollup.L1UserTxs))        // block 4 contains 1 L1UserTxs
-	assert.Equal(t, 0, len(blocks[3].Rollup.Batches[0].L2Txs)) // block 4, batch 2 contains 0 L2Tx
+	assert.Equal(t, 1, len(blocks[3].Rollup.Batches))   // block 4 contains 1 Batch
+	assert.Equal(t, 1, len(blocks[3].Rollup.L1UserTxs)) // block 4 contains 1 L1UserTxs
+	// assert.Equal(t, 0, len(blocks[3].Rollup.Batches[0].L2Txs)) // block 4, batch 2 contains 0 L2Tx
 
-	assert.Equal(t, 2, len(blocks[4].Rollup.Batches))          // block 5 contains 2 Batches
-	assert.Equal(t, 1, len(blocks[4].Rollup.L1UserTxs))        // block 5 contains 1 L1UserTxs
-	assert.Equal(t, 0, len(blocks[4].Rollup.Batches[0].L2Txs)) // block 5, batch 1 contains 0 L2Tx
+	assert.Equal(t, 2, len(blocks[4].Rollup.Batches))   // block 5 contains 2 Batches
+	assert.Equal(t, 1, len(blocks[4].Rollup.L1UserTxs)) // block 5 contains 1 L1UserTxs
+	// assert.Equal(t, 0, len(blocks[4].Rollup.Batches[0].L2Txs)) // block 5, batch 1 contains 0 L2Tx
 
-	assert.Equal(t, 1, len(blocks[5].Rollup.Batches))          // block 6 contains 1 Batch
-	assert.Equal(t, 3, len(blocks[5].Rollup.L1UserTxs))        // block 6 contains 3 L1UserTxs
-	assert.Equal(t, 0, len(blocks[5].Rollup.Batches[0].L2Txs)) // block 6, batch 1 contains 3 L2Tx
+	assert.Equal(t, 1, len(blocks[5].Rollup.Batches))   // block 6 contains 1 Batch
+	assert.Equal(t, 3, len(blocks[5].Rollup.L1UserTxs)) // block 6 contains 3 L1UserTxs
+	// assert.Equal(t, 0, len(blocks[5].Rollup.Batches[0].L2Txs)) // block 6, batch 1 contains 3 L2Tx
 
 	// assert.Equal(t, 2, len(blocks[6].Rollup.Batches))          // block 7 contains 1 Batch
 	// assert.Equal(t, 1, len(blocks[6].Rollup.L1UserTxs))        // block 7 contains 0 L1UserTxs

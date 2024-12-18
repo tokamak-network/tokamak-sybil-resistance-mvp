@@ -789,12 +789,12 @@ func (tc *Context) FillBlocksExtra(blocks []common.BlockData, cfg *ConfigExtra) 
 				tc.extra.toForgeL1TxsNum++
 			}
 
-			batchNum := batch.Batch.BatchNum
-			for k := range batch.L1CoordinatorTxs {
-				tx := &batch.L1CoordinatorTxs[k]
-				tx.BatchNum = &batchNum
-				tx.EthBlockNum = batch.Batch.EthBlockNum
-			}
+			// batchNum := batch.Batch.BatchNum
+			// for k := range batch.L1CoordinatorTxs {
+			// 	tx := &batch.L1CoordinatorTxs[k]
+			// 	tx.BatchNum = &batchNum
+			// 	tx.EthBlockNum = batch.Batch.EthBlockNum
+			// }
 
 			// TODO: default value is nil but the db column type is not nullable
 			batch.Batch.GasPrice = big.NewInt(0)
@@ -812,9 +812,9 @@ func (tc *Context) FillBlocksExtra(blocks []common.BlockData, cfg *ConfigExtra) 
 					l1Txs = append(l1Txs, &tc.Queues[*batch.Batch.ForgeL1TxsNum][k].L1Tx)
 				}
 			}
-			for k := range batch.L1CoordinatorTxs {
-				l1Txs = append(l1Txs, &batch.L1CoordinatorTxs[k])
-			}
+			// for k := range batch.L1CoordinatorTxs {
+			// 	l1Txs = append(l1Txs, &batch.L1CoordinatorTxs[k])
+			// }
 			for k := range l1Txs {
 				tx := l1Txs[k]
 				if tx.Type == common.TxTypeCreateAccountDeposit {

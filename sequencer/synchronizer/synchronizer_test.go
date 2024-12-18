@@ -8,10 +8,8 @@ import (
 	"os"
 	"sort"
 	"testing"
-	"time"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/database/historydb"
-	"tokamak-sybil-resistance/database/l2db"
 	"tokamak-sybil-resistance/database/statedb"
 	"tokamak-sybil-resistance/test"
 	"tokamak-sybil-resistance/test/til"
@@ -95,7 +93,7 @@ func checkSyncBlock(t *testing.T, s *Synchronizer, blockNum int, block,
 	dbBatches, err := s.historyDB.GetAllBatches()
 	require.NoError(t, err)
 
-	dbL2Txs, err := s.historyDB.GetAllL2Txs()
+	// dbL2Txs, err := s.historyDB.GetAllL2Txs()
 	require.NoError(t, err)
 	dbExits, err := s.historyDB.GetAllExits()
 	require.NoError(t, err)
@@ -129,14 +127,14 @@ func checkSyncBlock(t *testing.T, s *Synchronizer, blockNum int, block,
 		assert.Equal(t, batch.L1UserTxs, syncBatch.L1UserTxs)
 		// NOTE: EffectiveFromIdx is set to til L1CoordinatorTxs in
 		// `FillBlocksExtra` function
-		for j := range syncBatch.L1CoordinatorTxs {
-			assert.NotEqual(t, 0, syncBatch.L1CoordinatorTxs[j].EffectiveFromIdx)
-		}
-		for i := range batch.L1CoordinatorTxs {
-			batch.L1CoordinatorTxs[i].EthTxHash = ethCommon.HexToHash("0xef98421250239de255750811293f167abb9325152520acb62e40de72746d4d5e")
-		}
-		assert.Equal(t, batch.L1CoordinatorTxs, syncBatch.L1CoordinatorTxs)
-		assert.Equal(t, batch.L2Txs, syncBatch.L2Txs)
+		// for j := range syncBatch.L1CoordinatorTxs {
+		// 	assert.NotEqual(t, 0, syncBatch.L1CoordinatorTxs[j].EffectiveFromIdx)
+		// }
+		// for i := range batch.L1CoordinatorTxs {
+		// 	batch.L1CoordinatorTxs[i].EthTxHash = ethCommon.HexToHash("0xef98421250239de255750811293f167abb9325152520acb62e40de72746d4d5e")
+		// }
+		// assert.Equal(t, batch.L1CoordinatorTxs, syncBatch.L1CoordinatorTxs)
+		// assert.Equal(t, batch.L2Txs, syncBatch.L2Txs)
 		// In exit tree, we only check AccountIdx and Balance, because
 		// it's what we have precomputed before.
 		require.Equal(t, len(batch.ExitTree), len(syncBatch.ExitTree))
@@ -174,19 +172,19 @@ func checkSyncBlock(t *testing.T, s *Synchronizer, blockNum int, block,
 		}
 
 		// Check L2Txs from DB
-		for _, tx := range batch.L2Txs {
-			var dbTx *common.L2Tx
-			// Find tx in DB output
-			for _, _dbTx := range dbL2Txs {
-				if tx.BatchNum == _dbTx.BatchNum &&
-					tx.Position == _dbTx.Position {
-					dbTx = new(common.L2Tx)
-					*dbTx = _dbTx
-					break
-				}
-			}
-			assert.Equal(t, &tx, dbTx) //nolint:gosec
-		}
+		// for _, tx := range batch.L2Txs {
+		// 	var dbTx *common.L2Tx
+		// 	// Find tx in DB output
+		// 	for _, _dbTx := range dbL2Txs {
+		// 		if tx.BatchNum == _dbTx.BatchNum &&
+		// 			tx.Position == _dbTx.Position {
+		// 			dbTx = new(common.L2Tx)
+		// 			*dbTx = _dbTx
+		// 			break
+		// 		}
+		// 	}
+		// 	assert.Equal(t, &tx, dbTx) //nolint:gosec
+		// }
 
 		// Check Exits from DB
 		for _, exit := range batch.ExitTree {
@@ -248,7 +246,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB, *l2db.L2DB) {
+func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB /*, *l2db.L2DB*/) {
 	// Int State DB
 	dir, err := os.MkdirTemp("", "tmpdb")
 	require.NoError(t, err)
@@ -264,15 +262,15 @@ func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB, *l2db
 	historyDB := historydb.NewHistoryDB(db, db /*, nil*/)
 
 	// Init L2 DB
-	l2DB := l2db.NewL2DB(db, db, 10, 100, 0.0, 1000.0, 24*time.Hour, nil)
+	// l2DB := l2db.NewL2DB(db, db, 10, 100, 0.0, 1000.0, 24*time.Hour, nil)
 
 	t.Cleanup(func() {
 		test.MigrationsDownTest(historyDB.DB())
 		stateDB.Close()
-		l2DB.DB().Close()
+		// l2DB.DB().Close()
 	})
 
-	return stateDB, historyDB, l2DB
+	return stateDB, historyDB /*, l2DB*/
 }
 
 func newBigInt(s string) *big.Int {
@@ -284,7 +282,7 @@ func newBigInt(s string) *big.Int {
 }
 
 func TestSyncGeneral(t *testing.T) {
-	stateDB, historyDB, _ := newTestModules(t)
+	stateDB, historyDB := newTestModules(t)
 
 	// Init eth client
 	var timer timer

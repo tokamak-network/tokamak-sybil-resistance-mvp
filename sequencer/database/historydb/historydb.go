@@ -866,14 +866,14 @@ func (hdb *HistoryDB) AddBlockSCData(blockData *common.BlockData) (err error) {
 		// }
 
 		// Add forged l1 coordinator Txs
-		if err := hdb.addL1Txs(txn, batch.L1CoordinatorTxs); err != nil {
-			return common.Wrap(err)
-		}
+		// if err := hdb.addL1Txs(txn, batch.L1CoordinatorTxs); err != nil {
+		// 	return common.Wrap(err)
+		// }
 
 		// Add l2 Txs
-		if err := hdb.addL2Txs(txn, batch.L2Txs); err != nil {
-			return common.Wrap(err)
-		}
+		// if err := hdb.addL2Txs(txn, batch.L2Txs); err != nil {
+		// 	return common.Wrap(err)
+		// }
 
 		// Add user L1 txs that will be forged in next batch
 		if userlL1s, ok := userL1s[batch.Batch.BatchNum]; ok {

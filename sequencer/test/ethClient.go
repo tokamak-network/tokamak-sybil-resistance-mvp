@@ -848,20 +848,20 @@ func (c *Client) CtlAddBlocks(blocks []common.BlockData) (err error) {
 		}
 		c.CtlSetAddr(ethCommon.HexToAddress("0xE39fEc6224708f0772D2A74fd3f9055A90E0A9f2"))
 		for _, batch := range block.Rollup.Batches {
-			auths := make([][]byte, len(batch.L1CoordinatorTxs))
-			for i := range auths {
-				auths[i] = make([]byte, 65)
-			}
+			// auths := make([][]byte, len(batch.L1CoordinatorTxs))
+			// for i := range auths {
+			// 	auths[i] = make([]byte, 65)
+			// }
 			if _, err := c.RollupForgeBatch(&eth.RollupForgeBatchArgs{
 				NewLastIdx: batch.Batch.LastIdx,
 
-				NewAccountRoot:        batch.Batch.AccountRoot,
-				NewVouchRoot:          batch.Batch.VouchRoot,
-				NewScoreRoot:          batch.Batch.ScoreRoot,
-				NewExitRoot:           batch.Batch.ExitRoot,
-				L1CoordinatorTxs:      batch.L1CoordinatorTxs,
-				L1CoordinatorTxsAuths: auths,
-				L2TxsData:             batch.L2Txs,
+				NewAccountRoot: batch.Batch.AccountRoot,
+				NewVouchRoot:   batch.Batch.VouchRoot,
+				NewScoreRoot:   batch.Batch.ScoreRoot,
+				NewExitRoot:    batch.Batch.ExitRoot,
+				// L1CoordinatorTxs:      batch.L1CoordinatorTxs,
+				// L1CoordinatorTxsAuths: auths,
+				// L2TxsData:             batch.L2Txs,
 				// Circuit selector
 				VerifierIdx: 0, // Intentionally empty
 				L1Batch:     batch.L1Batch,

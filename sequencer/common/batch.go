@@ -76,8 +76,8 @@ type BatchData struct {
 // NewBatchData creates an empty BatchData with the slices initialized.
 func NewBatchData() *BatchData {
 	return &BatchData{
-		L1Batch: false,
-		// L1UserTxs:        make([]common.L1Tx, 0),
+		L1Batch:   false,
+		L1UserTxs: make([]L1Tx, 0),
 		// L1CoordinatorTxs: make([]L1Tx, 0),
 		// L2Txs:            make([]L2Tx, 0),
 		CreatedAccounts: make([]Account, 0),

@@ -466,10 +466,10 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 				"err", err, "nonce", auth.Nonce, "batchNum", batchInfo.BatchNum)
 			auth.Nonce.Sub(auth.Nonce, big.NewInt(1))
 			attempt--
-			// TODO: hermez uses ErrReplaceUnderpriced instead of ErrFeeCapTooLow but
+			// TODO: hermez uses ErrReplaceUnderpriced instead of ErrInsufficientFunds but
 			// ErrReplaceUnderpriced doesn't currently exist in go-ethereum. Need to
 			// double check if this replacement is correct.
-		} else if strings.Contains(err.Error(), core.ErrFeeCapTooLow.Error()) {
+		} else if strings.Contains(err.Error(), core.ErrInsufficientFunds.Error()) {
 			log.Warnw("TxManager ethClient.RollupForgeBatch incrementing gasPrice",
 				"err", err, "gasPrice", auth.GasPrice, "batchNum", batchInfo.BatchNum)
 			auth.GasPrice = addPerc(auth.GasPrice, 10)

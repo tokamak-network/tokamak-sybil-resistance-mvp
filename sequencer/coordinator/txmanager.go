@@ -447,7 +447,6 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 				auth.GasPrice, t.cfg.MaxGasPrice)
 		}
 
-		// TODO: Implement
 		// RollupForgeBatch() calls ethclient.SendTransaction()
 		ethTx, err = t.ethClient.RollupForgeBatch(batchInfo.ForgeBatchArgs, auth)
 

@@ -447,9 +447,8 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 				auth.GasPrice, t.cfg.MaxGasPrice)
 		}
 
-		// TODO: Implement
 		// RollupForgeBatch() calls ethclient.SendTransaction()
-		// ethTx, err = t.ethClient.RollupForgeBatch(batchInfo.ForgeBatchArgs, auth)
+		ethTx, err = t.ethClient.RollupForgeBatch(batchInfo.ForgeBatchArgs, auth)
 
 		// We check the errors via strings because we match the
 		// definition of the error from geth, with the string returned
@@ -466,6 +465,7 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 				"err", err, "nonce", auth.Nonce, "batchNum", batchInfo.BatchNum)
 			auth.Nonce.Sub(auth.Nonce, big.NewInt(1))
 			attempt--
+
 			// TODO: hermez uses ErrReplaceUnderpriced instead of ErrInsufficientFunds but
 			// ErrReplaceUnderpriced doesn't currently exist in go-ethereum. Need to
 			// double check if this replacement is correct.
@@ -474,6 +474,7 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 				"err", err, "gasPrice", auth.GasPrice, "batchNum", batchInfo.BatchNum)
 			auth.GasPrice = addPerc(auth.GasPrice, 10)
 			attempt--
+
 			// TODO: hermez uses ErrUnderpriced instead of ErrIntrinsicGas but
 			// ErrUnderpriced doesn't currently exist in go-ethereum. Need to
 			// double check if this replacement is correct.

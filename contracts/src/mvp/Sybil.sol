@@ -13,15 +13,16 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     uint48 constant _EXPLODE_IDX = 2;
     uint256 constant _TXN_TOTALBYTES = 128; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 1000; // Max transactions per batch
+    uint256 constant _LIMIT_LOADAMOUNT = (1 << 128); // Max loadAmount per call
 
-    uint8 public constant ABSOLUTE_MAX_L1BATCHTIMEOUT = 240;
+    uint8 public constant ABSOLUTE_MAX_BATCHTIMEOUT = 240;
 
     uint48 public lastIdx;
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
 
     mapping(uint32 => uint256) public accountRootMap;
-    mapping(uint32 => uint256) public vouchRootMap; 
+    mapping(uint32 => uint256) public vouchRootMap;
     mapping(uint32 => uint256) public scoreRootMap;
     mapping(uint32 => uint256) public exitRootMap;
     mapping(uint32 => bytes) public unprocessedBatchesMap;
@@ -55,7 +56,7 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         address[] memory verifiers,
         uint256[] memory maxTxs,
         uint256[] memory nLevels,
-        uint8 _forgeL1BatchTimeout, 
+        uint8 _forgeBatchTimeout,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _poseidon4Elements
@@ -75,14 +76,14 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
             _poseidon4Elements
         );
 
-        emit Initialize(_forgeL1BatchTimeout);
+        emit Initialize(_forgeBatchTimeout);
     }
 
     function _addTx(
         address ethAddress,
         uint48 fromIdx,
         uint40 loadAmountF,
-        uint40 amountF,   
+        uint40 amountF,
         uint48 toIdx
     ) public override {
         bytes memory l1Tx = abi.encodePacked(
@@ -108,20 +109,90 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         }
     }
 
-    function createAccount() external payable override{
-        _addTx(msg.sender, 0, 0, 0, 0);
+    function createAccountDeposit(uint40 loadAmountF) external payable override {
+        uint256 loadAmount = _float2Fix(loadAmountF);
+        if(loadAmount >= _LIMIT_LOADAMOUNT) {
+            revert LoadAmountExceedsLimit();
+        }
+
+        if(loadAmount != msg.value) {
+            revert LoadAmountDoesNotMatch();
+        }
+        _addTx(msg.sender, 0, loadAmountF, 0, 0);
     }
 
-    function deposit(uint48 fromIdx, uint40 loadAmountF, uint40 amountF) external payable override {
-        _addTx(msg.sender, fromIdx, loadAmountF, amountF, 0);
+    function deposit(uint48 fromIdx, uint40 loadAmountF) external payable override {
+        uint256 loadAmount = _float2Fix(loadAmountF);
+
+        if(loadAmount >= _LIMIT_LOADAMOUNT) {
+            revert LoadAmountExceedsLimit();
+        }
+
+        if(loadAmount != msg.value) {
+            revert LoadAmountDoesNotMatch();
+        }
+
+        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
+            revert InvalidFromIdx();
+        }
+
+        _addTx(msg.sender, fromIdx, loadAmountF, 0, 0);
     }
 
-    function exit(uint48 fromIdx, uint40 loadAmountF, uint40 amountF) external payable override {
-        _addTx(msg.sender, fromIdx, loadAmountF, amountF, _EXIT_IDX);
+
+    function exit(uint48 fromIdx, uint40 amountF) external override {
+        uint256 amount = _float2Fix(amountF);
+
+        if(amount >= _LIMIT_LOADAMOUNT) {
+            revert AmountExceedsLimit();
+        }
+
+        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
+            revert InvalidFromIdx();
+        }
+
+        _addTx(msg.sender, fromIdx, 0, amountF, _EXIT_IDX);
     }
 
-    function explode(uint48 fromIdx, uint40 loadAmountF, uint40 amountF) external payable override {
-        _addTx(msg.sender, fromIdx, loadAmountF, amountF, _EXPLODE_IDX);
+    function explodeMultiple(uint48 fromIdx, uint48[] memory toIdxs) external override {
+
+        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
+            revert InvalidFromIdx();
+        }
+        uint256 length = toIdxs.length;
+        for (uint i = 0; i < length; ++i) {
+            if((toIdxs[i] <= _RESERVED_IDX) || (toIdxs[i] > lastIdx)) {
+                revert InvalidToIdx();
+            }
+
+            _addTx(msg.sender, fromIdx, 0, 2, toIdxs[i]);
+        }
+    }
+
+    function vouch(uint48 fromIdx, uint48 toIdx) external {
+
+        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
+            revert InvalidFromIdx();
+        }
+
+        if(((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx))) {
+                revert InvalidToIdx();
+        }
+
+        _addTx(msg.sender, fromIdx, 0, 1, toIdx);
+    }
+
+    function unvouch(uint48 fromIdx, uint48 toIdx) external {
+
+        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
+            revert InvalidFromIdx();
+        }
+
+        if(((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx))) {
+                revert InvalidToIdx();
+        }
+
+        _addTx(msg.sender, fromIdx, 0, 0, toIdx);
     }
 
     // Implement the missing function from the IMvp interface
@@ -163,7 +234,7 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
 
     function setForgeL1BatchTimeout(uint8 newTimeout) external pure override {
         // Timeout logic
-        if (newTimeout > ABSOLUTE_MAX_L1BATCHTIMEOUT) {
+        if (newTimeout > ABSOLUTE_MAX_BATCHTIMEOUT) {
             revert BatchTimeoutExceeded();
         }
     }
@@ -238,6 +309,10 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
 
     function getQueueLength() external view override returns (uint32) {
         return currentFillingBatch - lastForgedBatch;
+    }
+
+    function _float2Fix(uint40 floatVal) internal pure returns(uint256) {
+        return uint256(floatVal) * 10 ** (18 - 8);
     }
 
     function _initializeVerifiers(

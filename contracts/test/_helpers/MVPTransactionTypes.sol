@@ -23,15 +23,15 @@ contract TransactionTypeHelper {
     // Returns invalid deposit transaction parameters
     function invalidDeposit() public pure returns (TxParams memory) {
         return TxParams({
-            fromIdx: 256, 
+            fromIdx: 255, 
             loadAmountF: 100, 
-            amountF: 100, 
+            amountF: 0, 
             toIdx: 0
         });
     }
 
     // Returns valid CreateAccount transaction parameters
-    function validCreateAccount() public pure returns (TxParams memory) {
+    function validCreateAccountDeposit() public pure returns (TxParams memory) {
         return TxParams({ 
             fromIdx: 0, 
             loadAmountF: 100, 
@@ -41,7 +41,7 @@ contract TransactionTypeHelper {
     }
 
     // Returns invalid CreateAccount transaction parameters
-    function invalidCreateAccount() public pure returns (TxParams memory) {
+    function invalidCreateAccountDeposit() public pure returns (TxParams memory) {
         return TxParams({
             fromIdx: 0, 
             loadAmountF: 100, 
@@ -63,8 +63,8 @@ contract TransactionTypeHelper {
     // Returns invalid ForceExit transaction parameters
     function invalidForceExit() public pure returns (TxParams memory) {
         return TxParams({
-            fromIdx: 256, 
-            loadAmountF: 100, // Invalid non-zero loadAmountF
+            fromIdx: 255, 
+            loadAmountF: 0,
             amountF: 0, 
             toIdx: 1 
         });
@@ -76,27 +76,47 @@ contract TransactionTypeHelper {
             fromIdx: 256, 
             loadAmountF: 0, 
             amountF: 0, 
-            toIdx: 2 
+            toIdx: 256
         });
     }
 
     // Returns invalid ForceExplode transaction parameters
-    function valid() public pure returns (TxParams memory) {
+    function invalidFromIdxForceExplode() public pure returns (TxParams memory) {
         return TxParams({
-            fromIdx: 0, 
-            loadAmountF: 100, 
+            fromIdx: 255, 
+            loadAmountF: 0, 
             amountF: 0, 
-            toIdx: 0 
+            toIdx: 256
         });
     }
 
     // Returns invalid ForceExplode transaction parameters
-    function invalidForceExplode() public pure returns (TxParams memory) {
+    function invalidToIdxForceExplode() public pure returns (TxParams memory) {
         return TxParams({
             fromIdx: 256, 
-            loadAmountF: 100, 
-            amountF: 100, 
-            toIdx: 2 
+            loadAmountF: 0, 
+            amountF: 0, 
+            toIdx: 255
+        });
+    }
+
+    // Returns valid Vouch transaction parameters
+    function validVouch() public pure returns (TxParams memory) {
+        return TxParams({
+            fromIdx: 256, 
+            loadAmountF: 0, 
+            amountF: 1, 
+            toIdx: 256
+        });
+    }
+
+    // Returns Invalid Vouch transaction parameters
+    function validUnVouch() public pure returns (TxParams memory) {
+        return TxParams({
+            fromIdx: 256, 
+            loadAmountF: 0, 
+            amountF: 1, 
+            toIdx: 256
         });
     }
 }

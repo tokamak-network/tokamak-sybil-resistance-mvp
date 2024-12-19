@@ -3,29 +3,23 @@ pragma solidity 0.8.23;
 
 interface IMVPSybil {
     error InvalidVerifierAddress();
-    error InvalidCreateAccountTransaction();
-    error InvalidDepositTransaction();
-    error InvalidForceExitTransaction();
-    error InvalidForceExplodeTransaction();
-    error InternalTxNotAllowed();
     error BatchTimeoutExceeded();
     error LoadAmountExceedsLimit();
     error LoadAmountDoesNotMatch();
     error AmountExceedsLimit();
-    error InvalidTransactionParameters();
     error WithdrawAlreadyDone();
     error SmtProofInvalid();
     error EthTransferFailed();
     error InvalidProof();
-
-
+    error InvalidFromIdx();
+    error InvalidToIdx();
 
     // Initialization function
     function initialize(
         address[] memory verifiers,
         uint256[] memory maxTxs,
         uint256[] memory nLevels,
-        uint8 _forgeL1L2BatchTimeout, 
+        uint8 _forgeBatchTimeout,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _poseidon4Elements
@@ -64,18 +58,31 @@ interface IMVPSybil {
     ) external view returns (bytes memory);
     function getQueueLength() external view returns (uint32);
 
-    // Creating the Account
-    function createAccount() external payable;
+    // Create the Account
+    function createAccountDeposit(uint40 loadAmountF) external payable;
 
-    // Deposting Fucnction
-    function deposit(uint48 fromIdx, uint40 loadAmountF, uint40 amountF) external payable;
+    // Deposit Function
+    function deposit(uint48 fromIdx, uint40 loadAmountF) external payable;
 
-    // 
-    function exit(uint48 fromIdx, uint40 loadAmountF, uint40 amountF) external payable;
+    // Exit Function
+    function exit(uint48 fromIdx, uint40 amountF) external;
 
-    function explode(uint48 fromIdx, uint40 loadAmountF, uint40 amountF) external payable;
+    // Explode function
+    function explodeMultiple(uint48 fromIdx, uint48[] memory toIdxs) external;
+
+    // Vouch function
+    function vouch(uint48 fromIdx, uint48 toIdx) external;
+
+    // Unvouch function
+    function unvouch(uint48 fromIdx, uint48 toIdx) external;
 
     function setForgeL1BatchTimeout(uint8 newTimeout) external pure;
 
+     function withdrawMerkleProof(
+        uint192 amount,
+        uint32 numExitRoot,
+        uint256[] calldata siblings,
+        uint48 idx
+    ) external;
 
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8 .23;
+pragma solidity 0.8.23;
 
 import "forge-std/Test.sol";
 import "../../src/mvp/Sybil.sol";
@@ -8,7 +8,7 @@ import "../_helpers/constants.sol";
 import "../_helpers/MVPTransactionTypes.sol";
 import "../../src/stub/VerifierRollupStub.sol";
 
-contract MvpTest is Test, TransactionTypeHelper{
+contract MvpTest is Test, TransactionTypeHelper {
     Sybil public sybil;
     bytes32[] public hashes;
 
@@ -95,60 +95,14 @@ contract MvpTest is Test, TransactionTypeHelper{
     }
 
     function testGetL1TransactionQueue() public {
-        uint48 fromIdx = 0;
-        uint40 loadAmountF = 100;
-        uint40 amountF = 0;
-        uint48 toIdx = 0;
+        TxParams memory params = validDeposit();
 
-        vm.prank(address(this));
-        sybil.deposit(fromIdx, loadAmountF, amountF);
-
-        bytes memory txData = sybil.getL1TransactionQueue(1);
-        bytes memory expectedTxData = abi.encodePacked(address(this), fromIdx, loadAmountF, amountF, toIdx);
-        assertEq(txData, expectedTxData);
-    }
-
-    function testGetQueueLength() public {
-        uint32 queueLength = sybil.getQueueLength();
-        assertEq(queueLength, 1);
-
-        TxParams memory params = valid();
         uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
-
-        vm.prank(address(this));
-        sybil.deposit {
-            value: loadAmount
-        }(params.fromIdx, params.loadAmountF, params.amountF);
-
-        queueLength = sybil.getQueueLength();
-        assertEq(queueLength, 1);
-    }
-
-    function testSetForgeL1BatchTimeout() public {
-        uint8 newTimeout = 255;
-        vm.expectRevert(IMVPSybil.BatchTimeoutExceeded.selector);
-        sybil.setForgeL1BatchTimeout(newTimeout);
-    }
-
-    function testClearQueue() public {
-        TxParams memory params = valid();
-        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
-
-        vm.prank(address(this));
-        sybil.deposit {
-            value: loadAmount
-        }( params.fromIdx, params.loadAmountF, params.amountF);
-        sybil.deposit {
-            value: loadAmount
-        }(params.fromIdx, params.loadAmountF, params.amountF);
-
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
         uint256 input = uint(1);
 
-        uint32 queueAfter = sybil.getQueueLength();
-        assertEq(queueAfter, 1);
         vm.prank(address(this));
         sybil.forgeBatch(
             256, 
@@ -163,10 +117,92 @@ contract MvpTest is Test, TransactionTypeHelper{
             input
         );
 
+        vm.prank(address(this));
+        sybil.deposit {
+            value: loadAmount
+        }(params.fromIdx, params.loadAmountF);
+
+        bytes memory txData = sybil.getL1TransactionQueue(1);
+        bytes memory expectedTxData = abi.encodePacked(address(this), params.fromIdx, params.loadAmountF, params.amountF, params.toIdx);
+        assertEq(txData, expectedTxData);
+    }
+
+    function testGetQueueLength() public {
+        uint32 queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 1);
+
+        TxParams memory params = validCreateAccountDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        vm.prank(address(this));
+        sybil.createAccountDeposit {
+            value: loadAmount
+        }(params.loadAmountF);
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            256, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 0);
+    }
+
+    function testSetForgeL1BatchTimeout() public {
+        uint8 newTimeout = 255;
+        vm.expectRevert(IMVPSybil.BatchTimeoutExceeded.selector);
+        sybil.setForgeL1BatchTimeout(newTimeout);
+    }
+
+    function testClearQueue() public {
+        TxParams memory params = validCreateAccountDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        vm.prank(address(this));
+        sybil.createAccountDeposit {
+            value: loadAmount
+        }(params.loadAmountF);
+    
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            256, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        uint32 queueAfter = sybil.getQueueLength();
+        assertEq(queueAfter, 0);
+
         queueAfter = sybil.getQueueLength();
         assertEq(sybil.getLastForgedBatch(),1);
         assertEq(queueAfter, 0);
-    } 
+    }
 
     // Events tests
     function testForgeBatchEventEmission() public {
@@ -194,16 +230,16 @@ contract MvpTest is Test, TransactionTypeHelper{
     }
 
     function testL1UserTxEventEmission() public {
-        TxParams memory params = valid();
+        TxParams memory params = validCreateAccountDeposit();
         uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
 
         vm.expectEmit(true, true, true, true);
         emit Sybil.L1UserTxEvent(1, 0, abi.encodePacked(address(this), params.fromIdx, params.loadAmountF, params.amountF, params.toIdx));
 
         vm.prank(address(this));
-        sybil.deposit {
+        sybil.createAccountDeposit {
             value: loadAmount
-        }(params.fromIdx, params.loadAmountF, params.amountF);
+        }(params.loadAmountF);
     }
 
     function testInitializeEventEmission() public {
@@ -235,22 +271,33 @@ contract MvpTest is Test, TransactionTypeHelper{
         emit Sybil.Initialize(120);
     }
 
-    // CreateAccount transactions tests
-    function testCreateAccountTransaction() public {
-        TxParams memory params = validCreateAccount();
+        // CreateAccount transactions tests
+    function testCreateDepositAccountTransaction() public {
+        TxParams memory params = validCreateAccountDeposit();
         uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
 
         vm.prank(address(this));
-        sybil.createAccount {
+        sybil.createAccountDeposit {
             value: loadAmount
-        }();
+        }(params.loadAmountF);
+    }
+
+    function testInvalidCreateDepositAccountTransaction() public {
+        TxParams memory params = invalidCreateAccountDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.LoadAmountDoesNotMatch.selector);
+        sybil.createAccountDeposit {
+            value: 2*loadAmount
+        }(params.loadAmountF);
     }
 
     function testDepositTransaction() public {
         TxParams memory params = validDeposit();
         uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
-        uint48 initialLastIdx = 256;
 
+        uint48 initialLastIdx = 256;
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
@@ -273,7 +320,258 @@ contract MvpTest is Test, TransactionTypeHelper{
         vm.prank(address(this));
         sybil.deposit {
             value: loadAmount
-        }(params.fromIdx, params.loadAmountF, params.amountF);
+        }(params.fromIdx, params.loadAmountF);
+    }
+
+    function testInvalidDepositTransactionWithLoadAmountDoesNotMatch() public {
+        TxParams memory params = validDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.LoadAmountDoesNotMatch.selector);
+        sybil.deposit {
+            value: 2*loadAmount
+        }(params.fromIdx, params.loadAmountF);
+    }
+
+    function testInvalidDepositTransactionWithInvalidFromIdx() public {
+        TxParams memory params = invalidDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 255;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidFromIdx.selector);
+        sybil.deposit {
+            value: loadAmount
+        }(params.fromIdx, params.loadAmountF);
+    }
+
+    function testVouch() public {
+        TxParams memory params = validVouch();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+
+        // forging to set the lastIdx
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        sybil.vouch(params.fromIdx, params.toIdx);
+    }
+
+        function testInvalidVouchWithInvalidFromIdx() public {
+        TxParams memory params = validVouch();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+
+        // forging to set the lastIdx
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidFromIdx.selector);
+        // fromIdx is 244 due to which the tx reverts
+        sybil.vouch(244, params.toIdx);
+    }
+
+    function testInvalidVouchWithInvalidToIdx() public {
+        TxParams memory params = validVouch();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+
+        // forging to set the lastIdx
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidToIdx.selector);
+        // toIdx is 244 due to which the tx reverts
+        sybil.vouch(params.fromIdx, 244);
+    }
+
+
+    function testUnVouch() public {
+        TxParams memory params = validUnVouch();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+
+        // forging to set the lastIdx
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0,
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+    
+        vm.prank(address(this));
+        sybil.unvouch(params.fromIdx, params.toIdx);
+    }
+
+        function testInvalidUnVouchWitInvalidFromIdx() public {
+        TxParams memory params = validUnVouch();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+
+        // forging to set the lastIdx
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidFromIdx.selector);
+        // fromIdx is 244 due to which the tx reverts
+        sybil.unvouch(244, params.toIdx);
+    }
+
+    function testInvalidUnVouchWitInvalidToIdx() public {
+        TxParams memory params = validUnVouch();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        uint48 initialLastIdx = 256;
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+
+        // forging to set the lastIdx
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidToIdx.selector);
+        // toIdx is 244 due to which the tx reverts
+        sybil.unvouch(params.fromIdx, 244);
     }
 
     // ForceExit transactions tests
@@ -302,13 +600,40 @@ contract MvpTest is Test, TransactionTypeHelper{
         );
 
         vm.prank(address(this));
-        sybil.exit {
-            value: loadAmount
-        }(params.fromIdx, params.loadAmountF, params.amountF);
+        sybil.exit(params.fromIdx, params.amountF);
+    }
+
+        function testInvalidForceExitTransactionWithInvalidFromIdx() public {
+        TxParams memory params = invalidForceExit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+        uint48 initialLastIdx = 256;
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidFromIdx.selector);
+        sybil.exit(params.fromIdx, params.amountF);
     }
 
     // ForceExplode transactions tests
-    function testForceExplodeTransaction() public {
+    function testExplodeMultiple() public {
         TxParams memory params = validForceExplode();
         uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
         uint48 initialLastIdx = 256;
@@ -332,10 +657,79 @@ contract MvpTest is Test, TransactionTypeHelper{
             input
         );
 
+        uint48 fromIdx = params.fromIdx;
+
+        uint48[] memory toIdxs = new uint48[](1);
+        toIdxs[0] = params.toIdx;
         vm.prank(address(this));
-        sybil.explode {
-            value: loadAmount
-        }(params.fromIdx, params.loadAmountF, params.amountF);
+        sybil.explodeMultiple(fromIdx, toIdxs);
+        
+    }
+
+    function testExplodeMultipleWithInvalidToIdx() public {
+        TxParams memory params = invalidFromIdxForceExplode();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+        uint48 initialLastIdx = 256;
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,  
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        uint48 fromIdx = params.fromIdx;
+
+        uint48[] memory toIdxs = new uint48[](1);
+        toIdxs[0] = params.toIdx;
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidFromIdx.selector);
+        sybil.explodeMultiple(fromIdx, toIdxs); 
+    }
+
+            function testExplodeMultipleWithInvalidFromIdx() public {
+        TxParams memory params = invalidToIdxForceExplode();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+        uint48 initialLastIdx = 256;
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 input = uint(1);
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            0,  
+            proofA,
+            proofB,
+            proofC,
+            input
+        );
+
+        uint48 fromIdx = params.fromIdx;
+
+        uint48[] memory toIdxs = new uint48[](1);
+        toIdxs[0] = params.toIdx;
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.InvalidToIdx.selector);
+        sybil.explodeMultiple(fromIdx, toIdxs); 
     }
 
     function testInitializeWithInvalidPoseidonAddresses() public {
@@ -427,24 +821,14 @@ contract MvpTest is Test, TransactionTypeHelper{
         );
     }
 
-    function testWithdrawMerkleProofTransferFails() public {
-        // Deploy RevertingReceiver contract
-
+        function testWithdrawMerkleProofTransferFails() public {
         uint192 amount = 1 ether;
         uint32 numExitRoot = 1;
         uint48 idx = 0;
 
-        // Directly set exitRootsMap[numExitRoot] to a dummy value
-        bytes32 exitRootSlot = keccak256(abi.encode(numExitRoot, uint256(keccak256("exitRootsMap"))));
-        vm.store(address(sybil), exitRootSlot, bytes32(uint256(0xdeadbeef)));
-
-        // Ensure exitNullifierMap[numExitRoot][idx] is false
-        bytes32 nullifierSlot = keccak256(abi.encode(idx, keccak256(abi.encode(numExitRoot, uint256(keccak256("exitNullifierMap"))))));
-        vm.store(address(sybil), nullifierSlot, bytes32(uint256(0)));
-
         uint256 [] memory siblings; // Empty siblings
 
-        // Expect revert due to ETH transfer failure
+        // Expect revert ETH transfer failed due to Sybil contract doesn't have enough ether to send
         vm.expectRevert(IMVPSybil.EthTransferFailed.selector);
         sybil.withdrawMerkleProof(
             amount,
@@ -454,21 +838,59 @@ contract MvpTest is Test, TransactionTypeHelper{
         );
     }
 
+        function testWithdrawMerkleProofAlreadyDone() public {
+        uint192 amount = 1 ether;
+        uint32 numExitRoot = 1;
+        uint48 idx = 0;
+
+        uint256 [] memory siblings; 
+
+        TxParams memory params = validCreateAccountDeposit();
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+        vm.prank(address(this));
+        sybil.createAccountDeposit {
+            value: loadAmount
+        }(params.loadAmountF);
+
+        vm.prank(address(this));
+        // Withdraw for the first time
+        sybil.withdrawMerkleProof(
+            uint192(loadAmount),
+            numExitRoot,
+            siblings,
+            idx
+        );
+
+        vm.expectRevert(IMVPSybil.WithdrawAlreadyDone.selector);
+        // Reverts as Withdraw Already Done
+        sybil.withdrawMerkleProof(
+            uint192(loadAmount),
+            numExitRoot,
+            siblings,
+            idx
+        );
+    }
+
     function testWithdrawMerkleProofTransferPasses() public {
         uint192 amount = 1 ether;
-        uint256 babyPubKey = 0x1234;
         uint32 numExitRoot = 1;
         uint48 idx = 2;
         
         // Calcuate exit root
         bytes32 exitRoot = calculateTestExitTreeRoot();
-        
-        // forge batch with exit root
-        uint256 input = uint(1);
+
+        TxParams memory params = validCreateAccountDeposit();     
+        uint256 loadAmount = (params.loadAmountF) * 10 ** (18 - 8);
+
+        vm.prank(address(this));
+        sybil.createAccountDeposit {
+            value: loadAmount
+        }(params.loadAmountF);
+
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-
+        
         vm.prank(address(this));
         sybil.forgeBatch(
             256, 
@@ -480,7 +902,7 @@ contract MvpTest is Test, TransactionTypeHelper{
             proofA,
             proofB,
             proofC,
-            input
+            uint(1)
         );
 
         /* verify
@@ -513,15 +935,15 @@ contract MvpTest is Test, TransactionTypeHelper{
         );
 
         assert(isVerified == true);
-
-        // call withdrawMerkleProof
-        vm.expectRevert(IMVPSybil.EthTransferFailed.selector);
+        uint256 balanceBefore = address(this).balance;
         sybil.withdrawMerkleProof(
-            amount,
+            uint192(loadAmount),
             numExitRoot,
             siblings,
             idx
         );   
+        // loadAmount is transferred to this contract by Sybil.sol
+        assertEq(address(this).balance, balanceBefore + loadAmount);
     }
 
     function calculateTestExitTreeRoot() internal returns (bytes32) {
@@ -572,5 +994,6 @@ contract MvpTest is Test, TransactionTypeHelper{
 
         return hash == uint(root);
     }
-    
+
+    receive() external payable { }
 }

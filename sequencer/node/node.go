@@ -593,14 +593,15 @@ func NewNode( /*mode Mode, */ cfg *config.Node, version string) (*Node, error) {
 	}, nil
 }
 
-func (n *Node) handleReorg( /*ctx context.Context,*/ stats *synchronizer.Stats,
-	vars *common.SCVariables) error {
-	// if n.mode == ModeCoordinator {
-	// 	n.coord.SendMsg(ctx, coordinator.MsgSyncReorg{
-	// 		Stats: *stats,
-	// 		Vars:  *vars.AsPtr(),
-	// 	})
-	// }
+func (n *Node) handleReorg(
+	ctx context.Context,
+	stats *synchronizer.Stats,
+	vars *common.SCVariables,
+) error {
+	n.coord.SendMsg(ctx, coordinator.MsgSyncReorg{
+		Stats: *stats,
+		Vars:  *vars.AsPtr(),
+	})
 	n.stateAPIUpdater.SetSCVars(vars.AsPtr())
 	n.stateAPIUpdater.UpdateNetworkInfoBlock(
 		stats.Eth.LastBlock, stats.Sync.LastBlock,
@@ -622,7 +623,7 @@ func (n *Node) syncLoopFn(ctx context.Context, lastBlock *common.Block) (*common
 		// case: reorg
 		log.Infow("Synchronizer.Sync reorg", "discarded", *discarded)
 		vars := n.sync.SCVars()
-		if err := n.handleReorg( /*ctx,*/ stats, vars); err != nil {
+		if err := n.handleReorg(ctx, stats, vars); err != nil {
 			return nil, time.Duration(0), common.Wrap(err)
 		}
 		return nil, time.Duration(0), nil

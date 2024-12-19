@@ -179,6 +179,9 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 			return nil, common.Wrap(err)
 		}
 		log.Infof("New account created: %s", account.Address.Hex())
+
+		// Necessary to pass the github actions Node Run test
+		cfg.Coordinator.ForgerAddress = account.Address
 	} else {
 		log.Infof("Keystore already initialized, skipping account creation.")
 	}

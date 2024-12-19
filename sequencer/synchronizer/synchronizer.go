@@ -613,7 +613,7 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// Get ForgeBatch events to get the L1CoordinatorTxs
 	for _, evtForgeBatch := range rollupEvents.ForgeBatch {
 		batchData := common.NewBatchData()
-		position := 0
+		// position := 0
 
 		// Get the input for each Tx
 		forgeBatchArgs, sender, err := s.EthClient.RollupForgeBatchArgs(evtForgeBatch.EthTxHash,
@@ -650,7 +650,7 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 				}
 			}
 
-			position = len(l1UserTxs)
+			// position = len(l1UserTxs)
 		}
 
 		// l1TxsAuth := make([]common.AccountCreationAuth,
@@ -701,15 +701,15 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 		// processed.
 
 		// Set TxType to the forged L2Txs
-		for i := range forgeBatchArgs.L2TxsData {
-			if err := forgeBatchArgs.L2TxsData[i].SetType(); err != nil {
-				return nil, common.Wrap(err)
-			}
-		}
+		// for i := range forgeBatchArgs.L2TxsData {
+		// 	if err := forgeBatchArgs.L2TxsData[i].SetType(); err != nil {
+		// 		return nil, common.Wrap(err)
+		// 	}
+		// }
 
 		// Transform L2 txs to PoolL2Txs
 		// NOTE: This is a big ugly, find a better way
-		poolL2Txs := common.L2TxsToPoolL2Txs(forgeBatchArgs.L2TxsData)
+		// poolL2Txs := common.L2TxsToPoolL2Txs(forgeBatchArgs.L2TxsData)
 
 		if int(forgeBatchArgs.VerifierIdx) >= len(s.consts.Rollup.Verifiers) {
 			return nil, common.Wrap(fmt.Errorf("forgeBatchArgs.VerifierIdx (%v) >= "+
@@ -741,18 +741,18 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 		// 		s.stateDB.AccountTree.Root().BigInt(), forgeBatchArgs.NewStRoot))
 		// }
 
-		l2Txs := make([]common.L2Tx, len(poolL2Txs))
-		for i, tx := range poolL2Txs {
-			l2Txs[i] = tx.L2Tx()
-			// Set TxID, BlockNum, BatchNum and Position to the forged L2Txs
-			if err := l2Txs[i].SetID(); err != nil {
-				return nil, common.Wrap(err)
-			}
-			l2Txs[i].EthBlockNum = blockNum
-			l2Txs[i].BatchNum = batchNum
-			l2Txs[i].Position = position
-			position++
-		}
+		// l2Txs := make([]common.L2Tx, len(poolL2Txs))
+		// for i, tx := range poolL2Txs {
+		// 	l2Txs[i] = tx.L2Tx()
+		// 	// Set TxID, BlockNum, BatchNum and Position to the forged L2Txs
+		// 	if err := l2Txs[i].SetID(); err != nil {
+		// 		return nil, common.Wrap(err)
+		// 	}
+		// 	l2Txs[i].EthBlockNum = blockNum
+		// 	l2Txs[i].BatchNum = batchNum
+		// 	l2Txs[i].Position = position
+		// 	position++
+		// }
 		// batchData.L2Txs = l2Txs
 
 		// Set the BatchNum in the forged L1UserTxs
@@ -844,16 +844,16 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// 	rollupData.AddedTokens = append(rollupData.AddedTokens, token)
 	// }
 
-	rollupData.UpdateBucketWithdraw = make([]common.BucketUpdate, 0, len(rollupEvents.UpdateBucketWithdraw))
-	for _, evt := range rollupEvents.UpdateBucketWithdraw {
-		rollupData.UpdateBucketWithdraw = append(rollupData.UpdateBucketWithdraw,
-			common.BucketUpdate{
-				EthBlockNum: blockNum,
-				NumBucket:   evt.NumBucket,
-				BlockStamp:  evt.BlockStamp,
-				Withdrawals: evt.Withdrawals,
-			})
-	}
+	// rollupData.UpdateBucketWithdraw = make([]common.BucketUpdate, 0, len(rollupEvents.UpdateBucketWithdraw))
+	// for _, evt := range rollupEvents.UpdateBucketWithdraw {
+	// 	rollupData.UpdateBucketWithdraw = append(rollupData.UpdateBucketWithdraw,
+	// 		common.BucketUpdate{
+	// 			EthBlockNum: blockNum,
+	// 			NumBucket:   evt.NumBucket,
+	// 			BlockStamp:  evt.BlockStamp,
+	// 			Withdrawals: evt.Withdrawals,
+	// 		})
+	// }
 
 	rollupData.Withdrawals = make([]common.WithdrawInfo, 0, len(rollupEvents.Withdraw))
 	for _, evt := range rollupEvents.Withdraw {
@@ -902,21 +902,21 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// implementation RollupEventsByBlock already inserts a non-existing
 	// RollupEventUpdateBucketsParameters into UpdateBucketsParameters with
 	// all the bucket values at 0 and SafeMode = true
-	for _, evt := range rollupEvents.UpdateBucketsParameters {
-		s.vars.Rollup.Buckets = make([]common.BucketParams, 0, len(evt.ArrayBuckets))
-		for _, bucket := range evt.ArrayBuckets {
-			s.vars.Rollup.Buckets = append(s.vars.Rollup.Buckets, common.BucketParams{
-				CeilUSD:         bucket.CeilUSD,
-				BlockStamp:      bucket.BlockStamp,
-				Withdrawals:     bucket.Withdrawals,
-				RateBlocks:      bucket.RateBlocks,
-				RateWithdrawals: bucket.RateWithdrawals,
-				MaxWithdrawals:  bucket.MaxWithdrawals,
-			})
-		}
-		s.vars.Rollup.SafeMode = evt.SafeMode
-		varsUpdate = true
-	}
+	// for _, evt := range rollupEvents.UpdateBucketsParameters {
+	// 	s.vars.Rollup.Buckets = make([]common.BucketParams, 0, len(evt.ArrayBuckets))
+	// 	for _, bucket := range evt.ArrayBuckets {
+	// 		s.vars.Rollup.Buckets = append(s.vars.Rollup.Buckets, common.BucketParams{
+	// 			CeilUSD:         bucket.CeilUSD,
+	// 			BlockStamp:      bucket.BlockStamp,
+	// 			Withdrawals:     bucket.Withdrawals,
+	// 			RateBlocks:      bucket.RateBlocks,
+	// 			RateWithdrawals: bucket.RateWithdrawals,
+	// 			MaxWithdrawals:  bucket.MaxWithdrawals,
+	// 		})
+	// 	}
+	// 	s.vars.Rollup.SafeMode = evt.SafeMode
+	// 	varsUpdate = true
+	// }
 
 	if varsUpdate {
 		s.vars.Rollup.EthBlockNum = blockNum

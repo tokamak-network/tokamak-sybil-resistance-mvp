@@ -16,9 +16,9 @@ interface IMVPSybil {
 
     // Initialization function
     function initialize(
-        address[] memory verifiers,
-        uint256[] memory maxTxs,
-        uint256[] memory nLevels,
+        address verifier,
+        uint256 maxTx,
+        uint256 nLevel,
         uint8 _forgeBatchTimeout,
         address _poseidon2Elements,
         address _poseidon3Elements,
@@ -41,11 +41,9 @@ interface IMVPSybil {
         uint256 newVouchRoot,
         uint256 newScoreRoot,
         uint256 newExitRoot,
-        uint8 verifierIdx,
         uint256[2] calldata proofA,
         uint256[2][2] calldata proofB,
-        uint256[2] calldata proofC,
-        uint256 input
+        uint256[2] calldata proofC
     ) external;
 
     // Getter functions

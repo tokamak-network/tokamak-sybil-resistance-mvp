@@ -48,7 +48,7 @@ func GetDbCredentials() (port int, host, user, password, dbname string) {
 	}
 	user = os.Getenv("PGUSER")
 	if user == "" {
-		user = "hermez"
+		user = "postgres"
 	}
 	password = os.Getenv("PGPASSWORD")
 	if password == "" {

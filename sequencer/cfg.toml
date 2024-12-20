@@ -45,7 +45,7 @@ UserWrite     = "postgres"
 ## Password of the PostgreSQL write server
 PasswordWrite = "123"
 ## Name of the PostgreSQL write server database
-NameWrite     = "postgres"
+NameWrite     = "statedb"
 ## Port of the PostgreSQL read server. If it is not set, the tokamak node will use the postgresql write server configuration
 # PortRead     = 5432
 ## Host of the PostgreSQL read server. If it is not set, the tokamak node will use the postgresql write server configuration
@@ -76,7 +76,7 @@ Rollup   = "0x3d4810E4F8377a34781A6Ceaab9dAc08E361192d"
 
 [Coordinator]
 ## Ethereum address that the coordinator is using to forge batches
-ForgerAddress = "0x7ebd0f4de5e4139b1c07fc4acfa4422c3f4347ed"
+ForgerAddress = "0x46732b099639ff3d3ceeb4b6138ccbbb9b72f492"
 ### Minimum balance the forger address needs to start the coordinator in wei. If It is set to 0, the coordinator will not check the balance
 #MinimumForgeAddressBalance = "0"
 ### Number of confirmation blocks to be sure that the tx has been mined correctly

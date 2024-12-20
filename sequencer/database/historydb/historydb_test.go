@@ -44,11 +44,11 @@ func setup(db *HistoryDB, t *testing.T) {
 
 func TestMain(m *testing.M) {
 	// init DB
-	db, err := database.InitTestSQLDB()
+	db, err := database.InitSQLDB()
 	if err != nil {
 		panic(err)
 	}
-	historyDB = NewHistoryDB(db, db /*, nil*/)
+	historyDB = NewHistoryDB(db, db)
 	// apiConnCon := database.NewAPIConnectionController(1, time.Second)
 	// historyDBWithACC = NewHistoryDB(db, db, apiConnCon)
 

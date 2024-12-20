@@ -143,10 +143,11 @@ func (hdb *HistoryDB) GetLastBatch() (*common.Batch, error) {
 	var batch common.Batch
 	err := meddler.QueryRow(
 		hdb.dbRead, &batch, `SELECT batch.batch_num, batch.eth_block_num, batch.forger_addr,
-		batch.account_root,
+		batch.exit_root,
 		batch.vouch_root,
+		batch.account_root,
 		batch.score_root,
-		batch.num_accounts, batch.last_idx, batch.exit_root, batch.forge_l1_txs_num,
+		batch.num_accounts, batch.last_idx, batch.forge_l1_txs_num,
 		batch.slot_num, batch.total_fees_usd, batch.gas_price, batch.gas_used, batch.ether_price_usd
 		FROM batch ORDER BY batch_num DESC LIMIT 1;`,
 	)

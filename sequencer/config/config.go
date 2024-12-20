@@ -109,54 +109,8 @@ type Coordinator struct {
 	// SyncRetryInterval is the waiting interval between calls to the main
 	// handler of a synced block after an error
 	SyncRetryInterval Duration `validate:"required" env:"TONNODE_COORDINATOR_SYNCRETRYINTERVAL"`
-	// PurgeByExtDelInterval is the waiting interval between calls
-	// to the PurgeByExternalDelete function of the l2db which deletes
-	// pending txs externally marked by the column `external_delete`
-	PurgeByExtDelInterval Duration `validate:"required" env:"TONNODE_COORDINATOR_PURGEBYEXTDELINTERVAL"`
 	// ProverWaitReadTimeout
 	ProverWaitReadTimeout Duration `env:"TONNODE_COORDINATOR_PROVERWAITREADTIMEOUT"`
-	// L2DB is the DB that holds the pool of L2Txs
-	L2DB struct {
-		// SafetyPeriod is the number of batches after which
-		// non-pending L2Txs are deleted from the pool
-		SafetyPeriod common.BatchNum `validate:"required" env:"TONNODE_L2DB_SAFETYPERIOD"`
-		// MaxTxs is the maximum number of pending L2Txs that can be
-		// stored in the pool.  Once this number of pending L2Txs is
-		// reached, inserts to the pool will be denied until some of
-		// the pending txs are forged.
-		MaxTxs uint32 `validate:"required" env:"TONNODE_L2DB_MAXTXS"`
-		// MinFeeUSD is the minimum fee in USD that a tx must pay in
-		// order to be accepted into the pool.  Txs with lower than
-		// minimum fee will be rejected at the API level.
-		MinFeeUSD float64 `validate:"gte=0" env:"TONNODE_L2DB_MINFEEUSD"`
-		// MaxFeeUSD is the maximum fee in USD that a tx must pay in
-		// order to be accepted into the pool.  Txs with greater than
-		// maximum fee will be rejected at the API level.
-		MaxFeeUSD float64 `validate:"required,gte=0" env:"TONNODE_L2DB_MAXFEEUSD"`
-		// TTL is the Time To Live for L2Txs in the pool. L2Txs older
-		// than TTL will be deleted.
-		TTL Duration `validate:"required" env:"TONNODE_L2DB_TTL"`
-		// PurgeBatchDelay is the delay between batches to purge
-		// outdated transactions. Outdated L2Txs are those that have
-		// been forged or marked as invalid for longer than the
-		// SafetyPeriod and pending L2Txs that have been in the pool
-		// for longer than TTL once there are MaxTxs.
-		PurgeBatchDelay int64 `validate:"required,gte=0" env:"TONNODE_L2DB_PURGEBATCHDELAY"`
-		// InvalidateBatchDelay is the delay between batches to mark
-		// invalid transactions due to nonce lower than the account
-		// nonce.
-		InvalidateBatchDelay int64 `validate:"required" env:"TONNODE_L2DB_INVALIDATEBATCHDELAY"`
-		// PurgeBlockDelay is the delay between blocks to purge
-		// outdated transactions. Outdated L2Txs are those that have
-		// been forged or marked as invalid for longer than the
-		// SafetyPeriod and pending L2Txs that have been in the pool
-		// for longer than TTL once there are MaxTxs.
-		PurgeBlockDelay int64 `validate:"required,gte=0" env:"TONNODE_L2DB_PURGEBLOCKDELAY"`
-		// InvalidateBlockDelay is the delay between blocks to mark
-		// invalid transactions due to nonce lower than the account
-		// nonce.
-		InvalidateBlockDelay int64 `validate:"required,gte=0" env:"TONNODE_L2DB_INVALIDATEBLOCKDELAY"`
-	} `validate:"required"`
 	TxSelector struct {
 		// Path where the TxSelector StateDB is stored
 		Path string `validate:"required" env:"TONNODE_TXSELECTOR_PATH"`
@@ -337,10 +291,6 @@ type APIConfigParameters struct {
 	UpdateMetricsInterval Duration `validate:"required" env:"TONNODE_API_UPDATEMETRICSINTERVAL"`
 	// UpdateRecommendedFeeInterval is the interval between updates of the recommended fees
 	UpdateRecommendedFeeInterval Duration `validate:"required" env:"TONNODE_API_UPDATERECOMMENDEDFEEINTERVAL"`
-	// CoordinatorNetwork enables a pubsub p2p network to share L2 related information among coordinators.
-	// Only used when running in coordinator mode, as the L2DB is required. Port 3598 will be used and must be open.
-	// KeyStore must be configured with the Ethereum private key of the coordinator
-	CoordinatorNetwork bool `env:"TONNODE_API_COORDINATORNETWORK"`
 	// FindPeersCoordinatorNetworkInterval time elapsed between peer discovery process for the coordinators p2p network
 	FindPeersCoordinatorNetworkInterval Duration `env:"TONNODE_API_COORDINATORNETWORK_FINDPEERSINTERVAL"`
 }
@@ -357,21 +307,6 @@ type APIServer struct {
 		API           struct {
 			// Coordinator enables the coordinator API endpoints
 			Coordinator bool `env:"TONNODE_COORDINATORAPI_COORDINATOR"`
-		} `validate:"required"`
-		L2DB struct {
-			// MaxTxs is the maximum number of pending L2Txs that can be
-			// stored in the pool.  Once this number of pending L2Txs is
-			// reached, inserts to the pool will be denied until some of
-			// the pending txs are forged.
-			MaxTxs uint32 `validate:"required" env:"TONNODE_L2DB_MAXTXS"`
-			// MinFeeUSD is the minimum fee in USD that a tx must pay in
-			// order to be accepted into the pool.  Txs with lower than
-			// minimum fee will be rejected at the API level.
-			MinFeeUSD float64 `validate:"gte=0" env:"TONNODE_L2DB_MINFEEUSD"`
-			// MaxFeeUSD is the maximum fee in USD that a tx must pay in
-			// order to be accepted into the pool.  Txs with greater than
-			// maximum fee will be rejected at the API level.
-			MaxFeeUSD float64 `validate:"required,gte=0" env:"TONNODE_L2DB_MAXFEEUSD"`
 		} `validate:"required"`
 		// Keystore is the ethereum keystore where private keys are kept.
 		// Required if API.CoordinatorNetwork == true

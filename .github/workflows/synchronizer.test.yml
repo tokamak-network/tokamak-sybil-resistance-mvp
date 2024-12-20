@@ -8,7 +8,6 @@ on:
     paths:
       - "sequencer/synchronizer/**"
       - "sequencer/database/historydb/**"
-      - "sequencer/database/l2db/**"
       - "sequencer/database/statedb/**"
       - "sequencer/txprocessor/**"
       - "sequencer/test/til/**"

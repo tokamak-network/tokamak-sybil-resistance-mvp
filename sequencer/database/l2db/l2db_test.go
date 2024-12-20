@@ -38,7 +38,7 @@ func WipeDB(db *sqlx.DB) {
 
 func TestMain(m *testing.M) {
 	// init DB
-	db, err := database.InitTestSQLDB()
+	db, err := database.InitSQLDB()
 	if err != nil {
 		panic(err)
 	}

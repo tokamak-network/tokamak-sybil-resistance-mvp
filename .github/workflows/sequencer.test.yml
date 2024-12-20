@@ -61,7 +61,7 @@ jobs:
       - name: Run all tests
         run: |
           cd ./sequencer
-          task test-sequencer
+          task test-seq
         env:
           PGHOST: "localhost"
           PGPORT: "5432"

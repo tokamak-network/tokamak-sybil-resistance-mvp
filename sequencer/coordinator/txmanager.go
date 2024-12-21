@@ -151,15 +151,6 @@ func (q *Queue) At(position int) *BatchInfo {
 	return q.list[position]
 }
 
-func (c *Config) debugBatchStore(batchInfo *BatchInfo) {
-	if c.DebugBatchPath != "" {
-		if err := batchInfo.DebugStore(c.DebugBatchPath); err != nil {
-			log.Warnw("Error storing debug BatchInfo",
-				"path", c.DebugBatchPath, "err", err)
-		}
-	}
-}
-
 // Remove removes the BatchInfo at position
 func (q *Queue) Remove(position int) {
 	// batchInfo := q.list[position]

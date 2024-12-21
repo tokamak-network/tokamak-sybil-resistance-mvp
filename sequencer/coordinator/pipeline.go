@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync"
 	"time"
@@ -12,8 +13,6 @@ import (
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/synchronizer"
 	"tokamak-sybil-resistance/txselector"
-
-	"github.com/hermeznetwork/tracerr"
 )
 
 type statsVars struct {
@@ -25,7 +24,6 @@ type state struct {
 	batchNum                     common.BatchNum
 	lastScheduledL1BatchBlockNum int64
 	lastForgeL1TxsNum            int64
-	// lastSlotForged               int64
 }
 
 // Pipeline manages the forging of batches with parallel server proofs
@@ -68,7 +66,6 @@ func (p *Pipeline) reset(
 		batchNum:                     batchNum,
 		lastForgeL1TxsNum:            stats.Sync.LastForgeL1TxsNum,
 		lastScheduledL1BatchBlockNum: 0,
-		// lastSlotForged:               -1,
 	}
 	p.stats = *stats
 	p.vars = *vars
@@ -98,43 +95,43 @@ func (p *Pipeline) reset(
 		return common.Wrap(err)
 	}
 
-	// TODO: implement
+	// TODO: discuss if it's necessary to check all the roots or just one is enough
 	// After reset, check that if the batch exists in the historyDB, the
 	// stateRoot matches with the local one, if not, force a reset from
 	// synchronizer
-	// batch, err := p.historyDB.GetBatch(p.state.batchNum)
-	// if common.Unwrap(err) == sql.ErrNoRows {
-	// 	// nothing to do
-	// } else if err != nil {
-	// 	return common.Wrap(err)
-	// } else {
-	// 	localStateAccountRoot := p.batchBuilder.LocalStateDB().AccountTree.Root().BigInt()
-	// 	localStateScoreRoot := p.batchBuilder.LocalStateDB().ScoreTree.Root().BigInt()
-	// 	localStateVouchRoot := p.batchBuilder.LocalStateDB().VouchTree.Root().BigInt()
+	batch, err := p.historyDB.GetBatch(p.state.batchNum)
+	if common.Unwrap(err) == sql.ErrNoRows {
+		// nothing to do
+	} else if err != nil {
+		return common.Wrap(err)
+	} else {
+		localStateAccountRoot := p.batchBuilder.LocalStateDB().AccountTree.Root().BigInt()
+		localStateScoreRoot := p.batchBuilder.LocalStateDB().ScoreTree.Root().BigInt()
+		localStateVouchRoot := p.batchBuilder.LocalStateDB().VouchTree.Root().BigInt()
 
-	// 	if batch.AccountStateRoot.Cmp(localStateAccountRoot) != 0 ||
-	// 		batch.ScoreStateRoot.Cmp(localStateScoreRoot) != 0 ||
-	// 		batch.VouchStateRoot.Cmp(localStateVouchRoot) != 0 {
-	// 		log.Debugw(
-	// 			"local state roots didn't match the historydb state roots:\n"+
-	// 				"localStateAccountRoot: %v vs historydb stateAccountRoot: %v \n"+
-	// 				"localStateVouchRoot: %v vs historydb stateVouchRoot: %v \n"+
-	// 				"localStateScoreRoot: %v vs historydb stateScoreRoot: %v \n"+
-	// 				"Forcing reset from Synchronizer",
-	// 			localStateAccountRoot, batch.AccountStateRoot,
-	// 			localStateVouchRoot, batch.VouchStateRoot,
-	// 			localStateScoreRoot, batch.ScoreStateRoot,
-	// 		)
-	// 		// StateRoots from synchronizer doesn't match StateRoots
-	// 		// from batchBuilder, force a reset from synchronizer
-	// 		if err := p.txSelector.Reset(p.state.batchNum, true); err != nil {
-	// 			return common.Wrap(err)
-	// 		}
-	// 		if err := p.batchBuilder.Reset(p.state.batchNum, true); err != nil {
-	// 			return common.Wrap(err)
-	// 		}
-	// 	}
-	// }
+		if batch.AccountRoot.Cmp(localStateAccountRoot) != 0 ||
+			batch.ScoreRoot.Cmp(localStateScoreRoot) != 0 ||
+			batch.VouchRoot.Cmp(localStateVouchRoot) != 0 {
+			log.Debugw(
+				"local state roots didn't match the historydb state roots:\n"+
+					"localStateAccountRoot: %v vs historydb stateAccountRoot: %v \n"+
+					"localStateVouchRoot: %v vs historydb stateVouchRoot: %v \n"+
+					"localStateScoreRoot: %v vs historydb stateScoreRoot: %v \n"+
+					"Forcing reset from Synchronizer",
+				localStateAccountRoot, batch.AccountRoot,
+				localStateVouchRoot, batch.VouchRoot,
+				localStateScoreRoot, batch.ScoreRoot,
+			)
+			// StateRoots from synchronizer doesn't match StateRoots
+			// from batchBuilder, force a reset from synchronizer
+			if err := p.txSelector.Reset(p.state.batchNum, true); err != nil {
+				return common.Wrap(err)
+			}
+			if err := p.batchBuilder.Reset(p.state.batchNum, true); err != nil {
+				return common.Wrap(err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -155,12 +152,11 @@ func (p *Pipeline) handleForgeBatch(
 	ctx context.Context,
 	batchNum common.BatchNum,
 ) (batchInfo *BatchInfo, err error) {
-	// 1. Wait for an available serverProof (blocking call)
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
 
-	// 2. Forge the batch internally (make a selection of txs and prepare
+	// Forge the batch internally (make a selection of txs and prepare
 	// all the smart contract arguments)
 	var skipReason *string
 	batchInfo, skipReason, err = p.forgeBatch(batchNum)
@@ -174,7 +170,7 @@ func (p *Pipeline) handleForgeBatch(
 		return nil, common.Wrap(errSkipBatchByPolicy)
 	}
 
-	// 3. Send the ZKInputs to the proof server
+	// Send the ZKInputs to the proof server
 	batchInfo.ServerProof = p.prover
 	batchInfo.ProofStart = time.Now()
 	if err := p.sendServerProof(ctx, batchInfo); ctx.Err() != nil {
@@ -188,12 +184,12 @@ func (p *Pipeline) handleForgeBatch(
 
 // sendServerProof sends the circuit inputs to the proof server
 func (p *Pipeline) sendServerProof(ctx context.Context, batchInfo *BatchInfo) error {
-	// p.cfg.debugBatchStore(batchInfo)
+	p.cfg.debugBatchStore(batchInfo)
 
-	// Call the selected idle server proof with BatchBuilder output,
+	// Call the server proof with BatchBuilder output,
 	// save server proof info for batchNum
 	if err := batchInfo.ServerProof.CalculateProof(ctx, batchInfo.ZKInputs); err != nil {
-		return tracerr.Wrap(err)
+		return common.Wrap(err)
 	}
 	return nil
 }
@@ -204,136 +200,99 @@ func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
 	skipReason *string,
 	err error,
 ) {
-	// TODO: investigate if we need this for L2Txs
-	// remove transactions from the pool that have been there for too long
-	// _, err = p.purger.InvalidateMaybe(
-	// 	p.l2DB,
-	// 	p.txSelector.LocalAccountsDB(),
-	// 	p.stats.Sync.LastBlock.Num,
-	// 	int64(batchNum),
-	// )
-	// if err != nil {
-	// 	return nil, nil, tracerr.Wrap(err)
-	// }
-	// _, err = p.purger.PurgeMaybe(p.l2DB, p.stats.Sync.LastBlock.Num, int64(batchNum))
-	// if err != nil {
-	// 	return nil, nil, tracerr.Wrap(err)
-	// }
-
 	// Structure to accumulate data and metadata of the batch
 	now := time.Now()
 	batchInfo = &BatchInfo{PipelineNum: p.num, BatchNum: batchNum}
 	batchInfo.Debug.StartTimestamp = now
 	batchInfo.Debug.StartBlockNum = p.stats.Eth.LastBlock.Num + 1
 
-	// var poolL2Txs []common.PoolL2Tx
-	// var discardedL2Txs []common.PoolL2Tx
-	var l1UserTxs, l1CoordTxs []common.L1Tx
+	var l1UserTxs []common.L1Tx
 	var auths [][]byte
-	var coordIdxs []common.AccountIdx
 
-	// 1. Decide if we forge L2Tx or L1+L2Tx
-	// if p.shouldL1L2Batch(batchInfo) {
-	batchInfo.L1Batch = true
-	// 2a: L1+L2 txs
 	_l1UserTxs, err := p.historyDB.GetUnforgedL1UserTxs(p.state.lastForgeL1TxsNum + 1)
 	if err != nil {
-		return nil, nil, tracerr.Wrap(err)
+		return nil, nil, common.Wrap(err)
 	}
 	// l1UserFutureTxs are the l1UserTxs that are not being forged
 	// in the next batch, but that are also in the queue for the
 	// future batches
 	l1UserFutureTxs, err := p.historyDB.GetUnforgedL1UserFutureTxs(p.state.lastForgeL1TxsNum + 1)
 	if err != nil {
-		return nil, nil, tracerr.Wrap(err)
+		return nil, nil, common.Wrap(err)
 	}
 
-	coordIdxs, auths, l1UserTxs, l1CoordTxs, poolL2Txs, discardedL2Txs, err =
-		p.txSelector.GetL1L2TxSelection(p.cfg.TxProcessorConfig, _l1UserTxs, l1UserFutureTxs)
+	// TODO: figure out what happens here and potentially remove txSelector
+	auths, l1UserTxs, err =
+		p.txSelector.GetL1TxSelection(p.cfg.TxProcessorConfig, _l1UserTxs, l1UserFutureTxs)
 	if err != nil {
-		return nil, nil, tracerr.Wrap(err)
+		return nil, nil, common.Wrap(err)
 	}
-	// }
-	// else {
-	// 	// get l1UserFutureTxs which are all the l1 pending in all the
-	// 	// queues
-	// 	l1UserFutureTxs, err := p.historyDB.GetUnforgedL1UserFutureTxs(p.state.lastForgeL1TxsNum) //nolint:gomnd
-	// 	if err != nil {
-	// 		return nil, nil, tracerr.Wrap(err)
-	// 	}
 
-	// 	// 2b: only L2 txs
-	// 	coordIdxs, auths, l1CoordTxs, poolL2Txs, discardedL2Txs, err =
-	// 		p.txSelector.GetL2TxSelection(p.cfg.TxProcessorConfig, l1UserFutureTxs)
-	// 	if err != nil {
-	// 		return nil, nil, tracerr.Wrap(err)
-	// 	}
-	// 	l1UserTxs = nil
-	// }
-
-	if skip, reason, err := p.forgePolicySkipPostSelection(now,
-		l1UserTxs, l1CoordTxs, poolL2Txs, batchInfo); err != nil {
-		return nil, nil, tracerr.Wrap(err)
+	// TODO: depending on what's happening in txSelector, this might not be necessary as well
+	if skip, reason, err := p.forgePolicySkipPostSelection(now, l1UserTxs, batchInfo); err != nil {
+		return nil, nil, common.Wrap(err)
 	} else if skip {
 		if err := p.txSelector.Reset(batchInfo.BatchNum-1, false); err != nil {
-			return nil, nil, tracerr.Wrap(err)
+			return nil, nil, common.Wrap(err)
 		}
-		return nil, &reason, tracerr.Wrap(err)
+		return nil, &reason, common.Wrap(err)
 	}
 
-	if batchInfo.L1Batch {
-		p.state.lastScheduledL1BatchBlockNum = p.stats.Eth.LastBlock.Num + 1
-		p.state.lastForgeL1TxsNum++
-	}
+	p.state.lastScheduledL1BatchBlockNum = p.stats.Eth.LastBlock.Num + 1
+	p.state.lastForgeL1TxsNum++
 
-	// 3.  Save metadata from TxSelector output for BatchNum
+	// Save metadata from TxSelector output for BatchNum
 	batchInfo.L1UserTxs = l1UserTxs
-	batchInfo.L1CoordTxs = l1CoordTxs
 	batchInfo.L1CoordinatorTxsAuths = auths
-	batchInfo.CoordIdxs = coordIdxs
-	batchInfo.VerifierIdx = p.cfg.VerifierIdx
 
-	if err := p.l2DB.StartForging(common.TxIDsFromPoolL2Txs(poolL2Txs),
-		batchInfo.BatchNum); err != nil {
-		return nil, nil, tracerr.Wrap(err)
-	}
-	if err := p.l2DB.UpdateTxsInfo(discardedL2Txs, batchInfo.BatchNum); err != nil {
-		return nil, nil, tracerr.Wrap(err)
-	}
-
-	// Invalidate transactions that become invalid because of
-	// the poolL2Txs selected.  Will mark as invalid the txs that have a
-	// (fromIdx, nonce) which already appears in the selected txs (includes
-	// all the nonces smaller than the current one)
-	err = p.l2DB.InvalidateOldNonces(idxsNonceFromPoolL2Txs(poolL2Txs), batchInfo.BatchNum)
-	if err != nil {
-		return nil, nil, tracerr.Wrap(err)
-	}
-
-	// 4. Call BatchBuilder with TxSelector output
+	// Call BatchBuilder with TxSelector output
 	configBatch := &batchbuilder.ConfigBatch{
 		TxProcessorConfig: p.cfg.TxProcessorConfig,
 	}
-	zkInputs, err := p.batchBuilder.BuildBatch(coordIdxs, configBatch, l1UserTxs,
-		l1CoordTxs, poolL2Txs)
+	zkInputs, err := p.batchBuilder.BuildBatch(configBatch, l1UserTxs)
 	if err != nil {
-		return nil, nil, tracerr.Wrap(err)
+		return nil, nil, common.Wrap(err)
 	}
-	l2Txs, err := common.PoolL2TxsToL2Txs(poolL2Txs) // NOTE: This is a big uggly, find a better way
-	if err != nil {
-		return nil, nil, tracerr.Wrap(err)
-	}
-	batchInfo.L2Txs = l2Txs
 
-	// 5. Save metadata from BatchBuilder output for BatchNum
+	// Save metadata from BatchBuilder output for BatchNum
 	batchInfo.ZKInputs = zkInputs
 	batchInfo.Debug.Status = StatusForged
 	p.cfg.debugBatchStore(batchInfo)
 	log.Infow("Pipeline: batch forged internally", "batch", batchInfo.BatchNum)
 
-	p.state.lastSlotForged = p.stats.Sync.Auction.CurrentSlot.SlotNum
-
 	return batchInfo, nil, nil
+}
+
+// forgePolicySkipPostSelection is called after doing a tx selection in a batch to
+// determine by policy if we should forge the batch or not.  Returns true and
+// the reason when the forging of the batch must be skipped.
+func (p *Pipeline) forgePolicySkipPostSelection(
+	now time.Time,
+	l1UserTxsExtra []common.L1Tx,
+	batchInfo *BatchInfo,
+) (bool, string, error) {
+	pendingTxs := true
+	if len(l1UserTxsExtra) == 0 {
+		// Query the number of unforged L1UserTxs
+		// (either in a open queue or in a frozen
+		// not-yet-forged queue).
+		count, err := p.historyDB.GetUnforgedL1UserTxsCount()
+		if err != nil {
+			return false, "", err
+		}
+		// If there are future L1UserTxs, we forge a
+		// batch to advance the queues to be able to
+		// forge the L1UserTxs in the future.
+		// Otherwise, skip.
+		if count == 0 {
+			pendingTxs = false
+		}
+	}
+
+	if pendingTxs {
+		return false, "", nil
+	}
+	return true, "no pending txs", nil
 }
 
 func (p *Pipeline) setErrAtBatchNum(batchNum common.BatchNum) {
@@ -345,6 +304,7 @@ func (p *Pipeline) setErrAtBatchNum(batchNum common.BatchNum) {
 // TODO: implement
 // waitServerProof gets the generated zkProof & sends it to the SmartContract
 func (p *Pipeline) waitServerProof(ctx context.Context, batchInfo *BatchInfo) error {
+	// TODO: implement prometheus metrics
 	// defer metric.MeasureDuration(metric.WaitServerProof, batchInfo.ProofStart,
 	// 	batchInfo.BatchNum.BigInt().String(), strconv.Itoa(batchInfo.PipelineNum))
 
@@ -404,10 +364,8 @@ func (p *Pipeline) Start(
 				batchNum = p.state.batchNum + 1
 				batchInfo, err := p.handleForgeBatch(p.ctx, batchNum)
 				if p.ctx.Err() != nil {
-					// p.revertPoolChanges(batchNum)
 					continue
 				} else if common.Unwrap(err) == errSkipBatchByPolicy {
-					// p.revertPoolChanges(batchNum)
 					continue
 				} else if err != nil {
 					p.setErrAtBatchNum(batchNum)
@@ -416,7 +374,6 @@ func (p *Pipeline) Start(
 							"Pipeline.handleForgBatch: %v", err),
 						FailedBatchNum: batchNum,
 					})
-					// p.revertPoolChanges(batchNum)
 					continue
 				}
 				p.lastForgeTime = time.Now()
@@ -448,12 +405,10 @@ func (p *Pipeline) Start(
 					// batches because there's been an error and we
 					// wait for the pipeline to be stopped.
 					if p.getErrAtBatchNum() != 0 {
-						// p.revertPoolChanges(batchNum)
 						return
 					}
 					err := p.waitServerProof(p.ctx, batchInfo)
 					if p.ctx.Err() != nil {
-						// p.revertPoolChanges(batchNum)
 						return
 					} else if err != nil {
 						log.Errorw("waitServerProof", "err", err)
@@ -463,11 +418,8 @@ func (p *Pipeline) Start(
 								"Pipeline.waitServerProof: %v", err),
 							FailedBatchNum: batchInfo.BatchNum,
 						})
-						// p.revertPoolChanges(batchNum)
 						return
 					}
-					// We are done with this serverProof, add it back to the pool
-					// p.proversPool.Add(p.ctx, batchInfo.ServerProof)
 					p.txManager.AddBatch(p.ctx, batchInfo)
 				}(p, batchInfo, batchNum)
 			}

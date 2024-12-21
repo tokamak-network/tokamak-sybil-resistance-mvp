@@ -320,12 +320,12 @@ func (t *TxManager) mustL1L2Batch(blockNum int64) bool {
 
 func (t *TxManager) shouldSendRollupForgeBatch(batchInfo *BatchInfo) error {
 	nextBlock := t.stats.Eth.LastBlock.Num + 1
-	if t.mustL1L2Batch(nextBlock) && !batchInfo.L1Batch {
+	if t.mustL1L2Batch(nextBlock) /* && !batchInfo.L1Batch*/ {
 		return fmt.Errorf("can't forge non-L1Batch in the next block: %v", nextBlock)
 	}
 	margin := t.cfg.SendBatchBlocksMarginCheck
 	if margin != 0 {
-		if t.mustL1L2Batch(nextBlock+margin) && !batchInfo.L1Batch {
+		if t.mustL1L2Batch(nextBlock + margin) /* && !batchInfo.L1Batch */ {
 			return fmt.Errorf("can't forge non-L1Batch after %v blocks: %v",
 				margin, nextBlock)
 		}
@@ -411,9 +411,10 @@ func (t *TxManager) NewAuth(ctx context.Context, batchInfo *BatchInfo) (*bind.Tr
 	auth.Value = big.NewInt(0) // in wei
 
 	gasLimit := t.cfg.ForgeBatchGasCost.Fixed +
-		uint64(len(batchInfo.L1UserTxs))*t.cfg.ForgeBatchGasCost.L1UserTx +
-		uint64(len(batchInfo.L1CoordTxs))*t.cfg.ForgeBatchGasCost.L1CoordTx +
-		uint64(len(batchInfo.L2Txs))*t.cfg.ForgeBatchGasCost.L2Tx
+		uint64(len(batchInfo.L1UserTxs))*t.cfg.ForgeBatchGasCost.L1UserTx
+		// uint64(len(batchInfo.L1UserTxs))*t.cfg.ForgeBatchGasCost.L1UserTx +
+		// uint64(len(batchInfo.L1CoordTxs))*t.cfg.ForgeBatchGasCost.L1CoordTx +
+		// uint64(len(batchInfo.L2Txs))*t.cfg.ForgeBatchGasCost.L2Tx
 	auth.GasLimit = gasLimit
 	auth.GasPrice = gasPrice
 	auth.Nonce = nil
@@ -516,9 +517,9 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 	t.cfg.debugBatchStore(batchInfo)
 
 	if !resend {
-		if batchInfo.L1Batch {
-			t.lastSentL1BatchBlockNum = t.stats.Eth.LastBlock.Num + 1
-		}
+		// if batchInfo.L1Batch {
+		t.lastSentL1BatchBlockNum = t.stats.Eth.LastBlock.Num + 1
+		// }
 	}
 	// if err := t.l2DB.DoneForging(common.TxIDsFromL2Txs(batchInfo.L2Txs),
 	// 	batchInfo.BatchNum); err != nil {

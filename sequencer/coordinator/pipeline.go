@@ -45,7 +45,6 @@ type Pipeline struct {
 	historyDB    *historydb.HistoryDB
 	txSelector   *txselector.TxSelector
 	batchBuilder *batchbuilder.BatchBuilder
-	purger       *Purger
 
 	stats       synchronizer.Stats
 	vars        common.SCVariables
@@ -173,9 +172,7 @@ func (p *Pipeline) handleForgeBatch(ctx context.Context,
 	// // 2. Forge the batch internally (make a selection of txs and prepare
 	// // all the smart contract arguments)
 	// var skipReason *string
-	// p.mutexL2DBUpdateDelete.Lock()
 	// batchInfo, skipReason, err = p.forgeBatch(batchNum)
-	// p.mutexL2DBUpdateDelete.Unlock()
 	// if ctx.Err() != nil {
 	// 	return nil, ctx.Err()
 	// } else if err != nil {

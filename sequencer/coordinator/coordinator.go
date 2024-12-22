@@ -160,7 +160,6 @@ type Config struct {
 	// DebugBatchPath if set, specifies the path where batchInfo is stored
 	// in JSON in every step/update of the pipeline
 	DebugBatchPath string
-	Purger         PurgerCfg
 	// VerifierIdx is the index of the verifier contract registered in the
 	// smart contract
 	// VerifierIdx uint8
@@ -205,7 +204,6 @@ type Coordinator struct {
 	pipeline              *Pipeline
 	lastNonFailedBatchNum common.BatchNum
 
-	purger    *Purger
 	txManager *TxManager
 }
 
@@ -249,13 +247,6 @@ func NewCoordinator(cfg Config,
 		}
 	}
 
-	purger := Purger{
-		cfg:                 cfg.Purger,
-		lastPurgeBlock:      0,
-		lastPurgeBatch:      0,
-		lastInvalidateBlock: 0,
-		lastInvalidateBatch: 0,
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	c := Coordinator{
@@ -277,8 +268,6 @@ func NewCoordinator(cfg Config,
 		historyDB:    historyDB,
 		txSelector:   txSelector,
 		batchBuilder: batchBuilder,
-
-		purger: &purger,
 
 		msgCh: make(chan interface{}, queueLen),
 		ctx:   ctx,
@@ -393,7 +382,6 @@ func NewPipeline(
 	historyDB *historydb.HistoryDB,
 	txSelector *txselector.TxSelector,
 	batchBuilder *batchbuilder.BatchBuilder,
-	purger *Purger,
 	coord *Coordinator,
 	txManager *TxManager,
 	prover prover.Client,
@@ -412,7 +400,6 @@ func NewPipeline(
 		txSelector:   txSelector,
 		batchBuilder: batchBuilder,
 		prover:       prover,
-		purger:       purger,
 		coord:        coord,
 		txManager:    txManager,
 		consts:       *scConsts,
@@ -429,7 +416,6 @@ func (c *Coordinator) newPipeline(ctx context.Context) (*Pipeline, error) {
 		c.historyDB,
 		c.txSelector,
 		c.batchBuilder,
-		c.purger,
 		c,
 		c.txManager,
 		c.prover,
@@ -487,15 +473,6 @@ func (c *Coordinator) syncStats(ctx context.Context, stats *synchronizer.Stats) 
 			return common.Wrap(err)
 		}
 
-		// TODO: Purging seems to be relevant to only L2 txs, need to confirm
-		// if _, err := c.purger.InvalidateMaybe(c.l2DB, c.txSelector.LocalAccountsDB(),
-		// 	stats.Sync.LastBlock.Num, int64(stats.Sync.LastBatch.BatchNum)); err != nil {
-		// 	return common.Wrap(err)
-		// }
-		// if _, err := c.purger.PurgeMaybe(c.l2DB, stats.Sync.LastBlock.Num,
-		// 	int64(stats.Sync.LastBatch.BatchNum)); err != nil {
-		// 	return common.Wrap(err)
-		// }
 	}
 
 	return nil

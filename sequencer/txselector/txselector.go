@@ -82,7 +82,6 @@ import (
 // TxSelector implements all the functionalities to select the txs for the next
 // batch
 type TxSelector struct {
-	// l2db            *l2db.L2DB
 	localAccountsDB *statedb.LocalStateDB
 
 	// coordAccount *CoordAccount
@@ -93,7 +92,6 @@ func NewTxSelector(
 	// coordAccount *CoordAccount,
 	dbpath string,
 	synchronizerStateDB *statedb.StateDB,
-	// l2 *l2db.L2DB,
 ) (*TxSelector, error) {
 	localAccountsDB, err := statedb.NewLocalStateDB(
 		statedb.Config{
@@ -108,7 +106,6 @@ func NewTxSelector(
 	}
 
 	return &TxSelector{
-		// l2db:            l2,
 		localAccountsDB: localAccountsDB,
 		// coordAccount:    coordAccount,
 	}, nil
@@ -193,10 +190,6 @@ func (txsel *TxSelector) getL1TxSelection(selectionConfig txprocessor.Config,
 	// 	}
 
 	// 	// Get pending txs from the pool
-	// 	l2TxsFromDB, err := txsel.l2db.GetPendingTxs()
-	// 	if err != nil {
-	// 		return nil, nil, nil, nil, nil, nil, tracerr.Wrap(err)
-	// 	}
 	// 	// Filter transactions belonging to failed atomic groups
 	// 	selectableTxsTmp, discardedTxs := filterFailedAtomicGroups(l2TxsFromDB, failedAtomicGroups)
 	// 	// Filter invalid atomic groups

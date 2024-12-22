@@ -258,23 +258,9 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		return nil, common.Wrap(err)
 	}
 
-	// var l2DB *l2db.L2DB
-	// if mode == ModeCoordinator {
-	// 	l2DB = l2db.NewL2DB(
-	// 		dbRead, dbWrite,
-	// 		cfg.Coordinator.L2DB.SafetyPeriod,
-	// 		cfg.Coordinator.L2DB.MaxTxs,
-	// 		cfg.Coordinator.L2DB.MinFeeUSD,
-	// 		cfg.Coordinator.L2DB.MaxFeeUSD,
-	// 		cfg.Coordinator.L2DB.TTL.Duration,
-	// 		apiConnCon,
-	// 	)
-	// }
-
 	sync, err := synchronizer.NewSynchronizer(
 		client,
 		historyDB,
-		// l2DB,
 		stateDB,
 		synchronizer.Config{
 			StatsUpdateBlockNumDiffThreshold: cfg.Synchronizer.StatsUpdateBlockNumDiffThreshold,
@@ -291,9 +277,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	}
 
 	// hdbNodeCfg := historydb.NodeConfig{
-	// 	MaxPoolTxs: cfg.Coordinator.L2DB.MaxTxs,
-	// 	MinFeeUSD:  cfg.Coordinator.L2DB.MinFeeUSD,
-	// 	MaxFeeUSD:  cfg.Coordinator.L2DB.MaxFeeUSD,
 	// 	ForgeDelay: cfg.Coordinator.ForgeDelay.Duration.Seconds(),
 	// }
 	// if err := historyDB.SetNodeConfig(&hdbNodeCfg); err != nil {
@@ -379,7 +362,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		// &coordAccount,
 		cfg.Coordinator.TxSelector.Path,
 		stateDB,
-		// l2DB,
 	)
 	if err != nil {
 		return nil, common.Wrap(err)
@@ -467,7 +449,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 			ProverReadTimeout: cfg.Coordinator.ProverWaitReadTimeout.Duration,
 		},
 		historyDB,
-		// l2DB,
 		txSelector,
 		batchBuilder,
 		nil, //serverProofs
@@ -525,7 +506,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	// 		CoordinatorEndpoints:     coord,
 	// 		Server:                   server,
 	// 		HistoryDB:                historyDB,
-	// 		L2DB:                     l2DB,
 	// 		StateDB:                  stateDB,
 	// 		EthClient:                ethClient,
 	// 		ForgerAddress:            &cfg.Coordinator.ForgerAddress,

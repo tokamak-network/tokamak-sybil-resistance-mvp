@@ -64,8 +64,6 @@ lines does:
   - if type==(Synchronizer || BatchBuilder), creates an ephemeral ExitTree
   - processes:
   - L1UserTxs --> for each tx calls ProcessL1Tx()
-  - L1CoordinatorTxs --> for each tx calls ProcessL1Tx()
-  - L2Txs --> for each tx calls ProcessL2Tx()
   - internally, it computes the Fees
   - each transaction processment includes:
   - updating the Account Balances (for sender & receiver, and in
@@ -74,7 +72,7 @@ lines does:
     for the type==TxSelector, which only updates the
     Accounts (leafs))
   - in case of Synchronizer & BatchBuilder, updates the ExitTree
-    for the txs of type Exit (L1 & L2)
+    for the txs of type Exit (L1)
   - in case of BatchBuilder, computes the ZKInputs while processing the txs
   - if type==Synchronizer, once all the txs are processed, for each Exit
     it generates the ExitInfo data

@@ -27,11 +27,11 @@ type TxManager struct {
 	cfg              Config
 	ethClient        eth.ClientInterface
 	etherscanService *etherscan.Service
-	coord   *Coordinator // Used only to send messages to stop the pipeline
-	batchCh chan *BatchInfo
-	chainID *big.Int
-	account accounts.Account
-	consts  common.SCConsts
+	coord            *Coordinator // Used only to send messages to stop the pipeline
+	batchCh          chan *BatchInfo
+	chainID          *big.Int
+	account          accounts.Account
+	consts           common.SCConsts
 
 	stats       synchronizer.Stats
 	vars        common.SCVariables
@@ -96,9 +96,9 @@ func NewTxManager(
 	}
 	log.Infow("TxManager started", "nonce", accNonce)
 	return &TxManager{
-		cfg:              *cfg,
-		ethClient:        ethClient,
-		etherscanService: etherscanService,
+		cfg:               *cfg,
+		ethClient:         ethClient,
+		etherscanService:  etherscanService,
 		coord:             coord,
 		batchCh:           make(chan *BatchInfo, queueLen),
 		statsVarsCh:       make(chan statsVars, queueLen),
@@ -409,8 +409,7 @@ func (t *TxManager) NewAuth(ctx context.Context, batchInfo *BatchInfo) (*bind.Tr
 
 	gasLimit := t.cfg.ForgeBatchGasCost.Fixed +
 		uint64(len(batchInfo.L1UserTxs))*t.cfg.ForgeBatchGasCost.L1UserTx +
-		uint64(len(batchInfo.L1CoordTxs))*t.cfg.ForgeBatchGasCost.L1CoordTx +
-		uint64(len(batchInfo.L2Txs))*t.cfg.ForgeBatchGasCost.L2Tx
+		uint64(len(batchInfo.L1CoordTxs))*t.cfg.ForgeBatchGasCost.L1CoordTx
 	auth.GasLimit = gasLimit
 	auth.GasPrice = gasPrice
 	auth.Nonce = nil

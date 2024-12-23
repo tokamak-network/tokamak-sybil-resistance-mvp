@@ -14,6 +14,7 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     uint256 constant _TXN_TOTALBYTES = 128; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 1000; // Max transactions per batch
     uint256 constant _LIMIT_LOADAMOUNT = (1 << 128); // Max loadAmount per call
+    uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
     uint8 public constant ABSOLUTE_MAX_BATCHTIMEOUT = 240;
 
@@ -32,12 +33,12 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
 
     struct VerifierRollup {
         VerifierRollupInterface verifierInterface;
-        uint256 maxTxs; // maximum rollup transactions in a batch: L1-tx transactions
-        uint256 nLevels; // number of levels of the circuit
+        uint256 maxTx; // maximum rollup transactions in a batch: L1-tx transactions
+        uint256 nLevel; // number of levels of the circuit
     }
 
-    // Verifiers array
-    VerifierRollup[] public rollupVerifiers;
+    // Verifier
+    VerifierRollup public rollupVerifier;
 
     event L1UserTxEvent(
         uint32 indexed queueIndex,
@@ -53,9 +54,9 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     event Initialize(uint8 forgeL1BatchTimeout);
 
     function initialize(
-        address[] memory verifiers,
-        uint256[] memory maxTxs,
-        uint256[] memory nLevels,
+        address verifier,
+        uint256 maxTx,
+        uint256 nLevel,
         uint8 _forgeBatchTimeout,
         address _poseidon2Elements,
         address _poseidon3Elements,
@@ -65,9 +66,9 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         currentFillingBatch = 1;
 
         _initializeVerifiers(
-            verifiers,
-            maxTxs,
-            nLevels
+            verifier,
+            maxTx,
+            nLevel
         );
 
         _initializeHelpers(
@@ -160,11 +161,13 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
             revert InvalidFromIdx();
         }
         uint256 length = toIdxs.length;
-        for (uint i = 0; i < length; ++i) {
+        for (uint256 i = 0; i < length; ++i) {
             if((toIdxs[i] <= _RESERVED_IDX) || (toIdxs[i] > lastIdx)) {
                 revert InvalidToIdx();
             }
+        }
 
+        for (uint256 i = 0; i < length; ++i) {
             _addTx(msg.sender, fromIdx, 0, 2, toIdxs[i]);
         }
     }
@@ -202,15 +205,21 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         uint256 newVouchRoot,
         uint256 newScoreRoot,
         uint256 newExitRoot,
-        uint8 verifierIdx,
         uint256[2] calldata proofA,
         uint256[2][2] calldata proofB,
-        uint256[2] calldata proofC,
-        uint256 input
+        uint256[2] calldata proofC
     ) external override {
+        uint256 input = _constructCircuitInput(
+          newLastIdx,
+          newAccountRoot,
+          newVouchRoot,
+          newScoreRoot,
+          newExitRoot
+      );
+
         // Verify the proof using the specific rollup verifier
         if (
-            !rollupVerifiers[verifierIdx].verifierInterface.verifyProof(
+            !rollupVerifier.verifierInterface.verifyProof(
                 proofA,
                 proofB,
                 proofC,
@@ -231,6 +240,34 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
 
         emit ForgeBatch(lastForgedBatch, l1UserTxsLen);
     }
+
+    function _constructCircuitInput(
+        uint48 newLastIdx,
+        uint256 newAccountRoot,
+        uint256 newVouchRoot,
+        uint256 newScoreRoot,
+        uint256 newExitRoot
+    ) internal view returns (uint256) {
+        uint256 oldAccountRoot = accountRootMap[lastForgedBatch];
+        uint256 oldVouchRoot = vouchRootMap[lastForgedBatch];
+        uint256 oldScoreRoot = scoreRootMap[lastForgedBatch];
+        uint256 oldLastIdx = lastIdx;
+        bytes memory txnData = unprocessedBatchesMap[lastForgedBatch+1];
+
+        bytes memory inputBytes = abi.encodePacked(
+            oldLastIdx,
+            oldAccountRoot,
+            oldVouchRoot,
+            oldScoreRoot,
+            newLastIdx,
+            newAccountRoot,
+            newVouchRoot,
+            newScoreRoot,
+            newExitRoot,
+            txnData
+        );
+        return uint256(sha256(inputBytes)) % _RFIELD;
+}    
 
     function setForgeL1BatchTimeout(uint8 newTimeout) external pure override {
         // Timeout logic
@@ -316,23 +353,18 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     }
 
     function _initializeVerifiers(
-        address[] memory _verifiers,
-        uint256[] memory _maxTxs,
-        uint256[] memory _nLevels
+        address _verifier,
+        uint256 _maxTx,
+        uint256 _nLevel
     ) internal {
-        uint256 len = _verifiers.length;
-        for (uint256 i = 0; i < len; ++i) {
-            if (_verifiers[i] == address(0)) {
-                revert InvalidVerifierAddress();
-            }
-
-            rollupVerifiers.push(
-                VerifierRollup({
-                    verifierInterface: VerifierRollupInterface(_verifiers[i]),
-                    maxTxs: _maxTxs[i],
-                    nLevels: _nLevels[i]
-                })
-            );
+        if (_verifier == address(0)) {
+            revert InvalidVerifierAddress();
         }
+
+        rollupVerifier = VerifierRollup({
+            verifierInterface: VerifierRollupInterface(_verifier),
+            maxTx: _maxTx,
+            nLevel: _nLevel
+        });
     }
 }

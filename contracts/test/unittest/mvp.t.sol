@@ -22,13 +22,9 @@ contract MvpTest is Test, TransactionTypeHelper {
 
         VerifierRollupStub verifierStub = new VerifierRollupStub(); 
 
-        address[] memory verifiers = new address[](1);
-        uint256[] memory maxTx = new uint256[](1);
-        uint256[] memory nLevels = new uint256[](1);
-
-        verifiers[0] = address(verifierStub);
-        maxTx[0] = uint(256);
-        nLevels[0] = uint(1);
+        address verifiers = address(verifierStub);
+        uint256 maxTx = uint(256);
+        uint256 nLevels = uint(1);
 
         sybil = new Sybil();
 
@@ -45,7 +41,6 @@ contract MvpTest is Test, TransactionTypeHelper {
 
     function testGetStateRoot() public {
         uint32 batchNum = 1;
-        uint256 input = uint(1);
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
@@ -57,11 +52,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0, 
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
         uint256 stateRoot = sybil.getStateRoot(batchNum);
         assertEq(stateRoot, 0xabc);
@@ -83,11 +76,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0, 
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         lastForged = sybil.getLastForgedBatch();
@@ -110,11 +101,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0, 
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -150,12 +139,10 @@ contract MvpTest is Test, TransactionTypeHelper {
             0xabc, 
             0, 
             0, 
-            0, 
-            0, 
+            0,  
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         queueLength = sybil.getQueueLength();
@@ -189,11 +176,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0, 
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         uint32 queueAfter = sybil.getQueueLength();
@@ -221,11 +206,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0, 
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
     }
 
@@ -250,13 +233,9 @@ contract MvpTest is Test, TransactionTypeHelper {
         // Deploy verifier stub
         VerifierRollupStub verifierStub = new VerifierRollupStub(); 
         
-        address[] memory verifiers = new address[](1);
-        uint256[] memory maxTx = new uint256[](1);
-        uint256[] memory nLevels = new uint256[](1);
-
-        verifiers[0] = address(verifierStub);
-        maxTx[0] = uint(256);
-        nLevels[0] = uint(1);
+        address verifiers = address(verifierStub);
+        uint256 maxTx = uint(256);
+        uint256 nLevels = uint(1);
 
         Sybil newSybil = new Sybil();
         newSybil.initialize(
@@ -310,11 +289,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -340,11 +317,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -371,11 +346,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -404,11 +377,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -434,11 +405,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -465,12 +434,10 @@ contract MvpTest is Test, TransactionTypeHelper {
             0xabc, 
             0, 
             0, 
-            0, 
             0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -499,11 +466,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0,
             0, 
-            0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
     
         vm.prank(address(this));
@@ -529,11 +494,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -561,11 +524,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -592,11 +553,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0, 
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -620,11 +579,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0, 
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         vm.prank(address(this));
@@ -650,11 +607,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0,  
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         uint48 fromIdx = params.fromIdx;
@@ -683,11 +638,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            0,  
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         uint48 fromIdx = params.fromIdx;
@@ -715,12 +668,10 @@ contract MvpTest is Test, TransactionTypeHelper {
             0xabc, 
             0, 
             0, 
-            0, 
-            0,  
+            0,
             proofA,
             proofB,
-            proofC,
-            input
+            proofC
         );
 
         uint48 fromIdx = params.fromIdx;
@@ -739,14 +690,9 @@ contract MvpTest is Test, TransactionTypeHelper {
         // Deploy verifier stub
         VerifierRollupStub verifierStub = new VerifierRollupStub(); 
         
-        address[] memory verifiers = new address[](1);
-        uint256[] memory maxTx = new uint256[](1);
-        uint256[] memory nLevels = new uint256[](1);
-
-        verifiers[0] = address(verifierStub);
-        maxTx[0] = uint(256);
-        nLevels[0] = uint(1);
-
+        address verifiers = address(verifierStub);
+        uint256 maxTx = uint(256);
+        uint256 nLevels = uint(1);
 
         address invalidAddress = address(0);
 
@@ -793,29 +739,20 @@ contract MvpTest is Test, TransactionTypeHelper {
         PoseidonUnit2 mockPoseidon2 = new PoseidonUnit2();
         PoseidonUnit3 mockPoseidon3 = new PoseidonUnit3();
         PoseidonUnit4 mockPoseidon4 = new PoseidonUnit4();
-        // Deploy verifier stub
-        VerifierRollupStub verifierStub = new VerifierRollupStub(); 
         
-        address[] memory verifiers = new address[](1);
-        uint256[] memory maxTx = new uint256[](1);
-        uint256[] memory nLevels = new uint256[](1);
-
-        verifiers[0] = address(0);
-        maxTx[0] = uint(256);
-        nLevels[0] = uint(1);
-
-
-        address invalidAddress = address(0);
+        address verifier = address(0);
+        uint256 maxTx = uint(256);
+        uint256 nLevel = uint(1);
 
         // Expect revert for invalid verifier address
         Sybil newSybil = new Sybil();
         vm.expectRevert(IMVPSybil.InvalidVerifierAddress.selector);
         newSybil.initialize(
-            verifiers, 
+            verifier, 
             maxTx, 
-            nLevels, 
+            nLevel, 
             120, 
-            invalidAddress, 
+            address(mockPoseidon2), 
             address(mockPoseidon3), 
             address(mockPoseidon4)
         );
@@ -898,11 +835,9 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             uint(exitRoot), 
-            0, 
             proofA,
             proofB,
-            proofC,
-            uint(1)
+            proofC
         );
 
         /* verify

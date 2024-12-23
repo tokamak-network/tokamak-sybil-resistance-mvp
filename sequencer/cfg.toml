@@ -114,6 +114,25 @@ Address = "0x56232B1c5B10038125Bc7345664B4AFD745bcF8E"
 ## BJJ is the baby jub jub public key of the account that will receive the fees
 BJJ = "0x130c5c7f294792559f469220274f3d3b2dca6e89f4c5ec88d3a08bf73262171b"
 
+[Coordinator.L2DB]
+### Number of batches after which non-pending L2Txs are deleted from the pool
+SafetyPeriod = 10
+### Maximum number of pending L2Txs that can be stored in the pool
+MaxTxs       = 1000000
+### Minimum fee in USD that a tx must pay in order to be accepted into the pool
+MinFeeUSD    = 0.10
+### Maximum fee in USD that a tx must pay in order to be accepted into the pool
+MaxFeeUSD    = 10.00
+### Time To Live for L2Txs in the pool. L2Txs older than TTL will be deleted.
+TTL          = "24h"
+### Delay between batches to purge outdated transactions. Outdated L2Txs are those that have been forged or marked as invalid for longer than the SafetyPeriod and pending L2Txs that have been in the pool for longer than TTL once there are MaxTxs
+PurgeBatchDelay = 10
+### Delay between batches to mark invalid transactions due to nonce lower than the account nonce
+InvalidateBatchDelay = 20
+### Delay between blocks to purge outdated transactions. Outdated L2Txs are those that have been forged or marked as invalid for longer than the SafetyPeriod and pending L2Txs that have been in the pool for longer than TTL once there are MaxTxs.
+PurgeBlockDelay = 10
+### Delay between blocks to mark invalid transactions due to nonce lower than the account nonce
+InvalidateBlockDelay = 20
 
 [Coordinator.TxSelector]
 ### Path where the TxSelector StateDB is stored

@@ -521,7 +521,6 @@ func (hdb *HistoryDB) addTxs(d meddler.DB, txs []txWrite) error {
 			deposit_amount_f,
 			eth_tx_hash,
 			l1_fee,
-			fee,
 			nonce
 		) VALUES %s;`,
 		txs,

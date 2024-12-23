@@ -329,7 +329,7 @@ func NewRollupClient(client *EthereumClient, address ethCommon.Address) (*Rollup
 func (c *RollupClient) RollupConstants() (rollupConstants *common.RollupConstants, err error) {
 	rollupConstants = new(common.RollupConstants)
 	if err := c.client.Call(func(ec *ethclient.Client) error {
-		absoluteMaxL1L2BatchTimeout, err := c.sybil.ABSOLUTEMAXL1BATCHTIMEOUT(c.opts)
+		absoluteMaxL1L2BatchTimeout, err := c.sybil.ABSOLUTEMAXBATCHTIMEOUT(c.opts)
 		if err != nil {
 			return common.Wrap(err)
 		}
@@ -338,7 +338,7 @@ func (c *RollupClient) RollupConstants() (rollupConstants *common.RollupConstant
 		// if err != nil {
 		// 	return common.Wrap(err)
 		// }
-		rollupVerifier, err := c.sybil.RollupVerifiers(c.opts, big.NewInt(0))
+		rollupVerifier, err := c.sybil.RollupVerifier(c.opts)
 		if err != nil {
 			return common.Wrap(err)
 		}
@@ -354,8 +354,8 @@ func (c *RollupClient) RollupConstants() (rollupConstants *common.RollupConstant
 		// 		newRollupVerifier)
 		// }
 		var newRollupVerifier common.RollupVerifierStruct
-		newRollupVerifier.MaxTx = rollupVerifier.MaxTxs.Int64()
-		newRollupVerifier.NLevels = rollupVerifier.NLevels.Int64()
+		newRollupVerifier.MaxTx = rollupVerifier.MaxTx.Int64()
+		newRollupVerifier.NLevels = rollupVerifier.NLevel.Int64()
 		rollupConstants.Verifiers = append(rollupConstants.Verifiers,
 			newRollupVerifier)
 		return common.Wrap(err)
@@ -586,8 +586,17 @@ func (c *RollupClient) RollupForgeBatch(args *RollupForgeBatchArgs, auth *bind.T
 	// }
 
 	// TODO: Need to send ZK Proof here on last param
-	tx, err = c.sybil.ForgeBatch(auth, newLastIdx, args.NewAccountRoot, args.NewVouchRoot, args.NewScoreRoot, args.NewExitRoot,
-		args.VerifierIdx, args.ProofA, args.ProofB, args.ProofC, args.NewScoreRoot)
+	tx, err = c.sybil.ForgeBatch(
+		auth,
+		newLastIdx,
+		args.NewAccountRoot,
+		args.NewVouchRoot,
+		args.NewScoreRoot,
+		args.NewExitRoot,
+		args.ProofA,
+		args.ProofB,
+		args.ProofC,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("Sybil.ForgeBatch: %w", err)
 	}

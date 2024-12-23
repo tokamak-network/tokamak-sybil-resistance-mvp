@@ -76,23 +76,23 @@ type Debug struct {
 
 // BatchInfo contans the Batch information
 type BatchInfo struct {
-	PipelineNum           int
-	BatchNum              common.BatchNum
-	ServerProof           prover.Client
-	ProofStart            time.Time
-	ZKInputs              *common.ZKInputs
-	Proof                 *prover.Proof
-	PublicInputs          []*big.Int
-	L1Batch               bool
-	VerifierIdx           uint8
-	L1UserTxs             []common.L1Tx
-	L1CoordTxs            []common.L1Tx
+	PipelineNum  int
+	BatchNum     common.BatchNum
+	ServerProof  prover.Client
+	ProofStart   time.Time
+	ZKInputs     *common.ZKInputs
+	Proof        *prover.Proof
+	PublicInputs []*big.Int
+	// L1Batch      bool
+	VerifierIdx uint8
+	L1UserTxs   []common.L1Tx
+	// L1CoordTxs            []common.L1Tx
 	L1CoordinatorTxsAuths [][]byte
-	CoordIdxs             []common.AccountIdx
-	ForgeBatchArgs        *eth.RollupForgeBatchArgs
-	Auth                  *bind.TransactOpts `json:"-"`
-	EthTxs                []*types.Transaction
-	EthTxsErrs            []error
+
+	ForgeBatchArgs *eth.RollupForgeBatchArgs
+	Auth           *bind.TransactOpts `json:"-"`
+	EthTxs         []*types.Transaction
+	EthTxsErrs     []error
 	// SendTimestamp  the time of batch sent to ethereum
 	SendTimestamp time.Time
 	Receipt       *types.Receipt

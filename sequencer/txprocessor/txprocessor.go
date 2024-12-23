@@ -177,9 +177,7 @@ func (txProcessor *TxProcessor) resetZKInputs() {
 // the HistoryDB, and adds Nonce & TokenID to the L2Txs.
 // And if TypeSynchronizer returns an array of common.Account with all the
 // created accounts.
-func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx,
-
-/*l2txs []common.PoolL2Tx*/) (ptOut *ProcessTxOutput, err error) {
+func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *ProcessTxOutput, err error) {
 	defer func() {
 		if err == nil {
 			err = txProcessor.state.MakeCheckpoint()

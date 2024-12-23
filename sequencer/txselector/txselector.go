@@ -130,8 +130,11 @@ func (txsel *TxSelector) Reset(batchNum common.BatchNum, fromSynchronizer bool) 
 // but there is a transactions to them and the authorization of account
 // creation exists. The L1UserTxs, L1CoordinatorTxs, PoolL2Txs that will be
 // included in the next batch.
-func (txsel *TxSelector) GetL1TxSelection(selectionConfig txprocessor.Config,
-	l1UserTxs, l1UserFutureTxs []common.L1Tx) ([][]byte, []common.L1Tx, error) {
+func (txsel *TxSelector) GetL1TxSelection(
+	selectionConfig txprocessor.Config,
+	l1UserTxs,
+	l1UserFutureTxs []common.L1Tx,
+) ([][]byte, []common.L1Tx, error) {
 	accCreationAuths, l1UserTxs, err := txsel.getL1TxSelection(selectionConfig, l1UserTxs, l1UserFutureTxs)
 	return accCreationAuths, l1UserTxs, err
 }

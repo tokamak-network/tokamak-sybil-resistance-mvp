@@ -170,6 +170,15 @@ type Config struct {
 	ProverReadTimeout time.Duration
 }
 
+func (c *Config) debugBatchStore(batchInfo *BatchInfo) {
+	if c.DebugBatchPath != "" {
+		if err := batchInfo.DebugStore(c.DebugBatchPath); err != nil {
+			log.Warnw("Error storing debug BatchInfo",
+				"path", c.DebugBatchPath, "err", err)
+		}
+	}
+}
+
 type fromBatch struct {
 	BatchNum   common.BatchNum
 	ForgerAddr ethCommon.Address

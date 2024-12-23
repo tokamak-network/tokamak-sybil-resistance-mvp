@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"strings"
 	"tokamak-sybil-resistance/common"
-	Sybil "tokamak-sybil-resistance/eth/contracts"
+	Sybil "tokamak-sybil-resistance/eth/contracts" // import not working
 	"tokamak-sybil-resistance/log"
 
 	"github.com/ethereum/go-ethereum"

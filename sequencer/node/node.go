@@ -289,6 +289,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		Rollup: *sync.RollupConstants(),
 	}
 
+	// TODO: rename node configs or remove unnecessary configs if not needed
 	hdbNodeCfg := historydb.NodeConfig{
 		MaxPoolTxs: cfg.Coordinator.L2DB.MaxTxs,
 		MinFeeUSD:  cfg.Coordinator.L2DB.MinFeeUSD,
@@ -550,14 +551,14 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Node{
 		stateAPIUpdater: stateAPIUpdater,
-		coord:        coord,
-		sync:         sync,
-		cfg:          cfg,
-		sqlConnRead:  db,
-		sqlConnWrite: db,
-		historyDB:    historyDB,
-		ctx:          ctx,
-		cancel:       cancel,
+		coord:           coord,
+		sync:            sync,
+		cfg:             cfg,
+		sqlConnRead:     db,
+		sqlConnWrite:    db,
+		historyDB:       historyDB,
+		ctx:             ctx,
+		cancel:          cancel,
 	}, nil
 }
 
@@ -677,7 +678,6 @@ func (n *Node) Stop() {
 	n.coord.TxSelector().LocalAccountsDB().Close()
 	n.coord.BatchBuilder().LocalStateDB().Close()
 }
-
 
 func (n *Node) handleNewBlock(
 	ctx context.Context,

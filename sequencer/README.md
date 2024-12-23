@@ -82,5 +82,5 @@ npm install solc@0.8.23
 npx solc --bin --abi src/sybil.sol -o build/
 ```
 ```
-abigen --abi=build/src_mvp_Sybil_sol_Sybil.abi --bin=build/src_mvp_Sybil_sol_Sybil.bin --pkg=main --out=Sybil.go
+abigen --abi=build/src_mvp_Sybil_sol_Sybil.abi --bin=build/src_mvp_Sybil_sol_Sybil.bin --pkg=sybil --out=Sybil.go
 ```

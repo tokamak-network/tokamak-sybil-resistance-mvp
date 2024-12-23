@@ -64,7 +64,6 @@ type Node struct {
 	// debugAPI        *debugapi.DebugAPI
 	// Coordinator
 	coord *coordinator.Coordinator
-	msgCh chan interface{}
 
 	// Synchronizer
 	sync *synchronizer.Synchronizer
@@ -290,15 +289,15 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		Rollup: *sync.RollupConstants(),
 	}
 
-	// hdbNodeCfg := historydb.NodeConfig{
-	// 	MaxPoolTxs: cfg.Coordinator.L2DB.MaxTxs,
-	// 	MinFeeUSD:  cfg.Coordinator.L2DB.MinFeeUSD,
-	// 	MaxFeeUSD:  cfg.Coordinator.L2DB.MaxFeeUSD,
-	// 	ForgeDelay: cfg.Coordinator.ForgeDelay.Duration.Seconds(),
-	// }
-	// if err := historyDB.SetNodeConfig(&hdbNodeCfg); err != nil {
-	// 	return nil, common.Wrap(err)
-	// }
+	hdbNodeCfg := historydb.NodeConfig{
+		MaxPoolTxs: cfg.Coordinator.L2DB.MaxTxs,
+		MinFeeUSD:  cfg.Coordinator.L2DB.MinFeeUSD,
+		MaxFeeUSD:  cfg.Coordinator.L2DB.MaxFeeUSD,
+		ForgeDelay: cfg.Coordinator.ForgeDelay.Duration.Seconds(),
+	}
+	if err := historyDB.SetNodeConfig(&hdbNodeCfg); err != nil {
+		return nil, common.Wrap(err)
+	}
 	hdbConsts := historydb.Constants{
 		SCConsts: common.SCConsts{
 			Rollup: scConsts.Rollup,
@@ -318,17 +317,17 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		log.Info("EtherScan method not configured in config file")
 		etherScanService = nil
 	}
-	// stateAPIUpdater, err := stateapiupdater.NewUpdater(
-	// 	historyDB,
-	// 	&hdbNodeCfg,
-	// 	initSCVars,
-	// 	&hdbConsts,
-	// 	&cfg.RecommendedFeePolicy,
-	// 	cfg.Coordinator.Circuit.MaxTx,
-	// )
-	// if err != nil {
-	// 	return nil, common.Wrap(err)
-	// }
+	stateAPIUpdater, err := stateapiupdater.NewUpdater(
+		historyDB,
+		&hdbNodeCfg,
+		initSCVars,
+		&hdbConsts,
+		&cfg.RecommendedFeePolicy,
+		cfg.Coordinator.Circuit.MaxTx,
+	)
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
 
 	var coord *coordinator.Coordinator
 	// if mode == ModeCoordinator {
@@ -550,6 +549,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	// }
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Node{
+		stateAPIUpdater: stateAPIUpdater,
 		coord:        coord,
 		sync:         sync,
 		cfg:          cfg,
@@ -678,12 +678,6 @@ func (n *Node) Stop() {
 	n.coord.BatchBuilder().LocalStateDB().Close()
 }
 
-func (n *Node) SendMsg(ctx context.Context, msg interface{}) {
-	select {
-	case n.msgCh <- msg:
-	case <-ctx.Done():
-	}
-}
 
 func (n *Node) handleNewBlock(
 	ctx context.Context,
@@ -691,7 +685,7 @@ func (n *Node) handleNewBlock(
 	vars *common.SCVariablesPtr,
 	/*, batches []common.BatchData*/
 ) error {
-	n.SendMsg(ctx, coordinator.MsgSyncBlock{
+	n.coord.SendMsg(ctx, coordinator.MsgSyncBlock{
 		Stats: *stats,
 		Vars:  *vars,
 	})

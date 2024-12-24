@@ -234,6 +234,20 @@ contract MvpTest is Test, TransactionTypeHelper {
         }(params.loadAmountF);
     }
 
+    function testInvalidCreateDepositAccountTransactionWithLoadAmountExceedsLimit() public {
+        uint40 maxValue = 1099511627775;
+        uint256 loadAmount = _float2Fix(maxValue);
+        address addr = address(this);
+        uint num = 34353197383670000000000000000000000000000000;
+        vm.deal(addr, num);
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.LoadAmountExceedsLimit.selector);
+        sybil.createAccountDeposit {
+            value: loadAmount
+        }(maxValue);
+    }
+
     function testDepositTransaction() public {
         TxParams memory params = validDeposit();
         uint256 loadAmount = _float2Fix(params.loadAmountF);
@@ -315,6 +329,21 @@ contract MvpTest is Test, TransactionTypeHelper {
         sybil.deposit {
             value: loadAmount
         }(params.fromIdx, params.loadAmountF);
+    }
+
+    function testInvalidDepositTransactionWithLoadAmountExceedsLimit() public {
+        TxParams memory params = validDeposit();
+        uint40 maxValue = 1099511627775;
+        uint256 loadAmount = _float2Fix(maxValue);
+        address addr = address(this);
+        uint num = 34353197383670000000000000000000000000000000;
+        vm.deal(addr, num);
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.LoadAmountExceedsLimit.selector);
+        sybil.deposit {
+            value: loadAmount
+        }(params.fromIdx, maxValue);
     }
 
     function testVouch() public {
@@ -525,6 +554,32 @@ contract MvpTest is Test, TransactionTypeHelper {
         vm.prank(address(this));
         vm.expectRevert(IMVPSybil.InvalidFromIdx.selector);
         sybil.exit(params.fromIdx, params.amountF);
+    }
+
+    function testInvalidForceExitTransactionWithAmountExceedsLimit() public {
+        uint48 initialLastIdx = 256;
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            initialLastIdx, 
+            0xabc, 
+            0, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC
+        );
+        TxParams memory params = validForceExit();
+        uint40 maxValue = 1099511627775;
+
+        vm.prank(address(this));
+        vm.expectRevert(IMVPSybil.AmountExceedsLimit.selector);
+        sybil.exit(params.fromIdx, maxValue);
     }
 
     // ForceExplode transactions tests

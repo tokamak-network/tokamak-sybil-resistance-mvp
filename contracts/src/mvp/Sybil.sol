@@ -49,13 +49,11 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         uint48 indexed idx,
         uint32 indexed numExitRoot
     );
-    event Initialize(uint8 forgeL1BatchTimeout);
 
     function initialize(
         address verifier,
         uint256 maxTx,
         uint256 nLevel,
-        uint8 _forgeBatchTimeout,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _poseidon4Elements
@@ -74,8 +72,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
             _poseidon3Elements,
             _poseidon4Elements
         );
-
-        emit Initialize(_forgeBatchTimeout);
     }
 
     function _addTx(

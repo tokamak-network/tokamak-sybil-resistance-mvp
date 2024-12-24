@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
 	"tokamak-sybil-resistance/batchbuilder"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/coordinator/prover"
 	"tokamak-sybil-resistance/database/historydb"
+	"tokamak-sybil-resistance/eth"
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/synchronizer"
 	"tokamak-sybil-resistance/txselector"
@@ -301,24 +303,23 @@ func (p *Pipeline) setErrAtBatchNum(batchNum common.BatchNum) {
 	p.errAtBatchNum = batchNum
 }
 
-// TODO: implement
 // waitServerProof gets the generated zkProof & sends it to the SmartContract
 func (p *Pipeline) waitServerProof(ctx context.Context, batchInfo *BatchInfo) error {
 	// TODO: implement prometheus metrics
 	// defer metric.MeasureDuration(metric.WaitServerProof, batchInfo.ProofStart,
 	// 	batchInfo.BatchNum.BigInt().String(), strconv.Itoa(batchInfo.PipelineNum))
 
-	// proof, pubInputs, err := batchInfo.ServerProof.GetProof(ctx) // blocking call,
-	// // until not resolved don't continue. Returns when the proof server has calculated the proof
-	// if err != nil {
-	// 	return common.Wrap(err)
-	// }
-	// batchInfo.Proof = proof
-	// batchInfo.PublicInputs = pubInputs
-	// batchInfo.ForgeBatchArgs = prepareForgeBatchArgs(batchInfo)
-	// batchInfo.Debug.Status = StatusProof
-	// p.cfg.debugBatchStore(batchInfo)
-	// log.Infow("Pipeline: batch proof calculated", "batch", batchInfo.BatchNum)
+	proof, pubInputs, err := batchInfo.ServerProof.GetProof(ctx) // blocking call,
+	// until not resolved don't continue. Returns when the proof server has calculated the proof
+	if err != nil {
+		return common.Wrap(err)
+	}
+	batchInfo.Proof = proof
+	batchInfo.PublicInputs = pubInputs
+	batchInfo.ForgeBatchArgs = prepareForgeBatchArgs(batchInfo)
+	batchInfo.Debug.Status = StatusProof
+	p.cfg.debugBatchStore(batchInfo)
+	log.Infow("Pipeline: batch proof calculated", "batch", batchInfo.BatchNum)
 	return nil
 }
 
@@ -437,5 +438,29 @@ func (p *Pipeline) SetSyncStatsVars(
 	select {
 	case p.statsVarsCh <- statsVars{Stats: *stats, Vars: *vars}:
 	case <-ctx.Done():
+	}
+}
+
+// TODO: discuss with the circuit team if new roots are necessary
+func prepareForgeBatchArgs(batchInfo *BatchInfo) *eth.RollupForgeBatchArgs {
+	proof := batchInfo.Proof
+	// zki := batchInfo.ZKInputs
+	return &eth.RollupForgeBatchArgs{
+		// NewLastIdx:            int64(zki.Metadata.NewLastIdxRaw),
+		// NewAccountRoot:        zki.Metadata.NewStateRootRaw.BigInt(),
+		// NewVouchRoot:          zki.Metadata.NewStateRootRaw.BigInt(),
+		// NewScoreRoot:          zki.Metadata.NewStateRootRaw.BigInt(),
+		// NewExitRoot:           zki.Metadata.NewExitRootRaw.BigInt(),
+		L1UserTxs:             batchInfo.L1UserTxs,
+		L1CoordinatorTxsAuths: batchInfo.L1CoordinatorTxsAuths,
+		// Circuit selector
+		VerifierIdx: batchInfo.VerifierIdx,
+		ProofA:      [2]*big.Int{proof.PiA[0], proof.PiA[1]},
+		// Implementation of the verifier need a swap on the proofB vector
+		ProofB: [2][2]*big.Int{
+			{proof.PiB[0][1], proof.PiB[0][0]},
+			{proof.PiB[1][1], proof.PiB[1][0]},
+		},
+		ProofC: [2]*big.Int{proof.PiC[0], proof.PiC[1]},
 	}
 }

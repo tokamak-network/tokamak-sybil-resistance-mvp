@@ -10,11 +10,8 @@ import (
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/coordinator/prover"
 	"tokamak-sybil-resistance/database/historydb"
-	"tokamak-sybil-resistance/database/kvdb"
-	"tokamak-sybil-resistance/database/statedb"
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/synchronizer"
-	"tokamak-sybil-resistance/txprocessor"
 	// "tokamak-sybil-resistance/txselector"
 )
 
@@ -212,10 +209,10 @@ func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
 	var l1UserTxs []common.L1Tx
 	var auths [][]byte
 
-	_l1UserTxs, err := p.historyDB.GetUnforgedL1UserTxs(p.state.lastForgeL1TxsNum + 1)
-	if err != nil {
-		return nil, nil, common.Wrap(err)
-	}
+	// _l1UserTxs, err := p.historyDB.GetUnforgedL1UserTxs(p.state.lastForgeL1TxsNum + 1)
+	// if err != nil {
+	// 	return nil, nil, common.Wrap(err)
+	// }
 	// l1UserFutureTxs are the l1UserTxs that are not being forged
 	// in the next batch, but that are also in the queue for the
 	// future batches
@@ -230,27 +227,27 @@ func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
 	// if err != nil {
 	// 	return nil, nil, common.Wrap(err)
 	// }
-	var selStateDB *statedb.LocalStateDB
-	localAccountsDB, err := statedb.NewLocalStateDB(
-		statedb.Config{
-			Path:    cfg.,
-			Keep:    kvdb.DefaultKeep,
-			Type:    statedb.TypeTxSelector,
-			NLevels: 0,
-		},
-		synchronizerStateDB)
+	// var selStateDB *statedb.LocalStateDB
+	// localAccountsDB, err := statedb.NewLocalStateDB(
+	// 	statedb.Config{
+	// 		Path:    cfg.Coordinator,
+	// 		Keep:    kvdb.DefaultKeep,
+	// 		Type:    statedb.TypeTxSelector,
+	// 		NLevels: 0,
+	// 	},
+	// 	synchronizerStateDB)
 
-	tp := txprocessor.NewTxProcessor(localAccountsDB.StateDB, p.cfg.TxProcessorConfig)
+	// tp := txprocessor.NewTxProcessor(localAccountsDB.StateDB, p.cfg.TxProcessorConfig)
 
 	// TODO: depending on what's happening in txSelector, this might not be necessary as well
-	if skip, reason, err := p.forgePolicySkipPostSelection(now, l1UserTxs, batchInfo); err != nil {
-		return nil, nil, common.Wrap(err)
-	} else if skip {
-		if err := p.txSelector.Reset(batchInfo.BatchNum-1, false); err != nil {
-			return nil, nil, common.Wrap(err)
-		}
-		return nil, &reason, common.Wrap(err)
-	}
+	// if skip, reason, err := p.forgePolicySkipPostSelection(now, l1UserTxs, batchInfo); err != nil {
+	// 	return nil, nil, common.Wrap(err)
+	// } else if skip {
+	// 	if err := p.txSelector.Reset(batchInfo.BatchNum-1, false); err != nil {
+	// 		return nil, nil, common.Wrap(err)
+	// 	}
+	// 	return nil, &reason, common.Wrap(err)
+	// }
 
 	p.state.lastScheduledL1BatchBlockNum = p.stats.Eth.LastBlock.Num + 1
 	p.state.lastForgeL1TxsNum++

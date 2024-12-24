@@ -237,7 +237,6 @@ func (tx PoolL2Tx) Tx() Tx {
 		ToIdx:   tx.ToIdx,
 		Amount:  tx.Amount,
 		Nonce:   &tx.Nonce,
-		Fee:     &tx.Fee,
 		Type:    tx.Type,
 	}
 }

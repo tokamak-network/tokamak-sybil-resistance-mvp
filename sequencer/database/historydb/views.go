@@ -37,7 +37,7 @@ type txWrite struct {
 	EthTxHash          *ethCommon.Hash        `meddler:"eth_tx_hash"`
 	L1Fee              *big.Int               `meddler:"l1_fee,bigintnull"`
 	// L2
-	Fee   *common.FeeSelector `meddler:"fee"`
+	// Fee   *common.FeeSelector `meddler:"fee"`
 	Nonce *common.Nonce       `meddler:"nonce"`
 }
 

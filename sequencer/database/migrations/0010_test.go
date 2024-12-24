@@ -46,7 +46,7 @@ func (m migrationTest0010) InsertData(db *sqlx.DB) error {
 	INSERT INTO account (item_id, idx, token_id, batch_num, bjj, eth_addr)
 	VALUES(2, 257, 11, 7, decode('4D05C307400C65795F02DB96B1B81C60386FD53E947D9D3F749F3D99B1853909','hex'), decode('9766D2E7FFDE358AD0A40BB87C4B88D9FAC3F4DD','hex'));
 
-	INSERT INTO tx (item_id, is_l1, id, "type", "position", from_idx, effective_from_idx, from_eth_addr, from_bjj, to_idx, to_eth_addr, to_bjj, amount, amount_success, amount_f, token_id, amount_usd, batch_num, eth_block_num, to_forge_l1_txs_num, user_origin, deposit_amount, deposit_amount_success, deposit_amount_f, deposit_amount_usd, fee, fee_usd, nonce)
+	INSERT INTO tx (item_id, is_l1, id, "type", "position", from_idx, effective_from_idx, from_eth_addr, from_bjj, to_idx, to_eth_addr, to_bjj, amount, amount_success, amount_f, token_id, amount_usd, batch_num, eth_block_num, to_forge_l1_txs_num, user_origin, deposit_amount, deposit_amount_success, deposit_amount_f, deposit_amount_usd, nonce)
 	VALUES(3, true, decode('00C33F316240F8D33A973DB2D0E901E4AC1C96DE30B185FCC6B63DAC4D0E147BD4','hex'), 'CreateAccountDeposit', 0, 0, 256, decode('27E9727FD9B8CDDDD0854F56712AD9DF647FAB74','hex'), decode('D746824F7D0AC5044A573F51B278ACB56D823BEC39551D1D7BF7378B68A1B021','hex'), 0, NULL, NULL, 0, true, 0, 11, NULL, 7, 187, 6, true, 1000000000000000000, true, 1000000000000000000, NULL, NULL, NULL, NULL);
 	`
 	_, err := db.Exec(queryInsert)
@@ -63,7 +63,7 @@ func (m migrationTest0010) RunAssertsAfterMigrationUp(t *testing.T, db *sqlx.DB)
 	assert.Equal(t, 1, result)
 
 	insert := `INSERT INTO tx
-	(item_id, is_l1, id, "type", "position", from_idx, effective_from_idx, from_eth_addr, from_bjj, to_idx, to_eth_addr, to_bjj, amount, amount_success, amount_f, token_id, amount_usd, batch_num, eth_block_num, to_forge_l1_txs_num, user_origin, deposit_amount, deposit_amount_success, deposit_amount_f, deposit_amount_usd, fee, fee_usd, nonce, eth_tx_hash, l1_fee)
+	(item_id, is_l1, id, "type", "position", from_idx, effective_from_idx, from_eth_addr, from_bjj, to_idx, to_eth_addr, to_bjj, amount, amount_success, amount_f, token_id, amount_usd, batch_num, eth_block_num, to_forge_l1_txs_num, user_origin, deposit_amount, deposit_amount_success, deposit_amount_f, deposit_amount_usd, nonce, eth_tx_hash, l1_fee)
 	VALUES(4, true, decode('00B55F0882C5229D1BE3D9D3C1A076290F249CD0BAE5AE6E609234606BEFB91233','hex'), 'CreateAccountDeposit', 1, 0, 257, decode('9766D2E7FFDE358AD0A40BB87C4B88D9FAC3F4DD','hex'), decode('4D05C307400C65795F02DB96B1B81C60386FD53E947D9D3F749F3D99B1853909','hex'), 0, NULL, NULL, 0, true, 0, 11, NULL, 7, 191, 6, true, 1000000000000000000, true, 1000000000000000000, NULL, NULL, NULL, NULL, DECODE('6b9cb28230289dcfb748859531f17ebb305c638a970c5c84377fc680fddfcf80', 'hex'), 3007800000);`
 	_, err := db.Exec(insert)
 	assert.NoError(t, err)

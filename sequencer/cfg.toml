@@ -99,8 +99,6 @@ SyncRetryInterval = "1s"
 #ForgeDelay = "600s"
 ### Delay after a forged batch if there are no txs to forge. If It is set to 0s, the coordinator will continuously forge even if the batches are empty
 #ForgeNoTxsDelay = "86400s"
-### Interval between calls to the PurgeByExternalDelete function of the l2db which deletes pending txs externally marked by the column `external_delete`
-PurgeByExtDelInterval = "1m"
 ### Enables the coordinator to forge in slots if the empty slots reach the slot deadline
 #MustForgeAtSlotDeadline = true
 ### It will make the coordinator forge at most one batch per slot, only if there are included txs in that batch, or pending l1UserTxs in the smart contract.  Setting this parameter overrides `ForgeDelay`, `ForgeNoTxsDelay`, `MustForgeAtSlotDeadline` and `IgnoreSlotCommitment`.

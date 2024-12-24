@@ -126,10 +126,9 @@ type Config struct {
 
 // Synchronizer implements the Synchronizer type
 type Synchronizer struct {
-	EthClient eth.ClientInterface
-	consts    *common.SCConsts
-	historyDB *historydb.HistoryDB
-	// l2DB             *l2db.L2DB
+	EthClient        eth.ClientInterface
+	consts           *common.SCConsts
+	historyDB        *historydb.HistoryDB
 	stateDB          *statedb.StateDB
 	cfg              Config
 	initVars         common.SCVariables
@@ -143,7 +142,6 @@ type Synchronizer struct {
 func NewSynchronizer(
 	ethClient eth.ClientInterface,
 	historyDB *historydb.HistoryDB,
-	// l2DB *l2db.L2DB,
 	stateDB *statedb.StateDB,
 	cfg Config,
 ) (*Synchronizer, error) {
@@ -164,10 +162,9 @@ func NewSynchronizer(
 
 	stats := NewStatsHolder(startBlockNum, cfg.StatsUpdateBlockNumDiffThreshold, cfg.StatsUpdateFrequencyDivider)
 	s := &Synchronizer{
-		EthClient: ethClient,
-		consts:    &consts,
-		historyDB: historyDB,
-		// l2DB:          l2DB,
+		EthClient:     ethClient,
+		consts:        &consts,
+		historyDB:     historyDB,
 		stateDB:       stateDB,
 		cfg:           cfg,
 		initVars:      *initVars,
@@ -613,8 +610,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// Get ForgeBatch events to get the L1CoordinatorTxs
 	for _, evtForgeBatch := range rollupEvents.ForgeBatch {
 		batchData := common.NewBatchData()
-		position := 0
-
 		// Get the input for each Tx
 		forgeBatchArgs, sender, err := s.EthClient.RollupForgeBatchArgs(evtForgeBatch.EthTxHash,
 			evtForgeBatch.L1UserTxsLen)
@@ -649,8 +644,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 					l1UserTxs = append(l1UserTxs, l1UserTx)
 				}
 			}
-
-			position = len(l1UserTxs)
 		}
 
 		// l1TxsAuth := make([]common.AccountCreationAuth,
@@ -689,27 +682,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 
 		// Insert the slice of account creation auth
 		// only if the node run as a coordinator
-		// if s.l2DB != nil && len(l1TxsAuth) > 0 {
-		// 	err = s.l2DB.AddManyAccountCreationAuth(l1TxsAuth)
-		// 	if err != nil {
-		// 		return nil, common.Wrap(err)
-		// 	}
-		// }
-
-		// Insert all the txs forged in this batch (l1UserTxs,
-		// L1CoordinatorTxs, PoolL2Txs) into stateDB so that they are
-		// processed.
-
-		// Set TxType to the forged L2Txs
-		for i := range forgeBatchArgs.L2TxsData {
-			if err := forgeBatchArgs.L2TxsData[i].SetType(); err != nil {
-				return nil, common.Wrap(err)
-			}
-		}
-
-		// Transform L2 txs to PoolL2Txs
-		// NOTE: This is a big ugly, find a better way
-		poolL2Txs := common.L2TxsToPoolL2Txs(forgeBatchArgs.L2TxsData)
 
 		if int(forgeBatchArgs.VerifierIdx) >= len(s.consts.Rollup.Verifiers) {
 			return nil, common.Wrap(fmt.Errorf("forgeBatchArgs.VerifierIdx (%v) >= "+
@@ -740,20 +712,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 		// 		"forgeBatchArgs.NewStRoot (%v)",
 		// 		s.stateDB.AccountTree.Root().BigInt(), forgeBatchArgs.NewStRoot))
 		// }
-
-		l2Txs := make([]common.L2Tx, len(poolL2Txs))
-		for i, tx := range poolL2Txs {
-			l2Txs[i] = tx.L2Tx()
-			// Set TxID, BlockNum, BatchNum and Position to the forged L2Txs
-			if err := l2Txs[i].SetID(); err != nil {
-				return nil, common.Wrap(err)
-			}
-			l2Txs[i].EthBlockNum = blockNum
-			l2Txs[i].BatchNum = batchNum
-			l2Txs[i].Position = position
-			position++
-		}
-		// batchData.L2Txs = l2Txs
 
 		// Set the BatchNum in the forged L1UserTxs
 		for i := range l1UserTxs {

@@ -246,7 +246,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB /*, *l2db.L2DB*/) {
+func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB ) {
 	// Int State DB
 	dir, err := os.MkdirTemp("", "tmpdb")
 	require.NoError(t, err)
@@ -261,16 +261,13 @@ func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB /*, *l
 	require.NoError(t, err)
 	historyDB := historydb.NewHistoryDB(db, db /*, nil*/)
 
-	// Init L2 DB
-	// l2DB := l2db.NewL2DB(db, db, 10, 100, 0.0, 1000.0, 24*time.Hour, nil)
 
 	t.Cleanup(func() {
 		test.MigrationsDownTest(historyDB.DB())
 		stateDB.Close()
-		// l2DB.DB().Close()
 	})
 
-	return stateDB, historyDB /*, l2DB*/
+	return stateDB, historyDB
 }
 
 func newBigInt(s string) *big.Int {
@@ -295,7 +292,6 @@ func TestSyncGeneral(t *testing.T) {
 	s, err := NewSynchronizer(
 		client,
 		historyDB,
-		// l2DB,
 		stateDB,
 		Config{
 			StatsUpdateBlockNumDiffThreshold: 100,

@@ -45,7 +45,6 @@ type Pipeline struct {
 	historyDB    *historydb.HistoryDB
 	txSelector   *txselector.TxSelector
 	batchBuilder *batchbuilder.BatchBuilder
-	purger       *Purger
 
 	stats       synchronizer.Stats
 	vars        common.SCVariables
@@ -148,6 +147,7 @@ func (p *Pipeline) getErrAtBatchNum() common.BatchNum {
 // handleForgeBatch waits for an available proof server, calls p.forgeBatch to
 // forge the batch and get the zkInputs, and then  sends the zkInputs to the
 // selected proof server so that the proof computation begins.
+
 func (p *Pipeline) handleForgeBatch(
 	ctx context.Context,
 	batchNum common.BatchNum,

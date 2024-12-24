@@ -257,23 +257,9 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		return nil, common.Wrap(err)
 	}
 
-	// var l2DB *l2db.L2DB
-	// if mode == ModeCoordinator {
-	// 	l2DB = l2db.NewL2DB(
-	// 		dbRead, dbWrite,
-	// 		cfg.Coordinator.L2DB.SafetyPeriod,
-	// 		cfg.Coordinator.L2DB.MaxTxs,
-	// 		cfg.Coordinator.L2DB.MinFeeUSD,
-	// 		cfg.Coordinator.L2DB.MaxFeeUSD,
-	// 		cfg.Coordinator.L2DB.TTL.Duration,
-	// 		apiConnCon,
-	// 	)
-	// }
-
 	sync, err := synchronizer.NewSynchronizer(
 		client,
 		historyDB,
-		// l2DB,
 		stateDB,
 		synchronizer.Config{
 			StatsUpdateBlockNumDiffThreshold: cfg.Synchronizer.StatsUpdateBlockNumDiffThreshold,
@@ -288,6 +274,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	scConsts := common.SCConsts{
 		Rollup: *sync.RollupConstants(),
 	}
+
 
 	// TODO: rename node configs or remove unnecessary configs if not needed
 	hdbNodeCfg := historydb.NodeConfig{
@@ -379,7 +366,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		// &coordAccount,
 		cfg.Coordinator.TxSelector.Path,
 		stateDB,
-		// l2DB,
 	)
 	if err != nil {
 		return nil, common.Wrap(err)
@@ -452,7 +438,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 			ForgeOncePerSlotIfTxs:   cfg.Coordinator.ForgeOncePerSlotIfTxs,
 			ForgeNoTxsDelay:         cfg.Coordinator.ForgeNoTxsDelay.Duration,
 			SyncRetryInterval:       cfg.Coordinator.SyncRetryInterval.Duration,
-			PurgeByExtDelInterval:   cfg.Coordinator.PurgeByExtDelInterval.Duration,
 			EthClientAttempts:       cfg.Coordinator.EthClient.Attempts,
 			EthClientAttemptsDelay:  cfg.Coordinator.EthClient.AttemptsDelay.Duration,
 			EthNoReuseNonce:         cfg.Coordinator.EthClient.NoReuseNonce,
@@ -462,19 +447,12 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 			GasPriceIncPerc:         cfg.Coordinator.EthClient.GasPriceIncPerc,
 			TxManagerCheckInterval:  cfg.Coordinator.EthClient.CheckLoopInterval.Duration,
 			DebugBatchPath:          cfg.Coordinator.Debug.BatchPath,
-			Purger: coordinator.PurgerCfg{
-				PurgeBatchDelay:      cfg.Coordinator.L2DB.PurgeBatchDelay,
-				InvalidateBatchDelay: cfg.Coordinator.L2DB.InvalidateBatchDelay,
-				PurgeBlockDelay:      cfg.Coordinator.L2DB.PurgeBlockDelay,
-				InvalidateBlockDelay: cfg.Coordinator.L2DB.InvalidateBlockDelay,
-			},
 			ForgeBatchGasCost: cfg.Coordinator.EthClient.ForgeBatchGasCost,
 			// VerifierIdx:       uint8(verifierIdx),
 			TxProcessorConfig: txProcessorCfg,
 			ProverReadTimeout: cfg.Coordinator.ProverWaitReadTimeout.Duration,
 		},
 		historyDB,
-		// l2DB,
 		txSelector,
 		batchBuilder,
 		nil, //serverProofs
@@ -532,7 +510,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	// 		CoordinatorEndpoints:     coord,
 	// 		Server:                   server,
 	// 		HistoryDB:                historyDB,
-	// 		L2DB:                     l2DB,
 	// 		StateDB:                  stateDB,
 	// 		EthClient:                ethClient,
 	// 		ForgerAddress:            &cfg.Coordinator.ForgerAddress,

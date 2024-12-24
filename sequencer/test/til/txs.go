@@ -17,7 +17,6 @@ import (
 func newBatchData(batchNum int) common.BatchData {
 	return common.BatchData{
 		// L1CoordinatorTxs: []common.L1Tx{},
-		// L2Txs:            []common.L2Tx{},
 		Batch: common.Batch{
 			BatchNum: common.BatchNum(batchNum),
 
@@ -72,7 +71,6 @@ type Context struct {
 	openToForge  int
 	// currBatchTest struct {
 	// 	l1CoordinatorTxs []L1Tx
-	// 	l2Txs            []L2Tx
 	// }
 	blockNum int64
 
@@ -131,16 +129,6 @@ type L1Tx struct {
 	fromIdxName string
 	toIdxName   string
 	L1Tx        common.L1Tx
-}
-
-// L2Tx is the data structure used internally for transaction test generation,
-// which contains a common.L2Tx data plus some intermediate data for the
-// transaction generation.
-type L2Tx struct {
-	lineNum     int
-	fromIdxName string
-	toIdxName   string
-	L2Tx        common.L2Tx
 }
 
 // GenerateBlocks returns an array of BlockData for a given set made of a

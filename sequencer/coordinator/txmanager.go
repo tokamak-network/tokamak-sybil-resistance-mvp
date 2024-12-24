@@ -27,12 +27,11 @@ type TxManager struct {
 	cfg              Config
 	ethClient        eth.ClientInterface
 	etherscanService *etherscan.Service
-	// l2DB    *l2db.L2DB   // Used only to mark forged txs as forged in the L2DB
-	coord   *Coordinator // Used only to send messages to stop the pipeline
-	batchCh chan *BatchInfo
-	chainID *big.Int
-	account accounts.Account
-	consts  common.SCConsts
+	coord            *Coordinator // Used only to send messages to stop the pipeline
+	batchCh          chan *BatchInfo
+	chainID          *big.Int
+	account          accounts.Account
+	consts           common.SCConsts
 
 	stats       synchronizer.Stats
 	vars        common.SCVariables
@@ -77,7 +76,6 @@ func NewTxManager(
 	ctx context.Context,
 	cfg *Config,
 	ethClient eth.ClientInterface,
-	// l2DB *l2db.L2DB,
 	coord *Coordinator,
 	scConsts *common.SCConsts,
 	initSCVars *common.SCVariables,
@@ -98,10 +96,9 @@ func NewTxManager(
 	}
 	log.Infow("TxManager started", "nonce", accNonce)
 	return &TxManager{
-		cfg:              *cfg,
-		ethClient:        ethClient,
-		etherscanService: etherscanService,
-		// l2DB:              l2DB,
+		cfg:               *cfg,
+		ethClient:         ethClient,
+		etherscanService:  etherscanService,
 		coord:             coord,
 		batchCh:           make(chan *BatchInfo, queueLen),
 		statsVarsCh:       make(chan statsVars, queueLen),
@@ -402,7 +399,8 @@ func (t *TxManager) NewAuth(ctx context.Context, batchInfo *BatchInfo) (*bind.Tr
 	auth.Value = big.NewInt(0) // in wei
 
 	gasLimit := t.cfg.ForgeBatchGasCost.Fixed +
-		uint64(len(batchInfo.L1UserTxs))*t.cfg.ForgeBatchGasCost.L1UserTx
+
+	uint64(len(batchInfo.L1UserTxs))*t.cfg.ForgeBatchGasCost.L1UserTx
 		// uint64(len(batchInfo.L1UserTxs))*t.cfg.ForgeBatchGasCost.L1UserTx +
 		// uint64(len(batchInfo.L1CoordTxs))*t.cfg.ForgeBatchGasCost.L1CoordTx +
 		// uint64(len(batchInfo.L2Txs))*t.cfg.ForgeBatchGasCost.L2Tx
@@ -512,10 +510,6 @@ func (t *TxManager) sendRollupForgeBatch(ctx context.Context, batchInfo *BatchIn
 		t.lastSentL1BatchBlockNum = t.stats.Eth.LastBlock.Num + 1
 		// }
 	}
-	// if err := t.l2DB.DoneForging(common.TxIDsFromL2Txs(batchInfo.L2Txs),
-	// 	batchInfo.BatchNum); err != nil {
-	// 	return tracerr.Wrap(err)
-	// }
 	return nil
 }
 

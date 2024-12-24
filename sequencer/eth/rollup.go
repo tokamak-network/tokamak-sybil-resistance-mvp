@@ -179,8 +179,6 @@ type RollupForgeBatchArgs struct {
 	L1UserTxs             []common.L1Tx
 	L1CoordinatorTxs      []common.L1Tx
 	L1CoordinatorTxsAuths [][]byte // Authorization for accountCreations for each L1CoordinatorTx
-	L2TxsData             []common.L2Tx
-	FeeIdxCoordinator     []common.AccountIdx
 	// Circuit selector
 	VerifierIdx uint8
 	L1Batch     bool
@@ -636,15 +634,11 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 		VerifierIdx:           aux.VerifierIdx,
 		L1CoordinatorTxs:      []common.L1Tx{},
 		L1CoordinatorTxsAuths: [][]byte{},
-		L2TxsData:             []common.L2Tx{},
-		FeeIdxCoordinator:     []common.AccountIdx{},
 	}
 	nLevels := c.consts.Verifiers[rollupForgeBatchArgs.VerifierIdx].NLevels
 	lenL1L2TxsBytes := int((nLevels/8)*2 + common.Float40BytesLength + 1) //nolint:gomnd
 	numBytesL1TxUser := int(l1UserTxsLen) * lenL1L2TxsBytes
 	numTxsL1Coord := len(aux.EncodedL1CoordinatorTx) / common.RollupConstL1CoordinatorTotalBytes
-	numBytesL1TxCoord := numTxsL1Coord * lenL1L2TxsBytes
-	numBeginL2Tx := numBytesL1TxCoord + numBytesL1TxUser
 	l1UserTxsData := []byte{}
 	if l1UserTxsLen > 0 {
 		l1UserTxsData = aux.L1L2TxsData[:numBytesL1TxUser]
@@ -657,20 +651,6 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 			return nil, nil, common.Wrap(err)
 		}
 		rollupForgeBatchArgs.L1UserTxs = append(rollupForgeBatchArgs.L1UserTxs, *l1Tx)
-	}
-	l2TxsData := []byte{}
-	if numBeginL2Tx < len(aux.L1L2TxsData) {
-		l2TxsData = aux.L1L2TxsData[numBeginL2Tx:]
-	}
-	numTxsL2 := len(l2TxsData) / lenL1L2TxsBytes
-	for i := 0; i < numTxsL2; i++ {
-		l2Tx, err :=
-			common.L2TxFromBytesDataAvailability(l2TxsData[i*lenL1L2TxsBytes:(i+1)*lenL1L2TxsBytes],
-				int(nLevels))
-		if err != nil {
-			return nil, nil, common.Wrap(err)
-		}
-		rollupForgeBatchArgs.L2TxsData = append(rollupForgeBatchArgs.L2TxsData, *l2Tx)
 	}
 	for i := 0; i < numTxsL1Coord; i++ {
 		bytesL1Coordinator :=
@@ -700,14 +680,6 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 		} else {
 			copy(paddedFeeIdx[:],
 				aux.FeeIdxCoordinator[i*lenFeeIdxCoordinatorBytes:(i+1)*lenFeeIdxCoordinatorBytes])
-		}
-		feeIdxCoordinator, err := common.AccountIdxFromBytes(paddedFeeIdx[:])
-		if err != nil {
-			return nil, nil, common.Wrap(err)
-		}
-		if feeIdxCoordinator != common.AccountIdx(0) {
-			rollupForgeBatchArgs.FeeIdxCoordinator =
-				append(rollupForgeBatchArgs.FeeIdxCoordinator, feeIdxCoordinator)
 		}
 	}
 	return &rollupForgeBatchArgs, &sender, nil

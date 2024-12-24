@@ -349,7 +349,13 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     }
 
     function _float2Fix(uint40 floatVal) internal pure returns(uint256) {
-        return uint256(floatVal) * 10 ** (18 - 8);
+        uint256 m = floatVal & 0x7FFFFFFFF;
+        uint256 e = floatVal >> 35;
+
+        uint256 exp = 10**e;
+        uint256 fix = m * exp;
+
+        return fix;
     }
 
     function _initializeVerifiers(

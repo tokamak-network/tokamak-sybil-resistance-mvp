@@ -251,7 +251,7 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         uint256 oldAccountRoot = accountRootMap[lastForgedBatch];
         uint256 oldVouchRoot = vouchRootMap[lastForgedBatch];
         uint256 oldScoreRoot = scoreRootMap[lastForgedBatch];
-        uint256 oldLastIdx = lastIdx;
+        uint48 oldLastIdx = lastIdx;
         bytes memory txnData = unprocessedBatchesMap[lastForgedBatch+1];
 
         bytes memory inputBytes = abi.encodePacked(

@@ -16,8 +16,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     uint256 constant _LIMIT_LOADAMOUNT = (1 << 128); // Max loadAmount per call
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
-    uint8 public constant ABSOLUTE_MAX_BATCHTIMEOUT = 240;
-
     uint48 public lastIdx;
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
@@ -268,13 +266,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         );
         return uint256(sha256(inputBytes)) % _RFIELD;
 }    
-
-    function setForgeL1BatchTimeout(uint8 newTimeout) external pure override {
-        // Timeout logic
-        if (newTimeout > ABSOLUTE_MAX_BATCHTIMEOUT) {
-            revert BatchTimeoutExceeded();
-        }
-    }
 
     function _clearBatchFromQueue() internal returns (uint16) {
         uint16 l1UserTxsLen = uint16(

@@ -57,7 +57,10 @@ import (
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/synchronizer"
 	"tokamak-sybil-resistance/txprocessor"
-	"tokamak-sybil-resistance/txselector"
+
+	// "tokamak-sybil-resistance/txselector"
+
+	// "tokamak-sybil-resistance/txselector"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
 )
@@ -206,8 +209,8 @@ type Coordinator struct {
 
 	cfg Config
 
-	historyDB    *historydb.HistoryDB
-	txSelector   *txselector.TxSelector
+	historyDB *historydb.HistoryDB
+	// txSelector   *txselector.TxSelector
 	batchBuilder *batchbuilder.BatchBuilder
 
 	msgCh  chan interface{}
@@ -248,7 +251,7 @@ type MsgStopPipeline struct {
 // NewCoordinator creates a new Coordinator
 func NewCoordinator(cfg Config,
 	historyDB *historydb.HistoryDB,
-	txSelector *txselector.TxSelector,
+	// txSelector *txselector.TxSelector,
 	batchBuilder *batchbuilder.BatchBuilder,
 	prover prover.Client,
 	ethClient eth.ClientInterface,
@@ -287,8 +290,8 @@ func NewCoordinator(cfg Config,
 
 		cfg: cfg,
 
-		historyDB:    historyDB,
-		txSelector:   txSelector,
+		historyDB: historyDB,
+		// txSelector:   txSelector,
 		batchBuilder: batchBuilder,
 
 		purger: &purger,
@@ -404,7 +407,7 @@ func NewPipeline(
 	cfg Config,
 	num int, // Pipeline sequential number
 	historyDB *historydb.HistoryDB,
-	txSelector *txselector.TxSelector,
+	// txSelector *txselector.TxSelector,
 	batchBuilder *batchbuilder.BatchBuilder,
 	purger *Purger,
 	coord *Coordinator,
@@ -419,10 +422,10 @@ func NewPipeline(
 	}
 
 	return &Pipeline{
-		num:          num,
-		cfg:          cfg,
-		historyDB:    historyDB,
-		txSelector:   txSelector,
+		num:       num,
+		cfg:       cfg,
+		historyDB: historyDB,
+		// txSelector:   txSelector,
 		batchBuilder: batchBuilder,
 		prover:       prover,
 		purger:       purger,
@@ -440,7 +443,7 @@ func (c *Coordinator) newPipeline(ctx context.Context) (*Pipeline, error) {
 		c.cfg,
 		c.pipelineNum,
 		c.historyDB,
-		c.txSelector,
+		// c.txSelector,
 		c.batchBuilder,
 		c.purger,
 		c,
@@ -451,9 +454,9 @@ func (c *Coordinator) newPipeline(ctx context.Context) (*Pipeline, error) {
 }
 
 // TxSelector returns the inner TxSelector
-func (c *Coordinator) TxSelector() *txselector.TxSelector {
-	return c.txSelector
-}
+// func (c *Coordinator) TxSelector() *txselector.TxSelector {
+// 	return c.txSelector
+// }
 
 // BatchBuilder returns the inner BatchBuilder
 func (c *Coordinator) BatchBuilder() *batchbuilder.BatchBuilder {

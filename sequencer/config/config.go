@@ -157,7 +157,7 @@ type Coordinator struct {
 		// nonce.
 		InvalidateBlockDelay int64 `validate:"required,gte=0" env:"TONNODE_L2DB_INVALIDATEBLOCKDELAY"`
 	} `validate:"required"`
-	TxSelector struct {
+	LocalAccountsDB struct {
 		// Path where the TxSelector StateDB is stored
 		Path string `validate:"required" env:"TONNODE_TXSELECTOR_PATH"`
 	} `validate:"required"`

@@ -10,9 +10,12 @@ import (
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/coordinator/prover"
 	"tokamak-sybil-resistance/database/historydb"
+	"tokamak-sybil-resistance/database/kvdb"
+	"tokamak-sybil-resistance/database/statedb"
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/synchronizer"
-	"tokamak-sybil-resistance/txselector"
+	"tokamak-sybil-resistance/txprocessor"
+	// "tokamak-sybil-resistance/txselector"
 )
 
 type statsVars struct {
@@ -39,11 +42,11 @@ type Pipeline struct {
 	errAtBatchNum common.BatchNum
 	lastForgeTime time.Time
 
-	prover       prover.Client
-	coord        *Coordinator
-	txManager    *TxManager
-	historyDB    *historydb.HistoryDB
-	txSelector   *txselector.TxSelector
+	prover    prover.Client
+	coord     *Coordinator
+	txManager *TxManager
+	historyDB *historydb.HistoryDB
+	// txSelector   *txselector.TxSelector
 	batchBuilder *batchbuilder.BatchBuilder
 	purger       *Purger
 
@@ -78,14 +81,14 @@ func (p *Pipeline) reset(
 	// Otherwise, reset from the local checkpoint.
 
 	// First attempt to reset from local checkpoint if such checkpoint exists
-	existsTxSelector, err := p.txSelector.LocalAccountsDB().CheckpointExists(p.state.batchNum)
-	if err != nil {
-		return common.Wrap(err)
-	}
-	fromSynchronizerTxSelector := !existsTxSelector
-	if err := p.txSelector.Reset(p.state.batchNum, fromSynchronizerTxSelector); err != nil {
-		return common.Wrap(err)
-	}
+	// existsTxSelector, err := p.txSelector.LocalAccountsDB().CheckpointExists(p.state.batchNum)
+	// if err != nil {
+	// 	return common.Wrap(err)
+	// }
+	// fromSynchronizerTxSelector := !existsTxSelector
+	// if err := p.txSelector.Reset(p.state.batchNum, fromSynchronizerTxSelector); err != nil {
+	// 	return common.Wrap(err)
+	// }
 	existsBatchBuilder, err := p.batchBuilder.LocalStateDB().CheckpointExists(p.state.batchNum)
 	if err != nil {
 		return common.Wrap(err)
@@ -124,9 +127,9 @@ func (p *Pipeline) reset(
 			)
 			// StateRoots from synchronizer doesn't match StateRoots
 			// from batchBuilder, force a reset from synchronizer
-			if err := p.txSelector.Reset(p.state.batchNum, true); err != nil {
-				return common.Wrap(err)
-			}
+			// if err := p.txSelector.Reset(p.state.batchNum, true); err != nil {
+			// 	return common.Wrap(err)
+			// }
 			if err := p.batchBuilder.Reset(p.state.batchNum, true); err != nil {
 				return common.Wrap(err)
 			}
@@ -216,17 +219,28 @@ func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
 	// l1UserFutureTxs are the l1UserTxs that are not being forged
 	// in the next batch, but that are also in the queue for the
 	// future batches
-	l1UserFutureTxs, err := p.historyDB.GetUnforgedL1UserFutureTxs(p.state.lastForgeL1TxsNum + 1)
-	if err != nil {
-		return nil, nil, common.Wrap(err)
-	}
+	// l1UserFutureTxs, err := p.historyDB.GetUnforgedL1UserFutureTxs(p.state.lastForgeL1TxsNum + 1)
+	// if err != nil {
+	// 	return nil, nil, common.Wrap(err)
+	// }
 
 	// TODO: figure out what happens here and potentially remove txSelector
-	auths, l1UserTxs, err =
-		p.txSelector.GetL1TxSelection(p.cfg.TxProcessorConfig, _l1UserTxs, l1UserFutureTxs)
-	if err != nil {
-		return nil, nil, common.Wrap(err)
-	}
+	// auths, l1UserTxs, err =
+	// 	p.txSelector.GetL1TxSelection(p.cfg.TxProcessorConfig, _l1UserTxs, l1UserFutureTxs)
+	// if err != nil {
+	// 	return nil, nil, common.Wrap(err)
+	// }
+	var selStateDB *statedb.LocalStateDB
+	localAccountsDB, err := statedb.NewLocalStateDB(
+		statedb.Config{
+			Path:    cfg.,
+			Keep:    kvdb.DefaultKeep,
+			Type:    statedb.TypeTxSelector,
+			NLevels: 0,
+		},
+		synchronizerStateDB)
+
+	tp := txprocessor.NewTxProcessor(localAccountsDB.StateDB, p.cfg.TxProcessorConfig)
 
 	// TODO: depending on what's happening in txSelector, this might not be necessary as well
 	if skip, reason, err := p.forgePolicySkipPostSelection(now, l1UserTxs, batchInfo); err != nil {

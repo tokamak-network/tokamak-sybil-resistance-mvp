@@ -31,7 +31,8 @@ import (
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/synchronizer"
 	"tokamak-sybil-resistance/txprocessor"
-	"tokamak-sybil-resistance/txselector"
+
+	// "tokamak-sybil-resistance/txselector"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -375,12 +376,12 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	// 	// AccountCreationAuth: auth.Signature,
 	// }
 
-	txSelector, err := txselector.NewTxSelector(
-		// &coordAccount,
-		cfg.Coordinator.TxSelector.Path,
-		stateDB,
-		// l2DB,
-	)
+	// txSelector, err := txselector.NewTxSelector(
+	// 	// &coordAccount,
+	// 	cfg.Coordinator.TxSelector.Path,
+	// 	stateDB,
+	// 	// l2DB,
+	// )
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
@@ -475,7 +476,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		},
 		historyDB,
 		// l2DB,
-		txSelector,
+		// txSelector,
 		batchBuilder,
 		nil, //serverProofs
 		client,
@@ -674,7 +675,7 @@ func (n *Node) Stop() {
 	// Close kv DBs
 	n.sync.StateDB().Close()
 
-	n.coord.TxSelector().LocalAccountsDB().Close()
+	// n.coord.TxSelector().LocalAccountsDB().Close()
 	n.coord.BatchBuilder().LocalStateDB().Close()
 }
 

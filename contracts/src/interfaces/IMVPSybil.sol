@@ -3,7 +3,6 @@ pragma solidity 0.8.23;
 
 interface IMVPSybil {
     error InvalidVerifierAddress();
-    error BatchTimeoutExceeded();
     error LoadAmountExceedsLimit();
     error LoadAmountDoesNotMatch();
     error AmountExceedsLimit();
@@ -19,7 +18,6 @@ interface IMVPSybil {
         address verifier,
         uint256 maxTx,
         uint256 nLevel,
-        uint8 _forgeBatchTimeout,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _poseidon4Elements
@@ -74,9 +72,7 @@ interface IMVPSybil {
     // Unvouch function
     function unvouch(uint48 fromIdx, uint48 toIdx) external;
 
-    function setForgeL1BatchTimeout(uint8 newTimeout) external pure;
-
-     function withdrawMerkleProof(
+    function withdrawMerkleProof(
         uint192 amount,
         uint32 numExitRoot,
         uint256[] calldata siblings,

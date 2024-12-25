@@ -16,8 +16,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     uint256 constant _LIMIT_LOADAMOUNT = (1 << 128); // Max loadAmount per call
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
-    uint8 public constant ABSOLUTE_MAX_BATCHTIMEOUT = 240;
-
     uint48 public lastIdx;
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
@@ -51,13 +49,11 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         uint48 indexed idx,
         uint32 indexed numExitRoot
     );
-    event Initialize(uint8 forgeL1BatchTimeout);
 
     function initialize(
         address verifier,
         uint256 maxTx,
         uint256 nLevel,
-        uint8 _forgeBatchTimeout,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _poseidon4Elements
@@ -76,8 +72,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
             _poseidon3Elements,
             _poseidon4Elements
         );
-
-        emit Initialize(_forgeBatchTimeout);
     }
 
     function _addTx(
@@ -251,7 +245,7 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         uint256 oldAccountRoot = accountRootMap[lastForgedBatch];
         uint256 oldVouchRoot = vouchRootMap[lastForgedBatch];
         uint256 oldScoreRoot = scoreRootMap[lastForgedBatch];
-        uint256 oldLastIdx = lastIdx;
+        uint48 oldLastIdx = lastIdx;
         bytes memory txnData = unprocessedBatchesMap[lastForgedBatch+1];
 
         bytes memory inputBytes = abi.encodePacked(
@@ -268,13 +262,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         );
         return uint256(sha256(inputBytes)) % _RFIELD;
 }    
-
-    function setForgeL1BatchTimeout(uint8 newTimeout) external pure override {
-        // Timeout logic
-        if (newTimeout > ABSOLUTE_MAX_BATCHTIMEOUT) {
-            revert BatchTimeoutExceeded();
-        }
-    }
 
     function _clearBatchFromQueue() internal returns (uint16) {
         uint16 l1UserTxsLen = uint16(
@@ -349,7 +336,13 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     }
 
     function _float2Fix(uint40 floatVal) internal pure returns(uint256) {
-        return uint256(floatVal) * 10 ** (18 - 8);
+        uint256 m = floatVal & 0x7FFFFFFFF;
+        uint256 e = floatVal >> 35;
+
+        uint256 exp = 10**e;
+        uint256 fix = m * exp;
+
+        return fix;
     }
 
     function _initializeVerifiers(

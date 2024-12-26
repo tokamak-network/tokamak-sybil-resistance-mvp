@@ -302,8 +302,7 @@ type Node struct {
 	} `validate:"required"`
 	SmartContracts struct {
 		// Rollup is the address of the Hermez.sol smart contract
-		Rollup        ethCommon.Address `validate:"required" env:"TONNODE_SMARTCONTRACTS_ROLLUP"`
-		StartBlockNum int64             `validate:"required"`
+		Rollup ethCommon.Address `validate:"required" env:"TONNODE_SMARTCONTRACTS_ROLLUP"`
 	} `validate:"required"`
 	API                  APIConfigParameters                  `validate:"required"`
 	RecommendedFeePolicy stateapiupdater.RecommendedFeePolicy `validate:"required"`

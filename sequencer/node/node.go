@@ -42,20 +42,8 @@ import (
 
 const SyncTime = 24 * 60 * time.Minute
 
-// Mode sets the working mode of the node (synchronizer or coordinator)
-// type Mode string
-
-// const (
-// 	// ModeCoordinator defines the mode of the HermezNode as Coordinator, which
-// 	// means that the node is set to forge (which also will be synchronizing with
-// 	// the L1 blockchain state)
-// 	ModeCoordinator Mode = "coordinator"
-
-// 	// ModeSynchronizer defines the mode of the HermezNode as Synchronizer, which
-// 	// means that the node is set to only synchronize with the L1 blockchain state
-// 	// and will not forge
-// 	ModeSynchronizer Mode = "synchronizer"
-// )
+// block number of the Smart contract to sync from
+const RollupStartBlockNum = 379608
 
 // Node is the Hermez Node
 type Node struct {
@@ -266,7 +254,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 			StatsUpdateBlockNumDiffThreshold: cfg.Synchronizer.StatsUpdateBlockNumDiffThreshold,
 			StatsUpdateFrequencyDivider:      cfg.Synchronizer.StatsUpdateFrequencyDivider,
 			ChainID:                          chainIDU64,
-			StartBlockNum:                    cfg.SmartContracts.StartBlockNum,
+			StartBlockNum:                    RollupStartBlockNum,
 		})
 	if err != nil {
 		return nil, common.Wrap(err)

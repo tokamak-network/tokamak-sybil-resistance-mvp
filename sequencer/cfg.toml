@@ -73,8 +73,6 @@ StatsUpdateFrequencyDivider = 100
 [SmartContracts]
 ## Smart contract address of the rollup contract
 Rollup   = "0xd2Fcf423780E5D4e6F8fD4F3c7aa931454DFB9c4"
-## block number of the Smart contract to sync from
-StartBlockNum = 379608
 
 [Coordinator]
 ## Ethereum address that the coordinator is using to forge batches

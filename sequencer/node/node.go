@@ -265,6 +265,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 			StatsUpdateBlockNumDiffThreshold: cfg.Synchronizer.StatsUpdateBlockNumDiffThreshold,
 			StatsUpdateFrequencyDivider:      cfg.Synchronizer.StatsUpdateFrequencyDivider,
 			ChainID:                          chainIDU64,
+			StartBlockNum:                    cfg.SmartContracts.StartBlockNum,
 		})
 	if err != nil {
 		return nil, common.Wrap(err)
@@ -274,7 +275,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	scConsts := common.SCConsts{
 		Rollup: *sync.RollupConstants(),
 	}
-
 
 	// TODO: rename node configs or remove unnecessary configs if not needed
 	hdbNodeCfg := historydb.NodeConfig{
@@ -447,7 +447,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 			GasPriceIncPerc:         cfg.Coordinator.EthClient.GasPriceIncPerc,
 			TxManagerCheckInterval:  cfg.Coordinator.EthClient.CheckLoopInterval.Duration,
 			DebugBatchPath:          cfg.Coordinator.Debug.BatchPath,
-			ForgeBatchGasCost: cfg.Coordinator.EthClient.ForgeBatchGasCost,
+			ForgeBatchGasCost:       cfg.Coordinator.EthClient.ForgeBatchGasCost,
 			// VerifierIdx:       uint8(verifierIdx),
 			TxProcessorConfig: txProcessorCfg,
 			ProverReadTimeout: cfg.Coordinator.ProverWaitReadTimeout.Duration,

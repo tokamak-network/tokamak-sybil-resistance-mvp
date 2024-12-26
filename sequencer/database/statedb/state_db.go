@@ -301,3 +301,8 @@ func (l *LocalStateDB) Reset(batchNum common.BatchNum, fromSynchronizer bool) er
 	// use checkpoint from LocalStateDB
 	return l.StateDB.Reset(batchNum)
 }
+
+// CurrentIdx returns the current in-memory CurrentAccountIdx of the StateDB.db
+func (s *StateDB) CurrentIdx() common.AccountIdx {
+	return s.db.CurrentAccountIdx
+}

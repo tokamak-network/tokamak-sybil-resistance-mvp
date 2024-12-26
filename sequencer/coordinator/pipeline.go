@@ -146,8 +146,8 @@ func (p *Pipeline) getErrAtBatchNum() common.BatchNum {
 	return p.errAtBatchNum
 }
 
-// handleForgeBatch waits for an available proof server, calls p.forgeBatch to
-// forge the batch and get the zkInputs, and then  sends the zkInputs to the
+// handleForgeBatch calls p.forgeBatch to
+// forge/create the batch and get the zkInputs, and then  sends the zkInputs to the
 // selected proof server so that the proof computation begins.
 
 func (p *Pipeline) handleForgeBatch(
@@ -444,13 +444,13 @@ func (p *Pipeline) SetSyncStatsVars(
 // TODO: discuss with the circuit team if new roots are necessary
 func prepareForgeBatchArgs(batchInfo *BatchInfo) *eth.RollupForgeBatchArgs {
 	proof := batchInfo.Proof
-	// zki := batchInfo.ZKInputs
+	zki := batchInfo.ZKInputs
 	return &eth.RollupForgeBatchArgs{
-		// NewLastIdx:            int64(zki.Metadata.NewLastIdxRaw),
-		// NewAccountRoot:        zki.Metadata.NewStateRootRaw.BigInt(),
-		// NewVouchRoot:          zki.Metadata.NewStateRootRaw.BigInt(),
-		// NewScoreRoot:          zki.Metadata.NewStateRootRaw.BigInt(),
-		// NewExitRoot:           zki.Metadata.NewExitRootRaw.BigInt(),
+		NewLastIdx:            int64(zki.NewLastIdxRaw),
+		NewAccountRoot:        zki.NewAccountRootRaw.BigInt(),
+		NewVouchRoot:          zki.NewVouchRootRaw.BigInt(),
+		NewScoreRoot:          zki.NewScoreRootRaw.BigInt(),
+		NewExitRoot:           zki.NewExitRootRaw.BigInt(),
 		L1UserTxs:             batchInfo.L1UserTxs,
 		L1CoordinatorTxsAuths: batchInfo.L1CoordinatorTxsAuths,
 		// Circuit selector

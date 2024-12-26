@@ -4,6 +4,8 @@ package common
 
 import (
 	"math/big"
+
+	"github.com/iden3/go-merkletree"
 )
 
 // ZKInputs represents the inputs that will be used to generate the zkSNARK
@@ -14,6 +16,7 @@ type ZKInputs struct {
 	// inputs for final `hashGlobalInputs`
 	// OldLastIdx is the last index assigned to an account
 	OldLastIdx *uint32 `json:"oldLastIdx"` // uint32 (max nLevels bits)
+
 	// OldStateRoot is the current account merkle tree root
 	OldAccountRoot *big.Int `json:"oldAccountRoot"`
 
@@ -24,6 +27,13 @@ type ZKInputs struct {
 	//Score
 	// OldScoreRoot is the current score merkle tree root
 	OldScoreRoot *big.Int `json:"oldScoreRoot"`
+
+	// New raw values
+	NewLastIdxRaw     uint32 `json:"newLastIdx"`
+	NewAccountRootRaw *merkletree.Hash
+	NewScoreRootRaw   *merkletree.Hash
+	NewVouchRootRaw   *merkletree.Hash
+	NewExitRootRaw    *merkletree.Hash
 
 	// GlobalChainID is the blockchain ID (0 for Ethereum mainnet). This
 	// value can be get from the smart contract.

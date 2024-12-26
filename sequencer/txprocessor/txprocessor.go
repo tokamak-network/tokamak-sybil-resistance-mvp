@@ -214,12 +214,18 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 
 	if txProcessor.state.Type() == statedb.TypeBatchBuilder {
 		currentBatchValueNum := uint32(uint32(txProcessor.state.CurrentBatch()) + 1)
-		txProcessor.zki = common.NewZKInputs(txProcessor.config.ChainID, txProcessor.config.MaxTx, txProcessor.config.MaxL1Tx,
-			txProcessor.config.NLevels, &currentBatchValueNum)
+		txProcessor.zki = common.NewZKInputs(
+			txProcessor.config.ChainID,
+			txProcessor.config.MaxTx,
+			txProcessor.config.MaxL1Tx,
+			txProcessor.config.NLevels,
+			&currentBatchValueNum,
+		)
 		//For Accounts
 		oldLastIdxValue := uint32(txProcessor.state.CurrentAccountIdx())
 		txProcessor.zki.OldLastIdx = &(oldLastIdxValue)
 		txProcessor.zki.OldAccountRoot = txProcessor.state.GetMTRootAccount()
+		txProcessor.zki.NewLastIdxRaw = uint32(txProcessor.state.CurrentAccountIdx())
 
 		//For Vouches
 		txProcessor.zki.OldVouchRoot = txProcessor.state.GetMTRootVouch()
@@ -379,41 +385,6 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 		}
 	}
 
-	// Process L2Txs
-	// for i := 0; i < len(l2txs); i++ {
-	// 	exitIdx, exitAccount, newExit, err := txProcessor.ProcessL2Tx(exitTree, &l2txs[i])
-	// 	if err != nil {
-	// 		return nil, common.Wrap(err)
-	// 	}
-	// 	if txProcessor.zki != nil {
-	// 		if err != nil {
-	// 			return nil, common.Wrap(err)
-	// 		}
-
-	// 		// Intermediate States
-	// 		if txProcessor.txIndex < nTx-1 {
-	// 			//TODO: Fill out the OutIdx and StateRoot, need to check it's parameters
-
-	// 			// txProcessor.zki.ISOutIdx[txProcessor.txIndex] = txProcessor.state.CurrentIdx().BigInt()
-	// 			// txProcessor.zki.ISStateRoot[txProcessor.txIndex] = txProcessor.state.MT.Root().BigInt()
-	// 			if exitIdx == nil {
-	// 				txProcessor.zki.ISExitRoot[txProcessor.txIndex] = exitTree.Root().BigInt()
-	// 			}
-	// 		}
-	// 	}
-	// 	if txProcessor.state.Type() == statedb.TypeSynchronizer || txProcessor.state.Type() == statedb.TypeBatchBuilder {
-	// 		if exitIdx != nil && exitTree != nil && exitAccount != nil {
-	// 			exits[txProcessor.txIndex] = processedExit{
-	// 				exit:    true,
-	// 				newExit: newExit,
-	// 				idx:     *exitIdx,
-	// 				acc:     *exitAccount,
-	// 			}
-	// 		}
-	// 		txProcessor.txIndex++
-	// 	}
-	// }
-
 	// if txProcessor.zki != nil {
 	// 	// Fill the empty slots in the ZKInputs remaining after
 	// 	// processing all L1 & L2 txs
@@ -490,6 +461,10 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 	// // compute last ZKInputs parameters
 	valueGlobalChain := uint16(txProcessor.config.ChainID)
 	txProcessor.zki.GlobalChainID = &(valueGlobalChain)
+	txProcessor.zki.NewAccountRootRaw = txProcessor.state.AccountTree.Root()
+	txProcessor.zki.NewVouchRootRaw = txProcessor.state.VouchTree.Root()
+	txProcessor.zki.NewScoreRootRaw = txProcessor.state.ScoreTree.Root()
+	txProcessor.zki.NewExitRootRaw = exitTree.Root()
 
 	// return ZKInputs as the BatchBuilder will return it to forge the Batch
 	return &ProcessTxOutput{

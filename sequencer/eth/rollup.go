@@ -235,7 +235,6 @@ type RollupInterface interface {
 	RollupConstants() (*common.RollupConstants, error)
 	RollupEventsByBlock(blockNum int64, blockHash *ethCommon.Hash) (*RollupEvents, error)
 	RollupForgeBatchArgs(ethCommon.Hash, uint16) (*RollupForgeBatchArgs, *ethCommon.Address, error)
-	RollupEventInit(genesisBlockNum int64) (*RollupEventInitialize, int64, error)
 }
 
 //
@@ -261,36 +260,6 @@ func (ei *RollupEventInitialize) RollupVariables() *common.RollupVariables {
 		Buckets:               []common.BucketParams{},
 		SafeMode:              false,
 	}
-}
-
-// RollupEventInit returns the initialize event with its corresponding block number
-func (c *RollupClient) RollupEventInit(genesisBlockNum int64) (*RollupEventInitialize, int64, error) {
-	query := ethereum.FilterQuery{
-		Addresses: []ethCommon.Address{
-			c.address,
-		},
-		FromBlock: big.NewInt(max(0, genesisBlockNum-blocksPerDay)),
-		ToBlock:   big.NewInt(genesisBlockNum),
-		Topics:    [][]ethCommon.Hash{{logSYBInitialize}},
-	}
-	logs, err := c.client.client.FilterLogs(context.Background(), query)
-	if err != nil {
-		return nil, 0, common.Wrap(err)
-	}
-	if len(logs) != 1 {
-		return nil, 0, common.Wrap(fmt.Errorf("no event of type InitializeSYBEvent found"))
-	}
-	vLog := logs[0]
-	if vLog.Topics[0] != logSYBInitialize {
-		return nil, 0, common.Wrap(fmt.Errorf("event is not InitializeSYBEvent"))
-	}
-
-	var rollupInit RollupEventInitialize
-	if err := c.contractAbi.UnpackIntoInterface(&rollupInit, "Initialize",
-		vLog.Data); err != nil {
-		return nil, 0, common.Wrap(err)
-	}
-	return &rollupInit, int64(vLog.BlockNumber), common.Wrap(err)
 }
 
 // NewRollupClient creates a new RollupClient
@@ -390,8 +359,6 @@ var (
 	// 	"UpdateBucketsParameters(uint256[])"))
 	logSYBSafeMode = crypto.Keccak256Hash([]byte(
 		"SafeMode()"))
-	logSYBInitialize = crypto.Keccak256Hash([]byte(
-		"Initialize(uint8)"))
 )
 
 // RollupEventsByBlock returns the events in a block that happened in the

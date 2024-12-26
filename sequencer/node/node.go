@@ -227,6 +227,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		},
 	})
 	if err != nil {
+		log.Errorw("eth.NewClient", "err", err)
 		return nil, common.Wrap(err)
 	}
 
@@ -393,37 +394,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		ChainID: chainIDU64,
 		// MaxFeeTx: common.RollupConstMaxFeeIdxCoordinator,
 		MaxL1Tx: common.RollupConstMaxL1Tx,
-	}
-	var verifierIdx int
-	if cfg.Coordinator.Debug.RollupVerifierIndex == nil {
-		verifierIdx, err = scConsts.Rollup.FindVerifierIdx(
-			cfg.Coordinator.Circuit.MaxTx,
-			cfg.Coordinator.Circuit.NLevels,
-		)
-		if err != nil {
-			return nil, common.Wrap(err)
-		}
-		log.Infow("Found verifier that matches circuit config", "verifierIdx", verifierIdx)
-	} else {
-		verifierIdx = *cfg.Coordinator.Debug.RollupVerifierIndex
-		log.Infow("Using debug verifier index from config", "verifierIdx", verifierIdx)
-		if verifierIdx >= len(scConsts.Rollup.Verifiers) {
-			return nil, common.Wrap(
-				fmt.Errorf("verifierIdx (%v) >= "+
-					"len(scConsts.Rollup.Verifiers) (%v)",
-					verifierIdx, len(scConsts.Rollup.Verifiers)))
-		}
-		verifier := scConsts.Rollup.Verifiers[verifierIdx]
-		if verifier.MaxTx != cfg.Coordinator.Circuit.MaxTx ||
-			verifier.NLevels != cfg.Coordinator.Circuit.NLevels {
-			return nil, common.Wrap(
-				fmt.Errorf("circuit config and verifier params don't match.  "+
-					"circuit.MaxTx = %v, circuit.NLevels = %v, "+
-					"verifier.MaxTx = %v, verifier.NLevels = %v",
-					cfg.Coordinator.Circuit.MaxTx, cfg.Coordinator.Circuit.NLevels,
-					verifier.MaxTx, verifier.NLevels,
-				))
-		}
 	}
 
 	coord, err = coordinator.NewCoordinator(

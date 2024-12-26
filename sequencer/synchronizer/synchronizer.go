@@ -245,6 +245,7 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		// Get lastSavedBlock from History DB
 		lastSavedBlock, err = s.historyDB.GetLastBlock()
 		if err != nil && common.Unwrap(err) != sql.ErrNoRows {
+			log.Errorw("Sync GetLastBlock", "err", err)
 			return nil, nil, common.Wrap(err)
 		}
 		// If we don't have any stored block, we must do a full sync

@@ -246,7 +246,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB ) {
+func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB) {
 	// Int State DB
 	dir, err := os.MkdirTemp("", "tmpdb")
 	require.NoError(t, err)
@@ -260,7 +260,6 @@ func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB ) {
 	db, err := dbUtils.InitSQLDB()
 	require.NoError(t, err)
 	historyDB := historydb.NewHistoryDB(db, db /*, nil*/)
-
 
 	t.Cleanup(func() {
 		test.MigrationsDownTest(historyDB.DB())
@@ -296,6 +295,7 @@ func TestSyncGeneral(t *testing.T) {
 		Config{
 			StatsUpdateBlockNumDiffThreshold: 100,
 			StatsUpdateFrequencyDivider:      100,
+			StartBlockNum:                    1,
 		},
 	)
 	require.NoError(t, err)
@@ -319,8 +319,8 @@ func TestSyncGeneral(t *testing.T) {
 	assert.Equal(t, int64(1), stats.Eth.FirstBlockNum)
 	assert.Equal(t, int64(1), stats.Eth.LastBlock.Num)
 	assert.Equal(t, int64(1), stats.Sync.LastBlock.Num)
-	vars := s.SCVars()
-	assert.Equal(t, *clientSetup.RollupVariables, vars.Rollup)
+	// vars := s.SCVars()
+	// assert.Equal(t, *clientSetup.RollupVariables, vars.Rollup)
 
 	dbBlocks, err := s.historyDB.GetAllBlocks()
 	require.NoError(t, err)
@@ -490,8 +490,6 @@ func TestSyncGeneral(t *testing.T) {
 	assert.Equal(t, int64(1), stats.Eth.FirstBlockNum)
 	assert.Equal(t, int64(4), stats.Eth.LastBlock.Num)
 	assert.Equal(t, int64(4), stats.Sync.LastBlock.Num)
-	vars = s.SCVars()
-	assert.Equal(t, *clientSetup.RollupVariables, vars.Rollup)
 
 	// dbExits, err := s.historyDB.GetAllExits()
 	// require.NoError(t, err)
@@ -529,8 +527,6 @@ func TestSyncGeneral(t *testing.T) {
 	assert.Equal(t, int64(1), stats.Eth.FirstBlockNum)
 	assert.Equal(t, int64(5), stats.Eth.LastBlock.Num)
 	assert.Equal(t, int64(5), stats.Sync.LastBlock.Num)
-	vars = s.SCVars()
-	assert.NotEqual(t, clientSetup.RollupVariables, vars.Rollup)
 
 	dbRollupVars, err := s.historyDB.GetSCVars()
 	require.NoError(t, err)

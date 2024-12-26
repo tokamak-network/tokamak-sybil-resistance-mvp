@@ -72,13 +72,13 @@ StatsUpdateFrequencyDivider = 100
 
 [SmartContracts]
 ## Smart contract address of the rollup contract
-Rollup   = "0x3d4810E4F8377a34781A6Ceaab9dAc08E361192d"
+Rollup   = "0xd2Fcf423780E5D4e6F8fD4F3c7aa931454DFB9c4"
 ## block number of the Smart contract to sync from
-StartBlockNum = 77877
+StartBlockNum = 379608
 
 [Coordinator]
 ## Ethereum address that the coordinator is using to forge batches
-ForgerAddress = "0x19795e3f46003bb44538708020dae2b4cc8b6425"
+ForgerAddress = "0x0f466febb653fac8bdf5cca8031270740e6d2bbf"
 ### Minimum balance the forger address needs to start the coordinator in wei. If It is set to 0, the coordinator will not check the balance
 #MinimumForgeAddressBalance = "0"
 ### Number of confirmation blocks to be sure that the tx has been mined correctly

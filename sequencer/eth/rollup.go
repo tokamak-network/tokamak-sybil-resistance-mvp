@@ -296,30 +296,10 @@ func NewRollupClient(client *EthereumClient, address ethCommon.Address) (*Rollup
 func (c *RollupClient) RollupConstants() (rollupConstants *common.RollupConstants, err error) {
 	rollupConstants = new(common.RollupConstants)
 	if err := c.client.Call(func(ec *ethclient.Client) error {
-		absoluteMaxL1L2BatchTimeout, err := c.sybil.ABSOLUTEMAXBATCHTIMEOUT(c.opts)
-		if err != nil {
-			return common.Wrap(err)
-		}
-		rollupConstants.AbsoluteMaxL1L2BatchTimeout = int64(absoluteMaxL1L2BatchTimeout)
-		// rollupConstants.TokenHEZ, err = c.tokamak.TokenHEZ(c.opts)
-		// if err != nil {
-		// 	return common.Wrap(err)
-		// }
 		rollupVerifier, err := c.sybil.RollupVerifier(c.opts)
 		if err != nil {
 			return common.Wrap(err)
 		}
-		// for i := int64(0); i < rollupVerifiers.MaxTxs.Int64(); i++ {
-		// 	var newRollupVerifier common.RollupVerifierStruct
-		// 	rollupVerifier, err := c.sybil.RollupVerifiers(c.opts, big.NewInt(i))
-		// 	if err != nil {
-		// 		return common.Wrap(err)
-		// 	}
-		// 	newRollupVerifier.MaxTx = rollupVerifier.MaxTxs.Int64()
-		// 	newRollupVerifier.NLevels = rollupVerifier.NLevels.Int64()
-		// 	rollupConstants.Verifiers = append(rollupConstants.Verifiers,
-		// 		newRollupVerifier)
-		// }
 		var newRollupVerifier common.RollupVerifierStruct
 		newRollupVerifier.MaxTx = rollupVerifier.MaxTx.Int64()
 		newRollupVerifier.NLevels = rollupVerifier.NLevel.Int64()

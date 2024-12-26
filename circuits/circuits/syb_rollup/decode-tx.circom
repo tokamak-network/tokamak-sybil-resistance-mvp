@@ -16,9 +16,8 @@ template DecodeTx(nLevels){
     signal input loadAmountF;
 
     signal input newAccount;
-    
-    //signal input auxFromIdx; //@TODO
-    //signal input auxToIdx;
+
+    signal input auxFromIdx;
 
     // fromEthAddr | fromIdx | loadAmountF | amountF | toIdx
     signal output L1TxFullData[160 + 48 + 40 + 40 + 48];
@@ -30,7 +29,7 @@ template DecodeTx(nLevels){
     signal output fromIdx; // 48 0..47
     signal output toIdx; // 48 48..95
     signal output nonce; // 40 96..135
-    
+
     signal output amount;
 
     var i;
@@ -118,5 +117,10 @@ template DecodeTx(nLevels){
 
     outIdx <== inIdx + newAccount;
 
-    //@TODO: auxFromIdx, auxToIdx
+    // check auxFromIdx if it is an L1 tx and new account
+    // force that index inserted for creating new accounts must be incremental
+    component idxChecker = ForceEqualIfEnabled();
+    idxChecker.in[0] <== auxFromIdx;
+    idxChecker.in[1] <== outIdx;
+    idxChecker.enabled <== newAccount;
 }

@@ -54,12 +54,6 @@ SyncRetryInterval = "1s"
 ### Waiting time for proover
 ProverWaitReadTimeout = "20s"
 
-[Coordinator.FeeAccount]
-## Ethereum address of the account that will receive the fees
-Address = "0x56232B1c5B10038125Bc7345664B4AFD745bcF8E"
-## BJJ is the baby jub jub public key of the account that will receive the fees
-BJJ = "0x130c5c7f294792559f469220274f3d3b2dca6e89f4c5ec88d3a08bf73262171b"
-
 [Coordinator.TxSelector]
 ### Path where the TxSelector StateDB is stored
 Path = "./var/tokamak/txselector"
@@ -103,12 +97,6 @@ Fixed = 900000
 L1UserTx = 15000
 ### Gas needed for a coordinator L1 tx
 L1CoordTx = 7000
-### Gas needed for an L2 tx
-L2Tx = 600
-
-#[Coordinator.API]
-### Enables coordinator API endpoints
-#Coordinator = true
 
 #[Coordinator.Debug]
 ### If this parameter is set, specifies the path where batchInfo is stored in JSON in every step/update of the pipeline

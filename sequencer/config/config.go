@@ -10,7 +10,6 @@ import (
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/go-playground/validator"
-	"github.com/iden3/go-iden3-crypto/babyjub"
 )
 
 // Duration is a wrapper type that parses time duration from text.
@@ -21,17 +20,8 @@ type Duration struct {
 // ForgeBatchGasCost is the costs associated to a ForgeBatch transaction, split
 // into different parts to be used in a formula.
 type ForgeBatchGasCost struct {
-	Fixed     uint64 `validate:"required" env:"TONNODE_FORGEBATCHGASCOST_FIXED"`
-	L1UserTx  uint64 `validate:"required" env:"TONNODE_FORGEBATCHGASCOST_L1USERTX"`
-	L1CoordTx uint64 `validate:"required" env:"TONNODE_FORGEBATCHGASCOST_L1COORDTX"`
-	L2Tx      uint64 `validate:"required" env:"TONNODE_FORGEBATCHGASCOST_L2TX"`
-}
-
-// CoordinatorAPI specifies the configuration parameters of the API in mode
-// coordinator
-type CoordinatorAPI struct {
-	// Coordinator enables the coordinator API endpoints
-	Coordinator bool `env:"TONNODE_COORDINATORAPI_COORDINATOR"`
+	Fixed    uint64 `validate:"required" env:"TONNODE_FORGEBATCHGASCOST_FIXED"`
+	L1UserTx uint64 `validate:"required" env:"TONNODE_FORGEBATCHGASCOST_L1USERTX"`
 }
 
 // Coordinator is the coordinator specific configuration.
@@ -41,13 +31,6 @@ type Coordinator struct {
 	// needs to start the coordinator in wei. Of set to 0, the coordinator
 	// will not check the balance before starting.
 	MinimumForgeAddressBalance *big.Int `env:"TONNODE_COORDINATOR_MINIMUMFORGEADDRESSBALANCE"`
-	// FeeAccount is the Hermez account that the coordinator uses to receive fees
-	FeeAccount struct {
-		// Address is the ethereum address of the account to receive fees
-		Address ethCommon.Address `validate:"required" env:"TONNODE_FEEACCOUNT_ADDRESS"`
-		// BJJ is the baby jub jub public key of the account to receive fees
-		BJJ babyjub.PublicKeyComp `validate:"required" env:"TONNODE_FEEACCOUNT_BJJ"`
-	} `validate:"required"`
 	// ConfirmBlocks is the number of confirmation blocks to wait for sent
 	// ethereum transactions before forgetting about them
 	ConfirmBlocks int64 `validate:"required,gte=0" env:"TONNODE_COORDINATOR_CONFIRMBLOCKS"`
@@ -157,7 +140,6 @@ type Coordinator struct {
 		// ForgeBatch transaction.
 		ForgeBatchGasCost ForgeBatchGasCost `validate:"required"`
 	} `validate:"required"`
-	API   CoordinatorAPI `validate:"required"`
 	Debug struct {
 		// BatchPath if set, specifies the path where batchInfo is stored
 		// in JSON in every step/update of the pipeline
@@ -294,21 +276,6 @@ type APIServer struct {
 		API           struct {
 			// Coordinator enables the coordinator API endpoints
 			Coordinator bool `env:"TONNODE_COORDINATORAPI_COORDINATOR"`
-		} `validate:"required"`
-		L2DB struct {
-			// MaxTxs is the maximum number of pending L2Txs that can be
-			// stored in the pool.  Once this number of pending L2Txs is
-			// reached, inserts to the pool will be denied until some of
-			// the pending txs are forged.
-			MaxTxs uint32 `validate:"required" env:"TONNODE_L2DB_MAXTXS"`
-			// MinFeeUSD is the minimum fee in USD that a tx must pay in
-			// order to be accepted into the pool.  Txs with lower than
-			// minimum fee will be rejected at the API level.
-			MinFeeUSD float64 `validate:"gte=0" env:"TONNODE_L2DB_MINFEEUSD"`
-			// MaxFeeUSD is the maximum fee in USD that a tx must pay in
-			// order to be accepted into the pool.  Txs with greater than
-			// maximum fee will be rejected at the API level.
-			MaxFeeUSD float64 `validate:"required,gte=0" env:"TONNODE_L2DB_MAXFEEUSD"`
 		} `validate:"required"`
 		// Keystore is the ethereum keystore where private keys are kept.
 		// Required if API.CoordinatorNetwork == true

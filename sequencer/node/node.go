@@ -318,52 +318,8 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	}
 
 	var coord *coordinator.Coordinator
-	// if mode == ModeCoordinator {
-	// Unlock FeeAccount EthAddr in the keystore to generate the
-	// account creation authorization
-	// if !keyStore.HasAddress(cfg.Coordinator.FeeAccount.Address) {
-	// 	return nil, common.Wrap(fmt.Errorf(
-	// 		"ethereum keystore doesn't have the key for address %v",
-	// 		cfg.Coordinator.FeeAccount.Address))
-	// }
-	// feeAccount := accounts.Account{
-	// 	Address: cfg.Coordinator.FeeAccount.Address,
-	// }
-	// if err := keyStore.Unlock(feeAccount,
-	// 	keystorePassword); err != nil {
-	// 	return nil, common.Wrap(err)
-	// }
-	// //Swap bjj endianness
-	// decodedBjjPubKey, err := hex.DecodeString(cfg.Coordinator.FeeAccount.BJJ.String())
-	// if err != nil {
-	// 	log.Error("Error decoding BJJ public key from config file. Error: ", err.Error())
-	// 	return nil, common.Wrap(err)
-	// }
-	// bSwapped := common.SwapEndianness(decodedBjjPubKey)
-	// var bjj babyjub.PublicKeyComp
-	// copy(bjj[:], bSwapped[:])
-
-	// auth := &common.AccountCreationAuth{
-	// 	EthAddr: cfg.Coordinator.FeeAccount.Address,
-	// 	BJJ:     bjj,
-	// }
-
-	//TODO: Check and complete this auth signing functionality
-
-	// if err := auth.Sign(func(msg []byte) ([]byte, error) {
-	// 	return keyStore.SignHash(feeAccount, msg)
-	// }, chainIDU16, cfg.SmartContracts.Rollup); err != nil {
-	// 	return nil, common.Wrap(err)
-	// }
-
-	// coordAccount := txselector.CoordAccount{
-	// 	Addr: cfg.Coordinator.FeeAccount.Address,
-	// 	BJJ:  bjj,
-	// 	// AccountCreationAuth: auth.Signature,
-	// }
 
 	txSelector, err := txselector.NewTxSelector(
-		// &coordAccount,
 		cfg.Coordinator.TxSelector.Path,
 		stateDB,
 	)

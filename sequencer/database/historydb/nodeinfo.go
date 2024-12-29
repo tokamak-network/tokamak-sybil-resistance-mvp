@@ -10,9 +10,6 @@ import (
 
 // NodeConfig contains the node config exposed in the API
 type NodeConfig struct {
-	MaxPoolTxs uint32
-	MinFeeUSD  float64
-	MaxFeeUSD  float64
 	ForgeDelay float64
 }
 

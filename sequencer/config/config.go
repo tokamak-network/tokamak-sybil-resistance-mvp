@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"strings"
 	"time"
-	"tokamak-sybil-resistance/api/stateapiupdater"
 	"tokamak-sybil-resistance/common"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
@@ -37,7 +36,6 @@ type CoordinatorAPI struct {
 
 // Coordinator is the coordinator specific configuration.
 type Coordinator struct {
-	// ForgerAddress is the address under which this coordinator is forging
 	ForgerAddress ethCommon.Address `validate:"required" env:"TONNODE_COORDINATOR_FORGERADDRESS"`
 	// MinimumForgeAddressBalance is the minimum balance the forger address
 	// needs to start the coordinator in wei. Of set to 0, the coordinator
@@ -111,48 +109,7 @@ type Coordinator struct {
 	SyncRetryInterval Duration `validate:"required" env:"TONNODE_COORDINATOR_SYNCRETRYINTERVAL"`
 	// ProverWaitReadTimeout
 	ProverWaitReadTimeout Duration `env:"TONNODE_COORDINATOR_PROVERWAITREADTIMEOUT"`
-	L2DB                  struct {
-		// SafetyPeriod is the number of batches after which
-		// non-pending L2Txs are deleted from the pool
-		SafetyPeriod common.BatchNum `validate:"required" env:"TONNODE_L2DB_SAFETYPERIOD"`
-		// MaxTxs is the maximum number of pending L2Txs that can be
-		// stored in the pool.  Once this number of pending L2Txs is
-		// reached, inserts to the pool will be denied until some of
-		// the pending txs are forged.
-		MaxTxs uint32 `validate:"required" env:"TONNODE_L2DB_MAXTXS"`
-		// MinFeeUSD is the minimum fee in USD that a tx must pay in
-		// order to be accepted into the pool.  Txs with lower than
-		// minimum fee will be rejected at the API level.
-		MinFeeUSD float64 `validate:"gte=0" env:"TONNODE_L2DB_MINFEEUSD"`
-		// MaxFeeUSD is the maximum fee in USD that a tx must pay in
-		// order to be accepted into the pool.  Txs with greater than
-		// maximum fee will be rejected at the API level.
-		MaxFeeUSD float64 `validate:"required,gte=0" env:"TONNODE_L2DB_MAXFEEUSD"`
-		// TTL is the Time To Live for L2Txs in the pool. L2Txs older
-		// than TTL will be deleted.
-		TTL Duration `validate:"required" env:"TONNODE_L2DB_TTL"`
-		// PurgeBatchDelay is the delay between batches to purge
-		// outdated transactions. Outdated L2Txs are those that have
-		// been forged or marked as invalid for longer than the
-		// SafetyPeriod and pending L2Txs that have been in the pool
-		// for longer than TTL once there are MaxTxs.
-		PurgeBatchDelay int64 `validate:"required,gte=0" env:"TONNODE_L2DB_PURGEBATCHDELAY"`
-		// InvalidateBatchDelay is the delay between batches to mark
-		// invalid transactions due to nonce lower than the account
-		// nonce.
-		InvalidateBatchDelay int64 `validate:"required" env:"TONNODE_L2DB_INVALIDATEBATCHDELAY"`
-		// PurgeBlockDelay is the delay between blocks to purge
-		// outdated transactions. Outdated L2Txs are those that have
-		// been forged or marked as invalid for longer than the
-		// SafetyPeriod and pending L2Txs that have been in the pool
-		// for longer than TTL once there are MaxTxs.
-		PurgeBlockDelay int64 `validate:"required,gte=0" env:"TONNODE_L2DB_PURGEBLOCKDELAY"`
-		// InvalidateBlockDelay is the delay between blocks to mark
-		// invalid transactions due to nonce lower than the account
-		// nonce.
-		InvalidateBlockDelay int64 `validate:"required,gte=0" env:"TONNODE_L2DB_INVALIDATEBLOCKDELAY"`
-	} `validate:"required"`
-	TxSelector struct {
+	TxSelector            struct {
 		// Path where the TxSelector StateDB is stored
 		Path string `validate:"required" env:"TONNODE_TXSELECTOR_PATH"`
 	} `validate:"required"`
@@ -196,13 +153,6 @@ type Coordinator struct {
 		// NoReuseNonce disables reusing nonces of pending transactions for
 		// new replacement transactions
 		NoReuseNonce bool `env:"TONNODE_ETHCLIENT_NOREUSENONCE"`
-		// Keystore is the ethereum keystore where private keys are kept
-		Keystore struct {
-			// Path to the keystore
-			Path string `validate:"required" env:"TONNODE_KEYSTORE_PATH"`
-			// Password used to decrypt the keys in the keystore
-			Password string `validate:"required" env:"TONNODE_KEYSTORE_PASSWORD"`
-		} `validate:"required"`
 		// ForgeBatchGasCost contains the cost of each action in the
 		// ForgeBatch transaction.
 		ForgeBatchGasCost ForgeBatchGasCost `validate:"required"`
@@ -276,8 +226,7 @@ type Node struct {
 		// Keep is the number of checkpoints to keep
 		Keep int `validate:"required,gte=128" env:"TONNODE_STATEDB_KEEP"`
 	} `validate:"required"`
-	PostgreSQL PostgreSQL `validate:"required"`
-	Web3       struct {
+	Web3 struct {
 		// URL is the URL of the web3 ethereum-node RPC server.  Only
 		// geth is officially supported.
 		URL string `validate:"required,url" env:"TONNODE_WEB3_URL"`
@@ -304,11 +253,8 @@ type Node struct {
 		// Rollup is the address of the Hermez.sol smart contract
 		Rollup ethCommon.Address `validate:"required" env:"TONNODE_SMARTCONTRACTS_ROLLUP"`
 	} `validate:"required"`
-	API                  APIConfigParameters                  `validate:"required"`
-	RecommendedFeePolicy stateapiupdater.RecommendedFeePolicy `validate:"required"`
-	Debug                NodeDebug                            `validate:"required"`
-	Coordinator          Coordinator                          `validate:"-"`
-	Log                  LogConf                              `validate:"-"`
+	Coordinator Coordinator `validate:"-"`
+	Log         LogConf     `validate:"-"`
 }
 
 // APIConfigParameters specifies the configuration parameters of the API
@@ -412,10 +358,8 @@ func LoadNode(path string /*, coordinator bool*/) (*Node, error) {
 	if err := validate.Struct(cfg); err != nil {
 		return nil, common.Wrap(fmt.Errorf("error validating configuration file: %w", err))
 	}
-	// if coordinator {
 	if err := validate.Struct(cfg.Coordinator); err != nil {
 		return nil, common.Wrap(fmt.Errorf("error validating configuration file: %w", err))
-		// }
 	}
 	log.Printf("Loaded Configuration: %+v", cfg)
 	return &cfg, nil

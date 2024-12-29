@@ -35,6 +35,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/jmoiron/sqlx"
 	"github.com/russross/meddler"
@@ -124,7 +125,7 @@ func isDirectoryEmpty(path string) (bool, error) {
 
 // NewNode creates a Node
 func NewNode(cfg *config.Node, version string) (*Node, error) {
-	meddler.Debug = cfg.Debug.MeddlerLogs
+	meddler.Debug = os.Getenv("MEDDLER_DEBUG") == "true"
 
 	// Establish DB connection
 	db, err := dbUtils.InitSQLDB()
@@ -152,28 +153,40 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		scryptN = keystore.LightScryptN
 		scryptP = keystore.LightScryptP
 	}
-	keyStore = keystore.NewKeyStore(cfg.Coordinator.EthClient.Keystore.Path, scryptN, scryptP)
+	keystorePath := os.Getenv("KEYSTORE_PATH")
+	keystorePassword := os.Getenv("KEYSTORE_PASSWORD")
+	if keystorePath == "" || keystorePassword == "" {
+		log.Errorw("keystore path or password not set")
+		return nil, common.Wrap(fmt.Errorf("keystore path or password not set"))
+	}
+	keyStore = keystore.NewKeyStore(keystorePath, scryptN, scryptP)
 
-	isEmpty, err := isDirectoryEmpty(cfg.Coordinator.EthClient.Keystore.Path)
+	forgerAddressHex := os.Getenv("FORGER_ADDRESS")
+	var forgerAddress ethcommon.Address
+	if forgerAddressHex != "" {
+		forgerAddress = ethcommon.HexToAddress(forgerAddressHex)
+		log.Infof("Forger address set from env: %s", forgerAddress.Hex())
+	}
+
+	isEmpty, err := isDirectoryEmpty(keystorePath)
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
-
 	if isEmpty {
 		// Create a new account if keystore is empty
-		account, err := keyStore.NewAccount(cfg.Coordinator.EthClient.Keystore.Password)
+		account, err := keyStore.NewAccount(keystorePassword)
 		if err != nil {
 			return nil, common.Wrap(err)
 		}
 		log.Infof("New account created: %s", account.Address.Hex())
 
 		// Necessary to pass the github actions Node Run test
-		cfg.Coordinator.ForgerAddress = account.Address
+		forgerAddress = account.Address
 	} else {
 		log.Infof("Keystore already initialized, skipping account creation.")
 	}
 
-	forgerBalance, err := ethClient.BalanceAt(context.TODO(), cfg.Coordinator.ForgerAddress, nil)
+	forgerBalance, err := ethClient.BalanceAt(context.TODO(), forgerAddress, nil)
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
@@ -185,29 +198,29 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 			forgerBalance, minForgeBalance))
 	}
 	log.Infow("forger ethereum account balance",
-		"addr", cfg.Coordinator.ForgerAddress,
+		"addr", forgerAddress,
 		"balance", forgerBalance,
 		"minForgeBalance", minForgeBalance,
 	)
 
 	// Unlock Coordinator ForgerAddr in the keystore to make calls
 	// to ForgeBatch in the smart contract
-	if !keyStore.HasAddress(cfg.Coordinator.ForgerAddress) {
+	if !keyStore.HasAddress(forgerAddress) {
 		return nil, common.Wrap(fmt.Errorf(
 			"ethereum keystore doesn't have the key for address %v",
-			cfg.Coordinator.ForgerAddress))
+			forgerAddress))
 	}
 	forgerAccount = &accounts.Account{
-		Address: cfg.Coordinator.ForgerAddress,
+		Address: forgerAddress,
 	}
 	if err := keyStore.Unlock(
 		*forgerAccount,
-		cfg.Coordinator.EthClient.Keystore.Password,
+		keystorePassword,
 	); err != nil {
 		return nil, common.Wrap(err)
 	}
 	log.Infow("Forger ethereum account unlocked in the keystore",
-		"addr", cfg.Coordinator.ForgerAddress)
+		"addr", forgerAddress)
 	client, err := eth.NewClient(ethClient, forgerAccount, keyStore, &eth.ClientConfig{
 		Ethereum: ethCfg,
 		Rollup: eth.RollupConfig{
@@ -267,9 +280,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 
 	// TODO: rename node configs or remove unnecessary configs if not needed
 	hdbNodeCfg := historydb.NodeConfig{
-		MaxPoolTxs: cfg.Coordinator.L2DB.MaxTxs,
-		MinFeeUSD:  cfg.Coordinator.L2DB.MinFeeUSD,
-		MaxFeeUSD:  cfg.Coordinator.L2DB.MaxFeeUSD,
 		ForgeDelay: cfg.Coordinator.ForgeDelay.Duration.Seconds(),
 	}
 	if err := historyDB.SetNodeConfig(&hdbNodeCfg); err != nil {
@@ -286,7 +296,9 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		return nil, common.Wrap(err)
 	}
 	var etherScanService *etherscan.Service
-	if cfg.Coordinator.Etherscan.URL != "" && cfg.Coordinator.Etherscan.APIKey != "" {
+	etherscanUrl := os.Getenv("ETHERSCAN_URL")
+	etherscanAPIKey := os.Getenv("ETHERSCAN_API_KEY")
+	if etherscanUrl != "" && etherscanAPIKey != "" {
 		log.Info("EtherScan method detected in cofiguration file")
 		etherScanService, _ = etherscan.NewEtherscanService(cfg.Coordinator.Etherscan.URL,
 			cfg.Coordinator.Etherscan.APIKey)
@@ -299,7 +311,6 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		&hdbNodeCfg,
 		initSCVars,
 		&hdbConsts,
-		&cfg.RecommendedFeePolicy,
 		cfg.Coordinator.Circuit.MaxTx,
 	)
 	if err != nil {
@@ -319,7 +330,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	// 	Address: cfg.Coordinator.FeeAccount.Address,
 	// }
 	// if err := keyStore.Unlock(feeAccount,
-	// 	cfg.Coordinator.EthClient.Keystore.Password); err != nil {
+	// 	keystorePassword); err != nil {
 	// 	return nil, common.Wrap(err)
 	// }
 	// //Swap bjj endianness
@@ -386,7 +397,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 
 	coord, err = coordinator.NewCoordinator(
 		coordinator.Config{
-			ForgerAddress:           cfg.Coordinator.ForgerAddress,
+			ForgerAddress:           forgerAddress,
 			ConfirmBlocks:           cfg.Coordinator.ConfirmBlocks,
 			L1BatchTimeoutPerc:      cfg.Coordinator.L1BatchTimeoutPerc,
 			ForgeRetryInterval:      cfg.Coordinator.ForgeRetryInterval.Duration,
@@ -447,11 +458,11 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	// 				log.Warn("error getting registered addresses from the SMC or no addresses registered. error:", err.Error())
 	// 			}
 	// 			// Get Ethereum private key of the coordinator
-	// 			keyJSON, err := keyStore.Export(*account, cfg.Coordinator.EthClient.Keystore.Password, cfg.Coordinator.EthClient.Keystore.Password)
+	// 			keyJSON, err := keyStore.Export(*account, keystorePassword, keystorePassword)
 	// 			if err != nil {
 	// 				return nil, common.Wrap(err)
 	// 			}
-	// 			key, err := keystore.DecryptKey(keyJSON, cfg.Coordinator.EthClient.Keystore.Password)
+	// 			key, err := keystore.DecryptKey(keyJSON, keystorePassword)
 	// 			if err != nil {
 	// 				return nil, common.Wrap(err)
 	// 			}
@@ -470,7 +481,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	// 		HistoryDB:                historyDB,
 	// 		StateDB:                  stateDB,
 	// 		EthClient:                ethClient,
-	// 		ForgerAddress:            &cfg.Coordinator.ForgerAddress,
+	// 		ForgerAddress:            &forgerAddress,
 	// 		CoordinatorNetworkConfig: coordnetConfig,
 	// 	}, cfg.API.CoordinatorNetwork, cfg.API.FindPeersCoordinatorNetworkInterval.Duration)
 	// 	if err != nil {

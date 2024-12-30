@@ -3,7 +3,7 @@
   "name": "syb_main_ruleset",
   "target": "branch",
   "source_type": "Repository",
-  "source": "tokamak-network/tokamak-sybil-resistance",
+  "source": "tokamak-network/tokamak-sybil-resistance-mvp",
   "enforcement": "active",
   "conditions": {
     "ref_name": {

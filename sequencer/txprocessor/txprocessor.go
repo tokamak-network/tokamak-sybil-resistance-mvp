@@ -214,12 +214,18 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 
 	if txProcessor.state.Type() == statedb.TypeBatchBuilder {
 		currentBatchValueNum := uint32(uint32(txProcessor.state.CurrentBatch()) + 1)
-		txProcessor.zki = common.NewZKInputs(txProcessor.config.ChainID, txProcessor.config.MaxTx, txProcessor.config.MaxL1Tx,
-			txProcessor.config.NLevels, &currentBatchValueNum)
+		txProcessor.zki = common.NewZKInputs(
+			txProcessor.config.ChainID,
+			txProcessor.config.MaxTx,
+			txProcessor.config.MaxL1Tx,
+			txProcessor.config.NLevels,
+			&currentBatchValueNum,
+		)
 		//For Accounts
 		oldLastIdxValue := uint32(txProcessor.state.CurrentAccountIdx())
 		txProcessor.zki.OldLastIdx = &(oldLastIdxValue)
 		txProcessor.zki.OldAccountRoot = txProcessor.state.GetMTRootAccount()
+		txProcessor.zki.NewLastIdxRaw = uint32(txProcessor.state.CurrentAccountIdx())
 
 		//For Vouches
 		txProcessor.zki.OldVouchRoot = txProcessor.state.GetMTRootVouch()
@@ -379,6 +385,32 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 		}
 	}
 
+	// if txProcessor.zki != nil {
+	// 	// Fill the empty slots in the ZKInputs remaining after
+	// 	// processing all L1 & L2 txs
+	// 	txCompressedDataEmpty := common.TxCompressedDataEmpty(txProcessor.config.ChainID)
+	// 	last := txProcessor.txIndex - 1
+	// 	if txProcessor.txIndex == 0 {
+	// 		last = 0
+	// 	}
+	// 	for i := last; i < int(txProcessor.config.MaxTx); i++ {
+	// 		if i < int(txProcessor.config.MaxTx)-1 {
+	// 			txProcessor.zki.ISOutIdx[i] = txProcessor.state.CurrentAccountIdx().BigInt()
+	// 			txProcessor.zki.ISStateRoot[i] = txProcessor.state.AccountTree.Root().BigInt()
+	// 			txProcessor.zki.ISAccFeeOut[i] = formatAccumulatedFees(collectedFees,
+	// 				txProcessor.zki.FeePlanTokens, coordIdxs)
+	// 			txProcessor.zki.ISExitRoot[i] = exitTree.Root().BigInt()
+	// 		}
+	// 		if i >= txProcessor.txIndex {
+	// 			txProcessor.zki.TxCompressedData[i] = txCompressedDataEmpty
+	// 		}
+	// 	}
+	// 	isFinalAccFee := formatAccumulatedFees(collectedFees, txProcessor.zki.FeePlanTokens, coordIdxs)
+	// 	copy(txProcessor.zki.ISFinalAccFee, isFinalAccFee)
+	// 	// before computing the Fees txs, set the ISInitStateRootFee
+	// 	txProcessor.zki.ISInitStateRootFee = txProcessor.state.AccountTree.Root().BigInt()
+	// }
+
 	if txProcessor.state.Type() == statedb.TypeTxSelector {
 		return nil, nil
 	}
@@ -429,6 +461,10 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 	// // compute last ZKInputs parameters
 	valueGlobalChain := uint16(txProcessor.config.ChainID)
 	txProcessor.zki.GlobalChainID = &(valueGlobalChain)
+	txProcessor.zki.NewAccountRootRaw = txProcessor.state.AccountTree.Root()
+	txProcessor.zki.NewVouchRootRaw = txProcessor.state.VouchTree.Root()
+	txProcessor.zki.NewScoreRootRaw = txProcessor.state.ScoreTree.Root()
+	txProcessor.zki.NewExitRootRaw = exitTree.Root()
 
 	// return ZKInputs as the BatchBuilder will return it to forge the Batch
 	return &ProcessTxOutput{

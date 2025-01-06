@@ -118,6 +118,7 @@ type Config struct {
 	StatsUpdateBlockNumDiffThreshold uint16
 	StatsUpdateFrequencyDivider      uint16
 	ChainID                          uint64
+	StartBlockNum                    int64
 }
 
 // Synchronizer implements the Synchronizer type
@@ -151,11 +152,7 @@ func NewSynchronizer(
 		Rollup: *rollupConstants,
 	}
 
-	initVars, startBlockNum, err := getInitialVariables(ethClient /*&consts*/)
-	if err != nil {
-		return nil, common.Wrap(err)
-	}
-
+	startBlockNum := cfg.StartBlockNum
 	stats := NewStatsHolder(startBlockNum, cfg.StatsUpdateBlockNumDiffThreshold, cfg.StatsUpdateFrequencyDivider)
 	s := &Synchronizer{
 		EthClient:     ethClient,
@@ -163,7 +160,6 @@ func NewSynchronizer(
 		historyDB:     historyDB,
 		stateDB:       stateDB,
 		cfg:           cfg,
-		initVars:      *initVars,
 		startBlockNum: startBlockNum,
 		stats:         stats,
 	}
@@ -245,6 +241,7 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		// Get lastSavedBlock from History DB
 		lastSavedBlock, err = s.historyDB.GetLastBlock()
 		if err != nil && common.Unwrap(err) != sql.ErrNoRows {
+			log.Errorw("Sync GetLastBlock", "err", err)
 			return nil, nil, common.Wrap(err)
 		}
 		// If we don't have any stored block, we must do a full sync
@@ -437,19 +434,6 @@ func (s *Synchronizer) reorg(uncleBlock *common.Block) (int64, error) {
 	s.resetStateFailed = false
 
 	return block.Num, nil
-}
-
-func getInitialVariables(ethClient eth.ClientInterface,
-
-/*consts *common.SCConsts*/) (*common.SCVariables, int64, error) {
-	rollupInit, rollupInitBlock, err := ethClient.RollupEventInit(77877) //TODO: Check this with hermuz code
-	if err != nil {
-		return nil, 0, common.Wrap(fmt.Errorf("RollupEventInit: %w", err))
-	}
-	rollupVars := rollupInit.RollupVariables()
-	return &common.SCVariables{
-		Rollup: *rollupVars,
-	}, rollupInitBlock, nil
 }
 
 func (s *Synchronizer) init() error {

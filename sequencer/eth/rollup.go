@@ -226,7 +226,6 @@ type RollupInterface interface {
 	RollupConstants() (*common.RollupConstants, error)
 	RollupEventsByBlock(blockNum int64, blockHash *ethCommon.Hash) (*RollupEvents, error)
 	RollupForgeBatchArgs(ethCommon.Hash, uint16) (*RollupForgeBatchArgs, *ethCommon.Address, error)
-	RollupEventInit(genesisBlockNum int64) (*RollupEventInitialize, int64, error)
 }
 
 //
@@ -252,36 +251,6 @@ func (ei *RollupEventInitialize) RollupVariables() *common.RollupVariables {
 		Buckets:             []common.BucketParams{},
 		SafeMode:            false,
 	}
-}
-
-// RollupEventInit returns the initialize event with its corresponding block number
-func (c *RollupClient) RollupEventInit(genesisBlockNum int64) (*RollupEventInitialize, int64, error) {
-	query := ethereum.FilterQuery{
-		Addresses: []ethCommon.Address{
-			c.address,
-		},
-		FromBlock: big.NewInt(max(0, genesisBlockNum-blocksPerDay)),
-		ToBlock:   big.NewInt(genesisBlockNum),
-		Topics:    [][]ethCommon.Hash{{logSYBInitialize}},
-	}
-	logs, err := c.client.client.FilterLogs(context.Background(), query)
-	if err != nil {
-		return nil, 0, common.Wrap(err)
-	}
-	if len(logs) != 1 {
-		return nil, 0, common.Wrap(fmt.Errorf("no event of type InitializeSYBEvent found"))
-	}
-	vLog := logs[0]
-	if vLog.Topics[0] != logSYBInitialize {
-		return nil, 0, common.Wrap(fmt.Errorf("event is not InitializeSYBEvent"))
-	}
-
-	var rollupInit RollupEventInitialize
-	if err := c.contractAbi.UnpackIntoInterface(&rollupInit, "Initialize",
-		vLog.Data); err != nil {
-		return nil, 0, common.Wrap(err)
-	}
-	return &rollupInit, int64(vLog.BlockNumber), common.Wrap(err)
 }
 
 // NewRollupClient creates a new RollupClient
@@ -318,30 +287,10 @@ func NewRollupClient(client *EthereumClient, address ethCommon.Address) (*Rollup
 func (c *RollupClient) RollupConstants() (rollupConstants *common.RollupConstants, err error) {
 	rollupConstants = new(common.RollupConstants)
 	if err := c.client.Call(func(ec *ethclient.Client) error {
-		absoluteMaxL1BatchTimeout, err := c.sybil.ABSOLUTEMAXBATCHTIMEOUT(c.opts)
-		if err != nil {
-			return common.Wrap(err)
-		}
-		rollupConstants.AbsoluteMaxL1BatchTimeout = int64(absoluteMaxL1BatchTimeout)
-		// rollupConstants.TokenHEZ, err = c.tokamak.TokenHEZ(c.opts)
-		// if err != nil {
-		// 	return common.Wrap(err)
-		// }
 		rollupVerifier, err := c.sybil.RollupVerifier(c.opts)
 		if err != nil {
 			return common.Wrap(err)
 		}
-		// for i := int64(0); i < rollupVerifiers.MaxTxs.Int64(); i++ {
-		// 	var newRollupVerifier common.RollupVerifierStruct
-		// 	rollupVerifier, err := c.sybil.RollupVerifiers(c.opts, big.NewInt(i))
-		// 	if err != nil {
-		// 		return common.Wrap(err)
-		// 	}
-		// 	newRollupVerifier.MaxTx = rollupVerifier.MaxTxs.Int64()
-		// 	newRollupVerifier.NLevels = rollupVerifier.NLevels.Int64()
-		// 	rollupConstants.Verifiers = append(rollupConstants.Verifiers,
-		// 		newRollupVerifier)
-		// }
 		var newRollupVerifier common.RollupVerifierStruct
 		newRollupVerifier.MaxTx = rollupVerifier.MaxTx.Int64()
 		newRollupVerifier.NLevels = rollupVerifier.NLevel.Int64()
@@ -381,8 +330,6 @@ var (
 	// 	"UpdateBucketsParameters(uint256[])"))
 	logSYBSafeMode = crypto.Keccak256Hash([]byte(
 		"SafeMode()"))
-	logSYBInitialize = crypto.Keccak256Hash([]byte(
-		"Initialize(uint8)"))
 )
 
 // RollupEventsByBlock returns the events in a block that happened in the

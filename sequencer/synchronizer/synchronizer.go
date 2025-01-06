@@ -50,10 +50,6 @@ type Stats struct {
 		// l1Batch was forged
 		LastL1BatchBlock  int64
 		LastForgeL1TxsNum int64
-		Auction           struct {
-			CurrentSlot common.Slot
-			NextSlot    common.Slot
-		}
 	}
 }
 
@@ -697,8 +693,7 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 		}
 		tp := txprocessor.NewTxProcessor(s.stateDB, tpc)
 
-		// ProcessTxs updates poolL2Txs adding: Nonce (and also TokenID, but we don't use it).
-		processTxsOut, err := tp.ProcessTxs(l1UserTxs /*, poolL2Txs*/)
+		processTxsOut, err := tp.ProcessTxs(l1UserTxs)
 		if err != nil {
 			return nil, common.Wrap(err)
 		}
@@ -841,8 +836,8 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 
 	varsUpdate := false
 
-	for _, evt := range rollupEvents.UpdateForgeL1L2BatchTimeout {
-		s.vars.Rollup.ForgeL1L2BatchTimeout = evt.NewForgeL1L2BatchTimeout
+	for _, evt := range rollupEvents.UpdateForgeL1BatchTimeout {
+		s.vars.Rollup.ForgeL1BatchTimeout = evt.NewForgeL1BatchTimeout
 		varsUpdate = true
 	}
 

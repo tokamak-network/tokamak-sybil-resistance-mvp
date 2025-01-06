@@ -305,9 +305,6 @@ func (p *parser) parseLine(setType setType) (*Instruction, error) {
 		switch lit {
 		case "Deposit":
 			c.Typ = common.TxTypeDeposit
-		case "Exit":
-			c.Typ = common.TxTypeExit
-			// fee = true
 		case "CreateVouch":
 			c.Typ = common.TxTypeCreateVouch
 			vouch = true
@@ -329,8 +326,6 @@ func (p *parser) parseLine(setType setType) (*Instruction, error) {
 		case "PoolDeleteVouch":
 			c.Typ = common.TxTypeDeleteVouch
 			vouch = true
-		case "PoolExit":
-			c.Typ = common.TxTypeExit
 		default:
 			return c, common.Wrap(fmt.Errorf("unexpected PoolL2 tx type: %s", lit))
 		}

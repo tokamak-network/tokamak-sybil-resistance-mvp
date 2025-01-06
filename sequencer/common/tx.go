@@ -72,9 +72,6 @@ func (txid *TxID) UnmarshalText(data []byte) error {
 type TxType string
 
 const (
-	// TxTypeExit represents L2->L1 token transfer.  A leaf for this account appears in the exit
-	// tree of the block
-	TxTypeExit TxType = "Exit"
 	// TxTypeDeposit represents L1->L2 transfer
 	TxTypeDeposit TxType = "Deposit"
 	// TxTypeCreateAccountDeposit represents creation of a new leaf in the state tree
@@ -88,8 +85,7 @@ const (
 	TxTypeDeleteVouch TxType = "DeleteVouch"
 )
 
-// Tx is a struct used by the TxSelector & BatchBuilder as a generic type generated from L1Tx &
-// PoolL2Tx
+// Tx is a struct used by the TxSelector & BatchBuilder as a generic type generated from L1Tx
 type Tx struct {
 	// Generic
 	IsL1        bool       `meddler:"is_l1"`
@@ -102,7 +98,7 @@ type Tx struct {
 	AmountFloat float64    `meddler:"amount_f"`
 	// TokenID     TokenID    `meddler:"token_id"`
 	// USD         *float64   `meddler:"amount_usd"`
-	// BatchNum in which this tx was forged. If the tx is L2, this must be != 0
+	// BatchNum in which this tx was forged.
 	BatchNum *BatchNum `meddler:"batch_num"`
 	// Ethereum Block Number in which this L1Tx was added to the queue
 	EthBlockNum int64 `meddler:"eth_block_num"`
@@ -118,7 +114,7 @@ type Tx struct {
 	DepositAmount      *big.Int              `meddler:"deposit_amount,bigintnull"`
 	DepositAmountFloat *float64              `meddler:"deposit_amount_f"`
 	DepositAmountUSD   *float64              `meddler:"deposit_amount_usd"`
-	Nonce  *Nonce       `meddler:"nonce"`
+	Nonce              *Nonce                `meddler:"nonce"`
 }
 
 const (
@@ -131,11 +127,6 @@ const (
 	// for a L1CoordinatorTx
 	//nolinter:gomnd
 	TxIDPrefixL1CoordTx = byte(1)
-
-	// TxIDPrefixL2Tx is the prefix that determines that the TxID is for a
-	// L2Tx (or PoolL2Tx)
-	//nolinter:gomnd
-	TxIDPrefixL2Tx = byte(2)
 
 	// TxIDLen is the length of the TxID byte array
 	TxIDLen = 33

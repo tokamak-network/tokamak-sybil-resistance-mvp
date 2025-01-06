@@ -23,6 +23,5 @@ type CoordinatorNetwork struct {
 	dht                 *dht.IpfsDHT
 	ctx                 context.Context
 	discovery           *discovery.RoutingDiscovery
-	txsPool             pubSubTxsPool
 	discoveryServiceTag string
 }

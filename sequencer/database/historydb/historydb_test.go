@@ -456,7 +456,6 @@ func TestTxs(t *testing.T) {
 	// Check saved txID's batch_num is not nil
 	assert.NotEqual(t, null, dbL1Txs[len(dbL1Txs)-4].BatchNum)
 
-
 	// // Tx Type
 	// assert.Equal(t, common.TxTypeCreateVouch, dbL2Txs[0].Type)
 	// assert.Equal(t, common.TxTypeCreateVouch, dbL2Txs[1].Type)
@@ -582,7 +581,7 @@ func exampleInitSCVars() *common.RollupVariables { // *common.AuctionVariables,
 	rollup := &common.RollupVariables{
 		EthBlockNum: 0,
 		// FeeAddToken:           big.NewInt(10),
-		ForgeL1L2BatchTimeout: 12,
+		ForgeL1BatchTimeout: 12,
 		// WithdrawalDelay:       13,
 		Buckets:  []common.BucketParams{},
 		SafeMode: false,

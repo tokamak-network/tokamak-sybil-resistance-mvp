@@ -11,7 +11,6 @@ type rollupConstants struct {
 	ReservedIdx             int      `json:"reservedIdx"`
 	ExitIdx                 int      `json:"exitIdx"`
 	LimitDepositAmount      *big.Int `json:"limitDepositAmount"`
-	LimitL2TransferAmount   *big.Int `json:"limitL2TransferAmount"`
 	LimitTokens             int      `json:"limitTokens"`
 	L1CoordinatorTotalBytes int      `json:"l1CoordinatorTotalBytes"`
 	L1UserTotalBytes        int      `json:"l1UserTotalBytes"`
@@ -35,7 +34,6 @@ func newRollupConstants(publicConstants common.RollupConstants) *rollupConstants
 		ReservedIdx:             common.RollupConstReservedIDx,
 		ExitIdx:                 common.RollupConstExitIDx,
 		LimitDepositAmount:      common.RollupConstLimitDepositAmount,
-		LimitL2TransferAmount:   common.RollupConstLimitL2TransferAmount,
 		LimitTokens:             common.RollupConstLimitTokens,
 		L1CoordinatorTotalBytes: common.RollupConstL1CoordinatorTotalBytes,
 		L1UserTotalBytes:        common.RollupConstL1UserTotalBytes,

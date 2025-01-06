@@ -415,17 +415,17 @@ func (c *RollupClient) RollupEventsByBlock(blockNum int64,
 			forgeBatch.GasUsed = txReceipt.GasUsed
 			rollupEvents.ForgeBatch = append(rollupEvents.ForgeBatch, forgeBatch)
 		case logSYBUpdateForgeL1L2BatchTimeout:
-			var updateForgeL1BatchTimeout struct {
-				NewForgeL1BatchTimeout uint8
+			var updateForgeL1L2BatchTimeout struct {
+				NewForgeL1L2BatchTimeout uint8
 			}
-			err := c.contractAbi.UnpackIntoInterface(&updateForgeL1BatchTimeout,
-				"UpdateForgeL1BatchTimeout", vLog.Data)
+			err := c.contractAbi.UnpackIntoInterface(&updateForgeL1L2BatchTimeout,
+				"UpdateForgeL1L2BatchTimeout", vLog.Data)
 			if err != nil {
 				return nil, common.Wrap(err)
 			}
 			rollupEvents.UpdateForgeL1L2BatchTimeout = append(rollupEvents.UpdateForgeL1L2BatchTimeout,
 				RollupEventUpdateForgeL1L2BatchTimeout{
-					NewForgeL1L2BatchTimeout: int64(updateForgeL1BatchTimeout.NewForgeL1BatchTimeout),
+					NewForgeL1L2BatchTimeout: int64(updateForgeL1L2BatchTimeout.NewForgeL1L2BatchTimeout),
 				})
 		case logSYBWithdrawEvent:
 			var withdraw RollupEventWithdraw

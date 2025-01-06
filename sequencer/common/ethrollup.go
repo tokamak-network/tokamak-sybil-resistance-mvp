@@ -75,10 +75,10 @@ type BucketUpdate struct {
 
 // RollupVariables are the variables of the Rollup Smart Contract
 type RollupVariables struct {
-	EthBlockNum         int64          `meddler:"eth_block_num"`
-	ForgeL1BatchTimeout int64          `meddler:"forge_l1_timeout" validate:"required"`
-	Buckets             []BucketParams `meddler:"buckets,json"`
-	SafeMode            bool           `meddler:"safe_mode"`
+	EthBlockNum           int64          `meddler:"eth_block_num"`
+	ForgeL1L2BatchTimeout int64          `meddler:"forge_l1_timeout" validate:"required"`
+	Buckets               []BucketParams `meddler:"buckets,json"`
+	SafeMode              bool           `meddler:"safe_mode"`
 }
 
 // RollupVerifierStruct is the information about verifiers of the Rollup Smart Contract

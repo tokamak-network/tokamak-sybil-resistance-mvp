@@ -303,7 +303,7 @@ func (t *TxManager) mustL1Batch(blockNum int64) bool {
 	if t.stats.Sync.LastL1BatchBlock > lastL1BatchBlockNum {
 		lastL1BatchBlockNum = t.stats.Sync.LastL1BatchBlock
 	}
-	return blockNum-lastL1BatchBlockNum >= t.vars.Rollup.ForgeL1BatchTimeout-1
+	return blockNum-lastL1BatchBlockNum >= t.vars.Rollup.ForgeL1L2BatchTimeout-1
 }
 
 func (t *TxManager) shouldSendRollupForgeBatch(batchInfo *BatchInfo) error {

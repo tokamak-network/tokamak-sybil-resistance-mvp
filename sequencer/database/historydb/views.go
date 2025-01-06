@@ -141,7 +141,7 @@ func NewRollupVariablesAPI(rollupVariables *common.RollupVariables) *RollupVaria
 	rollupVars := RollupVariablesAPI{
 		EthBlockNum: rollupVariables.EthBlockNum,
 		// FeeAddToken:           apitypes.NewBigIntStr(rollupVariables.FeeAddToken),
-		ForgeL1BatchTimeout: rollupVariables.ForgeL1BatchTimeout,
+		ForgeL1BatchTimeout: rollupVariables.ForgeL1L2BatchTimeout,
 		// WithdrawalDelay:       rollupVariables.WithdrawalDelay,
 		SafeMode: rollupVariables.SafeMode,
 		Buckets:  buckets,

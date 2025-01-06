@@ -581,7 +581,7 @@ func exampleInitSCVars() *common.RollupVariables { // *common.AuctionVariables,
 	rollup := &common.RollupVariables{
 		EthBlockNum: 0,
 		// FeeAddToken:           big.NewInt(10),
-		ForgeL1BatchTimeout: 12,
+		ForgeL1L2BatchTimeout: 12,
 		// WithdrawalDelay:       13,
 		Buckets:  []common.BucketParams{},
 		SafeMode: false,

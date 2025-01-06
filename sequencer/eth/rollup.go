@@ -41,7 +41,7 @@ type RollupState struct {
 	// ExitNullifierMap       map[[256 / 8]byte]bool
 	ExitNullifierMap       map[int64]map[int64]bool // batchNum -> idx -> bool
 	MapL1TxQueue           map[int64]*QueueStruct
-	LastL1Batch            int64
+	LastL1L2Batch          int64
 	CurrentToForgeL1TxsNum int64
 	LastToForgeL1TxsNum    int64
 	CurrentIdx             int64
@@ -50,9 +50,9 @@ type RollupState struct {
 // RollupEventInitialize is the InitializeHermezEvent event of the
 // Smart Contract
 type RollupEventInitialize struct {
-	ForgeL1BatchTimeout uint8
-	FeeAddToken         *big.Int
-	WithdrawalDelay     uint64
+	ForgeL1L2BatchTimeout uint8
+	FeeAddToken           *big.Int
+	WithdrawalDelay       uint64
 }
 
 // RollupEventL1UserTx is an event of the Rollup Smart Contract
@@ -79,9 +79,9 @@ type RollupEventForgeBatch struct {
 	GasPrice     *big.Int
 }
 
-// RollupEventUpdateForgeL1BatchTimeout is an event of the Rollup Smart Contract
-type RollupEventUpdateForgeL1BatchTimeout struct {
-	NewForgeL1BatchTimeout int64
+// RollupEventUpdateForgeL1L2BatchTimeout is an event of the Rollup Smart Contract
+type RollupEventUpdateForgeL1L2BatchTimeout struct {
+	NewForgeL1L2BatchTimeout int64
 }
 
 // RollupEventUpdateFeeAddToken is an event of the Rollup Smart Contract
@@ -146,26 +146,26 @@ type RollupEventSafeMode struct{}
 
 // RollupEvents is the list of events in a block of the Rollup Smart Contract
 type RollupEvents struct {
-	L1UserTx                  []RollupEventL1UserTx
-	ForgeBatch                []RollupEventForgeBatch
-	UpdateForgeL1BatchTimeout []RollupEventUpdateForgeL1BatchTimeout
-	UpdateFeeAddToken         []RollupEventUpdateFeeAddToken
-	Withdraw                  []RollupEventWithdraw
-	UpdateWithdrawalDelay     []RollupEventUpdateWithdrawalDelay
-	UpdateBucketWithdraw      []RollupEventUpdateBucketWithdraw
-	UpdateBucketsParameters   []RollupEventUpdateBucketsParameters
-	UpdateTokenExchange       []RollupEventUpdateTokenExchange
-	SafeMode                  []RollupEventSafeMode
+	L1UserTx                    []RollupEventL1UserTx
+	ForgeBatch                  []RollupEventForgeBatch
+	UpdateForgeL1L2BatchTimeout []RollupEventUpdateForgeL1L2BatchTimeout
+	UpdateFeeAddToken           []RollupEventUpdateFeeAddToken
+	Withdraw                    []RollupEventWithdraw
+	UpdateWithdrawalDelay       []RollupEventUpdateWithdrawalDelay
+	UpdateBucketWithdraw        []RollupEventUpdateBucketWithdraw
+	UpdateBucketsParameters     []RollupEventUpdateBucketsParameters
+	UpdateTokenExchange         []RollupEventUpdateTokenExchange
+	SafeMode                    []RollupEventSafeMode
 }
 
 // NewRollupEvents creates an empty RollupEvents with the slices initialized.
 func NewRollupEvents() RollupEvents {
 	return RollupEvents{
-		L1UserTx:                  make([]RollupEventL1UserTx, 0),
-		ForgeBatch:                make([]RollupEventForgeBatch, 0),
-		UpdateForgeL1BatchTimeout: make([]RollupEventUpdateForgeL1BatchTimeout, 0),
-		UpdateFeeAddToken:         make([]RollupEventUpdateFeeAddToken, 0),
-		Withdraw:                  make([]RollupEventWithdraw, 0),
+		L1UserTx:                    make([]RollupEventL1UserTx, 0),
+		ForgeBatch:                  make([]RollupEventForgeBatch, 0),
+		UpdateForgeL1L2BatchTimeout: make([]RollupEventUpdateForgeL1L2BatchTimeout, 0),
+		UpdateFeeAddToken:           make([]RollupEventUpdateFeeAddToken, 0),
+		Withdraw:                    make([]RollupEventWithdraw, 0),
 	}
 }
 
@@ -195,7 +195,7 @@ type rollupForgeBatchArgsAux struct {
 	NewScoreRoot           *big.Int
 	NewExitRoot            *big.Int
 	EncodedL1CoordinatorTx []byte
-	L1TxsData              []byte
+	L1L2TxsData            []byte
 	FeeIdxCoordinator      []byte
 	// Circuit selector
 	VerifierIdx uint8
@@ -246,10 +246,10 @@ type RollupClient struct {
 // RollupVariables returns the RollupVariables from the initialize event
 func (ei *RollupEventInitialize) RollupVariables() *common.RollupVariables {
 	return &common.RollupVariables{
-		EthBlockNum:         0,
-		ForgeL1BatchTimeout: int64(ei.ForgeL1BatchTimeout),
-		Buckets:             []common.BucketParams{},
-		SafeMode:            false,
+		EthBlockNum:           0,
+		ForgeL1L2BatchTimeout: int64(ei.ForgeL1L2BatchTimeout),
+		Buckets:               []common.BucketParams{},
+		SafeMode:              false,
 	}
 }
 
@@ -320,8 +320,8 @@ var (
 		"L1UserTxEvent(uint32,uint8,bytes)"))
 	logSYBForgeBatch = crypto.Keccak256Hash([]byte(
 		"ForgeBatch(uint32,uint16)"))
-	logSYBUpdateForgeL1BatchTimeout = crypto.Keccak256Hash([]byte(
-		"UpdateForgeL1BatchTimeout(uint8)"))
+	logSYBUpdateForgeL1L2BatchTimeout = crypto.Keccak256Hash([]byte(
+		"UpdateForgeL1L2BatchTimeout(uint8)"))
 	logSYBWithdrawEvent = crypto.Keccak256Hash([]byte(
 		"WithdrawEvent(uint48,uint32,bool)"))
 	logSYBUpdateBucketWithdraw = crypto.Keccak256Hash([]byte(
@@ -414,7 +414,7 @@ func (c *RollupClient) RollupEventsByBlock(blockNum int64,
 			}
 			forgeBatch.GasUsed = txReceipt.GasUsed
 			rollupEvents.ForgeBatch = append(rollupEvents.ForgeBatch, forgeBatch)
-		case logSYBUpdateForgeL1BatchTimeout:
+		case logSYBUpdateForgeL1L2BatchTimeout:
 			var updateForgeL1BatchTimeout struct {
 				NewForgeL1BatchTimeout uint8
 			}
@@ -423,9 +423,9 @@ func (c *RollupClient) RollupEventsByBlock(blockNum int64,
 			if err != nil {
 				return nil, common.Wrap(err)
 			}
-			rollupEvents.UpdateForgeL1BatchTimeout = append(rollupEvents.UpdateForgeL1BatchTimeout,
-				RollupEventUpdateForgeL1BatchTimeout{
-					NewForgeL1BatchTimeout: int64(updateForgeL1BatchTimeout.NewForgeL1BatchTimeout),
+			rollupEvents.UpdateForgeL1L2BatchTimeout = append(rollupEvents.UpdateForgeL1L2BatchTimeout,
+				RollupEventUpdateForgeL1L2BatchTimeout{
+					NewForgeL1L2BatchTimeout: int64(updateForgeL1BatchTimeout.NewForgeL1BatchTimeout),
 				})
 		case logSYBWithdrawEvent:
 			var withdraw RollupEventWithdraw
@@ -588,7 +588,7 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 	numTxsL1Coord := len(aux.EncodedL1CoordinatorTx) / common.RollupConstL1CoordinatorTotalBytes
 	l1UserTxsData := []byte{}
 	if l1UserTxsLen > 0 {
-		l1UserTxsData = aux.L1TxsData[:numBytesL1TxUser]
+		l1UserTxsData = aux.L1L2TxsData[:numBytesL1TxUser]
 	}
 	for i := 0; i < int(l1UserTxsLen); i++ {
 		l1Tx, err :=

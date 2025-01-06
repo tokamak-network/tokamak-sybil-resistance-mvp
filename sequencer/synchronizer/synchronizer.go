@@ -820,8 +820,8 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 
 	varsUpdate := false
 
-	for _, evt := range rollupEvents.UpdateForgeL1BatchTimeout {
-		s.vars.Rollup.ForgeL1BatchTimeout = evt.NewForgeL1BatchTimeout
+	for _, evt := range rollupEvents.UpdateForgeL1L2BatchTimeout {
+		s.vars.Rollup.ForgeL1L2BatchTimeout = evt.NewForgeL1L2BatchTimeout
 		varsUpdate = true
 	}
 

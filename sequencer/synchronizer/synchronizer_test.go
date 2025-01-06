@@ -485,8 +485,8 @@ func TestSyncGeneral(t *testing.T) {
 	// Update variables manually
 	rollupVars, err := s.historyDB.GetSCVars()
 	require.NoError(t, err)
-	rollupVars.ForgeL1BatchTimeout = 42
-	_, err = client.RollupUpdateForgeL1BatchTimeout(rollupVars.ForgeL1BatchTimeout)
+	rollupVars.ForgeL1L2BatchTimeout = 42
+	_, err = client.RollupUpdateForgeL1BatchTimeout(rollupVars.ForgeL1L2BatchTimeout)
 	require.NoError(t, err)
 
 	client.CtlMineBlock()

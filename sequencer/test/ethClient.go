@@ -122,8 +122,8 @@ func NewClientSetupExample() *ClientSetup {
 		TokamakGovernanceAddress: governanceAddress,
 	}
 	rollupVariables := &common.RollupVariables{
-		ForgeL1BatchTimeout: 10,
-		Buckets:             []common.BucketParams{},
+		ForgeL1L2BatchTimeout: 10,
+		Buckets:               []common.BucketParams{},
 	}
 	return &ClientSetup{
 		RollupConstants: rollupConstants,
@@ -191,7 +191,7 @@ func NewClient(l bool, timer Timer, addr *ethCommon.Address, setup *ClientSetup)
 				ExitRoots:              make([]*big.Int, 1),
 				ExitNullifierMap:       make(map[int64]map[int64]bool),
 				MapL1TxQueue:           mapL1TxQueue,
-				LastL1Batch:            0,
+				LastL1L2Batch:          0,
 				CurrentToForgeL1TxsNum: 0,
 				LastToForgeL1TxsNum:    1,
 				CurrentIdx:             0,
@@ -764,9 +764,9 @@ func (c *Client) RollupUpdateForgeL1BatchTimeout(newForgeL1Timeout int64) (tx *t
 
 	nextBlock := c.nextBlock()
 	r := nextBlock.Rollup
-	r.Vars.ForgeL1BatchTimeout = newForgeL1Timeout
-	r.Events.UpdateForgeL1BatchTimeout = append(r.Events.UpdateForgeL1BatchTimeout,
-		eth.RollupEventUpdateForgeL1BatchTimeout{NewForgeL1BatchTimeout: newForgeL1Timeout})
+	r.Vars.ForgeL1L2BatchTimeout = newForgeL1Timeout
+	r.Events.UpdateForgeL1L2BatchTimeout = append(r.Events.UpdateForgeL1L2BatchTimeout,
+		eth.RollupEventUpdateForgeL1L2BatchTimeout{NewForgeL1L2BatchTimeout: newForgeL1Timeout})
 
 	return r.addTransaction(c.newTransaction("updateForgeL1L2BatchTimeout", newForgeL1Timeout)), nil
 }
@@ -815,7 +815,7 @@ func (c *Client) RollupEventsByBlock(blockNum int64,
 func (c *Client) RollupEventInit(genesisBlockNum int64) (*eth.RollupEventInitialize, int64, error) {
 	vars := c.blocks[0].Rollup.Vars
 	return &eth.RollupEventInitialize{
-		ForgeL1BatchTimeout: uint8(vars.ForgeL1BatchTimeout),
+		ForgeL1L2BatchTimeout: uint8(vars.ForgeL1L2BatchTimeout),
 	}, 1, nil
 }
 

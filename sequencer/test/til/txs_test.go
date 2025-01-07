@@ -144,60 +144,6 @@ func (tc *Context) checkL1TxParams(t *testing.T, tx common.L1Tx, typ common.TxTy
 	}
 }
 
-// func (tc *Context) checkL2TxParams(t *testing.T, tx common.L2Tx, typ common.TxType,
-// 	from, to string, amount *big.Int, batchNum common.BatchNum) {
-// 	assert.Equal(t, typ, tx.Type)
-// 	assert.Equal(t, tc.Accounts[from].Idx, tx.FromIdx)
-// 	if tx.Type != common.TxTypeExit {
-// 		assert.Equal(t, tc.Accounts[to].Idx, tx.ToIdx)
-// 	}
-// 	if amount != nil {
-// 		assert.Equal(t, amount, tx.Amount)
-// 	}
-// 	assert.Equal(t, batchNum, tx.BatchNum)
-// }
-
-// func TestGeneratePoolL2Txs(t *testing.T) {
-// 	set := `
-// 		Type: Blockchain
-// 		CreateAccountDeposit A: 10
-// 		CreateAccountDeposit C: 5
-// 		CreateAccountDeposit B: 5
-// 		CreateAccountDeposit D: 0
-// 		> batchL1
-// 		> batchL1
-// 	`
-// 	tc := NewContext(0, common.RollupConstMaxL1UserTx)
-// 	_, err := tc.GenerateBlocks(set)
-// 	require.NoError(t, err)
-// 	set = `
-// 		Type: PoolL2
-// 		PoolCreateVouch A-B
-// 		PoolCreateVouch A-C
-// 		PoolDeleteVouch A-C
-// 		PoolExit A: 3
-// 	`
-// 	poolL2Txs, err := tc.GeneratePoolL2Txs(set)
-// 	require.NoError(t, err)
-// 	assert.Equal(t, 4, len(poolL2Txs))
-// 	assert.Equal(t, common.TxTypeCreateVouch, poolL2Txs[0].Type)
-// 	assert.Equal(t, common.TxTypeDeleteVouch, poolL2Txs[2].Type)
-// 	assert.Equal(t, common.TxTypeExit, poolL2Txs[3].Type)
-// 	assert.Equal(t, common.Nonce(0), poolL2Txs[0].Nonce)
-// 	assert.Equal(t, common.Nonce(1), poolL2Txs[1].Nonce)
-// 	assert.Equal(t, common.Nonce(2), poolL2Txs[2].Nonce)
-// 	assert.Equal(t, common.Nonce(3), poolL2Txs[3].Nonce)
-
-// 	// load another set in the same Context
-// 	set = `
-// 		Type: PoolL2
-// 		PoolExit B: 3
-// 	`
-// 	poolL2Txs, err = tc.GeneratePoolL2Txs(set)
-// 	require.NoError(t, err)
-// 	assert.Equal(t, common.Nonce(0), poolL2Txs[0].Nonce)
-// }
-
 func TestGenerateErrors(t *testing.T) {
 	// check transactions when account is not created yet
 	set := `
@@ -253,33 +199,6 @@ func TestGenerateErrors(t *testing.T) {
 	tc = NewContext(0, common.RollupConstMaxL1UserTx)
 	_, err = tc.GenerateBlocks(set)
 	require.Equal(t, "line 2: CreateVouchA-, err: expected 'to' account name, found ''", err.Error())
-
-	// // check vouching syntax errors on L2
-	// set = `
-	// 	Type: PoolL2
-	// 	DeleteVouch A
-	// 	> batch
-	// `
-	// tc = NewContext(0, common.RollupConstMaxL1UserTx)
-	// _, err = tc.GenerateBlocks(set)
-	// require.Equal(t, "line 2: DeleteVouch, err: unexpected PoolL2 tx type: DeleteVouch", err.Error())
-
-	// set = `
-	// 	Type: PoolL2
-	// 	PoolCreateVouch A
-	// 	> batch
-	// `
-	// tc = NewContext(0, common.RollupConstMaxL1UserTx)
-	// _, err = tc.GenerateBlocks(set)
-	// require.Equal(t, "line 2: PoolCreateVouchA> batch\n, err: expected '-', found '>'", err.Error())
-
-	// set = `
-	// 	Type: PoolL2
-	// 	PoolDeleteVouch A-
-	// `
-	// tc = NewContext(0, common.RollupConstMaxL1UserTx)
-	// _, err = tc.GenerateBlocks(set)
-	// require.Equal(t, "line 2: PoolDeleteVouchA-, err: expected 'to' account name, found ''", err.Error())
 }
 
 func TestGenerateBlocksFromInstructions(t *testing.T) {
@@ -289,8 +208,8 @@ func TestGenerateBlocksFromInstructions(t *testing.T) {
 	i := 0
 	da := big.NewInt(10)
 	setInst = append(setInst, Instruction{
-		LineNum: i,
-		// Literal: "CreateAccountDeposit A: 10",
+		LineNum:       i,
+		Literal:       "CreateAccountDeposit A: 10",
 		Typ:           common.TxTypeCreateAccountDeposit,
 		From:          "A",
 		DepositAmount: da,
@@ -299,8 +218,8 @@ func TestGenerateBlocksFromInstructions(t *testing.T) {
 	i++
 	da = big.NewInt(10)
 	setInst = append(setInst, Instruction{
-		LineNum: i,
-		// Literal: "CreateAccountDeposit B: 10",
+		LineNum:       i,
+		Literal:       "CreateAccountDeposit B: 10",
 		Typ:           common.TxTypeCreateAccountDeposit,
 		From:          "B",
 		DepositAmount: da,
@@ -309,8 +228,8 @@ func TestGenerateBlocksFromInstructions(t *testing.T) {
 	i++
 	da = big.NewInt(6)
 	setInst = append(setInst, Instruction{
-		LineNum: i,
-		// Literal: "Deposit A: 6",
+		LineNum:       i,
+		Literal:       "Deposit A: 6",
 		Typ:           common.TxTypeDeposit,
 		From:          "A",
 		DepositAmount: da,
@@ -319,60 +238,49 @@ func TestGenerateBlocksFromInstructions(t *testing.T) {
 	i++
 	setInst = append(setInst, Instruction{
 		LineNum: i,
-		// Literal: "CreateVouch A-B",
-		Typ:  common.TxTypeCreateVouch,
-		From: "A",
-		To:   "B",
+		Literal: "CreateVouch A-B",
+		Typ:     common.TxTypeCreateVouch,
+		From:    "A",
+		To:      "B",
 	})
 
 	i++
 	setInst = append(setInst, Instruction{
 		LineNum: i,
-		// Literal: "CreateVouch B-A",
-		Typ:  common.TxTypeCreateVouch,
-		From: "B",
-		To:   "A",
+		Literal: "CreateVouch B-A",
+		Typ:     common.TxTypeCreateVouch,
+		From:    "B",
+		To:      "A",
 	})
 
 	i++
 	setInst = append(setInst, Instruction{
 		LineNum: i,
-		// Literal: "> batchL1",
-		Typ: TypeNewBatchL1,
-	})
-
-	// i++
-	// a := big.NewInt(3)
-	// setInst = append(setInst, Instruction{
-	// 	LineNum: i,
-	// 	// Literal: "Exit A: 3",
-	// 	Typ:    common.TxTypeExit,
-	// 	From:   "A",
-	// 	Amount: a,
-	// 	Fee:    1,
-	// })
-
-	i++
-	setInst = append(setInst, Instruction{
-		LineNum: i,
-		// Literal: "DeleteVouch A-B",
-		Typ:  common.TxTypeDeleteVouch,
-		From: "A",
-		To:   "B",
+		Literal: "> batchL1",
+		Typ:     TypeNewBatchL1,
 	})
 
 	i++
 	setInst = append(setInst, Instruction{
 		LineNum: i,
-		// Literal: "> batch",
-		Typ: TypeNewBatchL1,
+		Literal: "DeleteVouch A-B",
+		Typ:     common.TxTypeDeleteVouch,
+		From:    "A",
+		To:      "B",
 	})
 
 	i++
 	setInst = append(setInst, Instruction{
 		LineNum: i,
-		// Literal: "> block",
-		Typ: TypeNewBlock,
+		Literal: "> batchL1",
+		Typ:     TypeNewBatchL1,
+	})
+
+	i++
+	setInst = append(setInst, Instruction{
+		LineNum: i,
+		Literal: "> block",
+		Typ:     TypeNewBlock,
 	})
 
 	tc := NewContext(0, common.RollupConstMaxL1UserTx)
@@ -399,13 +307,6 @@ func TestGenerateBlocksFromInstructions(t *testing.T) {
 
 	// Generated data should be equivalent, except for Eth Addrs and BJJs
 	for i, strBatch := range blockFromString[0].Rollup.Batches {
-		// instBatch := blockFromInstructions[0].Rollup.Batches[i]
-		// for j := 0; j < len(strBatch.L1CoordinatorTxs); j++ {
-		// 	blockFromInstructions[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromEthAddr =
-		// 		blockFromString[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromEthAddr
-		// 	blockFromInstructions[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromBJJ =
-		// 		blockFromString[0].Rollup.Batches[i].L1CoordinatorTxs[j].FromBJJ
-		// }
 		for j := 0; j < len(strBatch.L1UserTxs); j++ {
 			blockFromInstructions[0].Rollup.Batches[i].L1UserTxs[j].FromEthAddr =
 				blockFromString[0].Rollup.Batches[i].L1UserTxs[j].FromEthAddr

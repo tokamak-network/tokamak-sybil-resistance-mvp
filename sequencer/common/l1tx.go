@@ -10,6 +10,12 @@ import (
 	"github.com/iden3/go-iden3-crypto/babyjub"
 )
 
+// EmptyBJJComp contains the 32 byte array of a empty BabyJubJub PublicKey
+// Compressed. It is a valid point in the BabyJubJub curve, so does not give
+// errors when being decompressed.
+var EmptyBJJComp = babyjub.PublicKeyComp([32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+
 // L1Tx is a struct that represents a L1 tx
 type L1Tx struct {
 	// Stored in DB: mandatory fileds

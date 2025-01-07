@@ -456,7 +456,6 @@ func TestTxs(t *testing.T) {
 	// Check saved txID's batch_num is not nil
 	assert.NotEqual(t, null, dbL1Txs[len(dbL1Txs)-4].BatchNum)
 
-
 	// // Tx Type
 	// assert.Equal(t, common.TxTypeCreateVouch, dbL2Txs[0].Type)
 	// assert.Equal(t, common.TxTypeCreateVouch, dbL2Txs[1].Type)

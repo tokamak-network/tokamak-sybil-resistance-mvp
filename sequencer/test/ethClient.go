@@ -751,8 +751,8 @@ func (c *Client) RollupGetCurrentTokens() (*big.Int, error) {
 	return nil, common.Wrap(errTODO)
 }
 
-// RollupUpdateForgeL1L2BatchTimeout is the interface to call the smart contract function
-func (c *Client) RollupUpdateForgeL1L2BatchTimeout(newForgeL1Timeout int64) (tx *types.Transaction,
+// RollupUpdateForgeL1BatchTimeout is the interface to call the smart contract function
+func (c *Client) RollupUpdateForgeL1BatchTimeout(newForgeL1Timeout int64) (tx *types.Transaction,
 	err error) {
 	c.rw.Lock()
 	defer c.rw.Unlock()

@@ -216,15 +216,6 @@ type RollupInterface interface {
 
 	RollupForgeBatch(*RollupForgeBatchArgs, *bind.TransactOpts) (*types.Transaction, error)
 
-	// RollupWithdrawMerkleProof(babyPubKey babyjub.PublicKeyComp, tokenID uint32, numExitRoot,
-	// 	idx int64, amount *big.Int, siblings []*big.Int, instantWithdraw bool) (*types.Transaction,
-	// 	error)
-	// RollupWithdrawCircuit(proofA, proofC [2]*big.Int, proofB [2][2]*big.Int, tokenID uint32,
-	// 	numExitRoot, idx int64, amount *big.Int, instantWithdraw bool) (*types.Transaction, error)
-
-	// Governance Public Functions
-	// RollupUpdateForgeL1L2BatchTimeout(newForgeL1L2BatchTimeout int64) (*types.Transaction, error)
-
 	// Viewers
 	RollupLastForgedBatch() (int64, error)
 
@@ -235,7 +226,6 @@ type RollupInterface interface {
 	RollupConstants() (*common.RollupConstants, error)
 	RollupEventsByBlock(blockNum int64, blockHash *ethCommon.Hash) (*RollupEvents, error)
 	RollupForgeBatchArgs(ethCommon.Hash, uint16) (*RollupForgeBatchArgs, *ethCommon.Address, error)
-	RollupEventInit(genesisBlockNum int64) (*RollupEventInitialize, int64, error)
 }
 
 //
@@ -261,36 +251,6 @@ func (ei *RollupEventInitialize) RollupVariables() *common.RollupVariables {
 		Buckets:               []common.BucketParams{},
 		SafeMode:              false,
 	}
-}
-
-// RollupEventInit returns the initialize event with its corresponding block number
-func (c *RollupClient) RollupEventInit(genesisBlockNum int64) (*RollupEventInitialize, int64, error) {
-	query := ethereum.FilterQuery{
-		Addresses: []ethCommon.Address{
-			c.address,
-		},
-		FromBlock: big.NewInt(max(0, genesisBlockNum-blocksPerDay)),
-		ToBlock:   big.NewInt(genesisBlockNum),
-		Topics:    [][]ethCommon.Hash{{logSYBInitialize}},
-	}
-	logs, err := c.client.client.FilterLogs(context.Background(), query)
-	if err != nil {
-		return nil, 0, common.Wrap(err)
-	}
-	if len(logs) != 1 {
-		return nil, 0, common.Wrap(fmt.Errorf("no event of type InitializeSYBEvent found"))
-	}
-	vLog := logs[0]
-	if vLog.Topics[0] != logSYBInitialize {
-		return nil, 0, common.Wrap(fmt.Errorf("event is not InitializeSYBEvent"))
-	}
-
-	var rollupInit RollupEventInitialize
-	if err := c.contractAbi.UnpackIntoInterface(&rollupInit, "Initialize",
-		vLog.Data); err != nil {
-		return nil, 0, common.Wrap(err)
-	}
-	return &rollupInit, int64(vLog.BlockNumber), common.Wrap(err)
 }
 
 // NewRollupClient creates a new RollupClient
@@ -327,30 +287,10 @@ func NewRollupClient(client *EthereumClient, address ethCommon.Address) (*Rollup
 func (c *RollupClient) RollupConstants() (rollupConstants *common.RollupConstants, err error) {
 	rollupConstants = new(common.RollupConstants)
 	if err := c.client.Call(func(ec *ethclient.Client) error {
-		absoluteMaxL1L2BatchTimeout, err := c.sybil.ABSOLUTEMAXBATCHTIMEOUT(c.opts)
-		if err != nil {
-			return common.Wrap(err)
-		}
-		rollupConstants.AbsoluteMaxL1L2BatchTimeout = int64(absoluteMaxL1L2BatchTimeout)
-		// rollupConstants.TokenHEZ, err = c.tokamak.TokenHEZ(c.opts)
-		// if err != nil {
-		// 	return common.Wrap(err)
-		// }
 		rollupVerifier, err := c.sybil.RollupVerifier(c.opts)
 		if err != nil {
 			return common.Wrap(err)
 		}
-		// for i := int64(0); i < rollupVerifiers.MaxTxs.Int64(); i++ {
-		// 	var newRollupVerifier common.RollupVerifierStruct
-		// 	rollupVerifier, err := c.sybil.RollupVerifiers(c.opts, big.NewInt(i))
-		// 	if err != nil {
-		// 		return common.Wrap(err)
-		// 	}
-		// 	newRollupVerifier.MaxTx = rollupVerifier.MaxTxs.Int64()
-		// 	newRollupVerifier.NLevels = rollupVerifier.NLevels.Int64()
-		// 	rollupConstants.Verifiers = append(rollupConstants.Verifiers,
-		// 		newRollupVerifier)
-		// }
 		var newRollupVerifier common.RollupVerifierStruct
 		newRollupVerifier.MaxTx = rollupVerifier.MaxTx.Int64()
 		newRollupVerifier.NLevels = rollupVerifier.NLevel.Int64()
@@ -390,8 +330,6 @@ var (
 	// 	"UpdateBucketsParameters(uint256[])"))
 	logSYBSafeMode = crypto.Keccak256Hash([]byte(
 		"SafeMode()"))
-	logSYBInitialize = crypto.Keccak256Hash([]byte(
-		"Initialize(uint8)"))
 )
 
 // RollupEventsByBlock returns the events in a block that happened in the
@@ -645,8 +583,8 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 		L1CoordinatorTxsAuths: [][]byte{},
 	}
 	nLevels := c.consts.Verifiers[rollupForgeBatchArgs.VerifierIdx].NLevels
-	lenL1L2TxsBytes := int((nLevels/8)*2 + common.Float40BytesLength + 1) //nolint:gomnd
-	numBytesL1TxUser := int(l1UserTxsLen) * lenL1L2TxsBytes
+	lenL1TxsBytes := int((nLevels/8)*2 + common.Float40BytesLength + 1) //nolint:gomnd
+	numBytesL1TxUser := int(l1UserTxsLen) * lenL1TxsBytes
 	numTxsL1Coord := len(aux.EncodedL1CoordinatorTx) / common.RollupConstL1CoordinatorTotalBytes
 	l1UserTxsData := []byte{}
 	if l1UserTxsLen > 0 {
@@ -654,7 +592,7 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 	}
 	for i := 0; i < int(l1UserTxsLen); i++ {
 		l1Tx, err :=
-			common.L1TxFromDataAvailability(l1UserTxsData[i*lenL1L2TxsBytes:(i+1)*lenL1L2TxsBytes],
+			common.L1TxFromDataAvailability(l1UserTxsData[i*lenL1TxsBytes:(i+1)*lenL1TxsBytes],
 				uint32(nLevels))
 		if err != nil {
 			return nil, nil, common.Wrap(err)

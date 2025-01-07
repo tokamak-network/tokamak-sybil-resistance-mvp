@@ -27,7 +27,7 @@ func NewHistoryDB(dbRead, dbWrite *sqlx.DB /*, apiConnCon *database.APIConnectio
 	}
 }
 
-// DB returns a pointer to the L2DB.db. This method should be used only for
+// DB returns a pointer to the db. This method should be used only for
 // internal testing purposes.
 func (hdb *HistoryDB) DB() *sqlx.DB {
 	return hdb.dbWrite
@@ -570,7 +570,6 @@ func (hdb *HistoryDB) GetAllL1CoordinatorTxs() ([]common.L1Tx, error) {
 	)
 	return database.SlicePtrsToSlice(txs).([]common.L1Tx), common.Wrap(err)
 }
-
 
 // GetUnforgedL1UserTxs gets L1 User Txs to be forged in the L1Batch with toForgeL1TxsNum.
 func (hdb *HistoryDB) GetUnforgedL1UserTxs(toForgeL1TxsNum int64) ([]common.L1Tx, error) {

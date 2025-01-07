@@ -9,7 +9,6 @@ package stateapiupdater
 
 import (
 	"database/sql"
-	"fmt"
 	"sync"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/database/historydb"
@@ -24,7 +23,6 @@ type Updater struct {
 	vars          common.SCVariablesPtr
 	consts        historydb.Constants
 	rw            sync.RWMutex
-	rfp           *RecommendedFeePolicy
 	maxTxPerBatch int64
 }
 
@@ -86,11 +84,14 @@ func (u *Updater) SetSCVars(vars *common.SCVariablesPtr) {
 }
 
 // NewUpdater creates a new Updater
-func NewUpdater(hdb *historydb.HistoryDB, config *historydb.NodeConfig, vars *common.SCVariables,
-	consts *historydb.Constants, rfp *RecommendedFeePolicy, maxTxPerBatch int64) (*Updater, error) {
-	if ok := rfp.valid(); !ok {
-		return nil, common.Wrap(fmt.Errorf("Invalid recommended fee policy: %v", rfp.PolicyType))
-	}
+func NewUpdater(
+	hdb *historydb.HistoryDB,
+	config *historydb.NodeConfig,
+	vars *common.SCVariables,
+	consts *historydb.Constants,
+	// rfp *RecommendedFeePolicy,
+	maxTxPerBatch int64,
+) (*Updater, error) {
 	u := Updater{
 		hdb:    hdb,
 		config: *config,
@@ -100,7 +101,6 @@ func NewUpdater(hdb *historydb.HistoryDB, config *historydb.NodeConfig, vars *co
 				ForgeDelay: config.ForgeDelay,
 			},
 		},
-		rfp:           rfp,
 		maxTxPerBatch: maxTxPerBatch,
 	}
 	u.SetSCVars(vars.AsPtr())

@@ -44,11 +44,7 @@ const (
 // TODO: Check and Set the following
 var (
 	// RollupConstLimitDepositAmount Max deposit amount allowed (depositAmount: L1 --> L2)
-	RollupConstLimitDepositAmount, _ = new(big.Int).SetString(
-		"", 10)
-	// RollupConstLimitL2TransferAmount Max amount allowed (amount L2 --> L2)
-	RollupConstLimitL2TransferAmount, _ = new(big.Int).SetString(
-		"", 10)
+	RollupConstLimitDepositAmount, _ = new(big.Int).SetString("", 10)
 	// RollupConstEthAddressInternalOnly This ethereum address is used internally for rollup
 	// accounts that don't have ethereum address, only Babyjubjub.
 	// This non-ethereum accounts can be created by the coordinator and allow users to have a
@@ -93,9 +89,9 @@ type RollupVerifierStruct struct {
 
 // RollupConstants are the constants of the Rollup Smart Contract
 type RollupConstants struct {
-	AbsoluteMaxL1L2BatchTimeout int64                  `json:"absoluteMaxL1L2BatchTimeout"`
-	Verifiers                   []RollupVerifierStruct `json:"verifiers"`
-	TokamakGovernanceAddress    ethCommon.Address      `json:"tokamakGovernanceAddress"`
+	AbsoluteMaxL1BatchTimeout int64                  `json:"absoluteMaxL1BatchTimeout"`
+	Verifiers                 []RollupVerifierStruct `json:"verifiers"`
+	TokamakGovernanceAddress  ethCommon.Address      `json:"tokamakGovernanceAddress"`
 	// First block where the first slot begins
 	GenesisBlockNum int64 `json:"genesisBlockNum"`
 }

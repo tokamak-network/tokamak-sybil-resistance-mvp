@@ -1,65 +1,11 @@
-#[Log]
-### Levels: info, debug, warn, error, fatal
-#Level = "info"
-### Out where logs are going to be stored or showed: ["stdout", "filepath.log"]
-#Out = ["stdout"]
-
-[API]
-ReadTimeout = "30s"
-WriteTimeout = "30s"
-FindPeersCoordinatorNetworkInterval = "180s"
-### Url and port where the API will listen
-#Address = "0.0.0.0:8086"
-### Enables the Explorer API endpoints
-#Explorer = true
-### Interval between updates of the API metrics
-UpdateMetricsInterval = "10s"
-### Interval between updates of the recommended fees
-UpdateRecommendedFeeInterval = "15s"
-### Maximum concurrent connections allowed between API and SQL
-MaxSQLConnections = 100
-### Maximum amount of time that an API request can wait to establish a SQL connection
-SQLConnectionTimeout = "2s"
-
-#[Debug]
-### If it is set, the debug api will listen in this address and port
-#APIAddress = "0.0.0.0:12345"
-### Enables meddler debug mode, where unused columns and struct fields will be logged
-#MeddlerLogs = true
-### Sets the web framework Gin-Gonic to run in debug mode
-#GinDebugMode = false
-
 [StateDB]
 ### Path where the synchronizer StateDB is stored
 Path = "./var/tokamak/statedb"
 ### Number of checkpoints to keep
 Keep = 256
 
-[PostgreSQL]
-## Port of the PostgreSQL write server
-PortWrite     = 5432
-## Host of the PostgreSQL write server
-HostWrite     = "localhost"
-## User of the PostgreSQL write server
-UserWrite     = "postgres"
-## Password of the PostgreSQL write server
-PasswordWrite = "123"
-## Name of the PostgreSQL write server database
-NameWrite     = "statedb"
-## Port of the PostgreSQL read server. If it is not set, the tokamak node will use the postgresql write server configuration
-# PortRead     = 5432
-## Host of the PostgreSQL read server. If it is not set, the tokamak node will use the postgresql write server configuration
-# HostRead     = "localhost"
-## User of the PostgreSQL read server. If it is not set, the tokamak node will use the postgresql write server configuration
-# UserRead     = "tokamak"
-## Password of the PostgreSQL read server. If it is not set, the tokamak node will use the postgresql write server configuration
-# PasswordRead = "yourpasswordhere"
-## Name of the PostgreSQL read server database. If it is not set, the tokamak node will use the postgresql write server configuration
-# NameRead     = "tokamak"
-
 [Web3]
-## Url of the web3 ethereum-node RPC server. Only geth is officially supported
-## URL = "http://localhost:8545"
+### Url of the web3 ethereum-node RPC server. Only geth is officially supported
 URL = "https://rpc.thanos-sepolia.tokamak.network"
 
 [Synchronizer]
@@ -72,11 +18,11 @@ StatsUpdateFrequencyDivider = 100
 
 [SmartContracts]
 ## Smart contract address of the rollup contract
-Rollup   = "0x3d4810E4F8377a34781A6Ceaab9dAc08E361192d"
+Rollup   = "0xd2Fcf423780E5D4e6F8fD4F3c7aa931454DFB9c4"
 
 [Coordinator]
 ## Ethereum address that the coordinator is using to forge batches
-ForgerAddress = "0x19795e3f46003bb44538708020dae2b4cc8b6425"
+ForgerAddress = "0x7ebd0f4de5e4139b1c07fc4acfa4422c3f4347ed"
 ### Minimum balance the forger address needs to start the coordinator in wei. If It is set to 0, the coordinator will not check the balance
 #MinimumForgeAddressBalance = "0"
 ### Number of confirmation blocks to be sure that the tx has been mined correctly
@@ -107,32 +53,6 @@ SyncRetryInterval = "1s"
 #ForgeOncePerSlotIfTxs = false
 ### Waiting time for proover
 ProverWaitReadTimeout = "20s"
-
-[Coordinator.FeeAccount]
-## Ethereum address of the account that will receive the fees
-Address = "0x56232B1c5B10038125Bc7345664B4AFD745bcF8E"
-## BJJ is the baby jub jub public key of the account that will receive the fees
-BJJ = "0x130c5c7f294792559f469220274f3d3b2dca6e89f4c5ec88d3a08bf73262171b"
-
-[Coordinator.L2DB]
-### Number of batches after which non-pending L2Txs are deleted from the pool
-SafetyPeriod = 10
-### Maximum number of pending L2Txs that can be stored in the pool
-MaxTxs       = 1000000
-### Minimum fee in USD that a tx must pay in order to be accepted into the pool
-MinFeeUSD    = 0.10
-### Maximum fee in USD that a tx must pay in order to be accepted into the pool
-MaxFeeUSD    = 10.00
-### Time To Live for L2Txs in the pool. L2Txs older than TTL will be deleted.
-TTL          = "24h"
-### Delay between batches to purge outdated transactions. Outdated L2Txs are those that have been forged or marked as invalid for longer than the SafetyPeriod and pending L2Txs that have been in the pool for longer than TTL once there are MaxTxs
-PurgeBatchDelay = 10
-### Delay between batches to mark invalid transactions due to nonce lower than the account nonce
-InvalidateBatchDelay = 20
-### Delay between blocks to purge outdated transactions. Outdated L2Txs are those that have been forged or marked as invalid for longer than the SafetyPeriod and pending L2Txs that have been in the pool for longer than TTL once there are MaxTxs.
-PurgeBlockDelay = 10
-### Delay between blocks to mark invalid transactions due to nonce lower than the account nonce
-InvalidateBlockDelay = 20
 
 [Coordinator.TxSelector]
 ### Path where the TxSelector StateDB is stored
@@ -170,12 +90,6 @@ MinGasPrice = 5
 ### Percentage increased of gas price set in an ethereum transaction from the suggested gas price by the ethereum node
 #GasPriceIncPerc = 5
 
-[Coordinator.EthClient.Keystore]
-### Path where the keystore is stored
-Path = "./var/tokamak/ethkeystore"
-## Password used to decrypt the keys in the keystore
-Password = "123"
-
 [Coordinator.EthClient.ForgeBatchGasCost]
 ### Gas needed to forge an empty batch
 Fixed = 900000
@@ -183,12 +97,6 @@ Fixed = 900000
 L1UserTx = 15000
 ### Gas needed for a coordinator L1 tx
 L1CoordTx = 7000
-### Gas needed for an L2 tx
-L2Tx = 600
-
-#[Coordinator.API]
-### Enables coordinator API endpoints
-#Coordinator = true
 
 #[Coordinator.Debug]
 ### If this parameter is set, specifies the path where batchInfo is stored in JSON in every step/update of the pipeline
@@ -197,24 +105,3 @@ L2Tx = 600
 #LightScrypt = false
 ### RollupVerifierIndex is the index of the verifier to use in the Rollup smart contract. The verifier chosen by index must match with the Circuit parameters
 #RollupVerifierIndex = 0
-
-#[Coordinator.Etherscan]
-### If this parameter is set, specifies the etherscan endpoint to get the gas estimations for that momment
-#URL = "https://api.etherscan.io"
-### APIKey parameter allows access to etherscan services
-#APIKey = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-
-[RecommendedFeePolicy]
-### Strategy used to calculate the recommended fee that the API will expose.
-### Available options:
-### - Static: always return the same value (StaticValue) in USD
-### - AvgLastHour: calculate using the average fee of the forged transactions during the last hour
-### - DynamicFee: calculated taking in account the gas used in L1, the gasPrice and the ether price in the last batches.
-### Selects the mode. "Static", "AvgLastHour" or "DynamicFee"
-PolicyType = "Static"
-### If PolicyType is "static" defines the recommended fee value
-#StaticValue = 0.10
-### If PolicyType is "DynamicFee" defines the break threshold parameter
-#BreakThreshold = 50
-### If PolicyType is "DynamicFee" defines the number of batches to calculate the average cost
-#NumLastBatchAvg = 10

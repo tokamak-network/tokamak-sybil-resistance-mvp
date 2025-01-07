@@ -19,14 +19,14 @@ func TestParseBlockchainTxs(t *testing.T) {
 		CreateVouch A-B
 
 		// set new batch
-		> batch
+		> batchL1
 
 		CreateAccountDeposit C: 5
 		CreateVouch B-C
 		Deposit User0: 20
 		Deposit User1: 20
 
-		> batch
+		> batchL1
 		> block
 
 		DeleteVouch A-B
@@ -44,7 +44,7 @@ func TestParseBlockchainTxs(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, TypeNewBatch, instructions.instructions[4].Typ)
+	assert.Equal(t, TypeNewBatchL1, instructions.instructions[4].Typ)
 	assert.Equal(t, "DepositUser0:20", instructions.instructions[7].raw())
 	assert.Equal(t, "CreateVouchA-B", instructions.instructions[3].raw())
 	assert.Equal(t, "DeleteVouchA-B", instructions.instructions[11].raw())
@@ -97,12 +97,4 @@ func TestParseErrors(t *testing.T) {
 	assert.Equal(t,
 		"line 1: Type:, err: invalid set type: 'PoolL1'. Valid set types: 'Blockchain', 'PoolL2'",
 		err.Error())
-
-	s = `Type: PoolL2
-		Type: Blockchain`
-	parser = newParser(strings.NewReader(s))
-	_, err = parser.parse()
-	assert.Equal(t,
-		"line 2: Instruction of 'Type: Blockchain' when there is already a previous "+
-			"instruction 'Type: PoolL2' defined", err.Error())
 }

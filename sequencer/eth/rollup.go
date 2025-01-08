@@ -171,20 +171,17 @@ func NewRollupEvents() RollupEvents {
 
 // RollupForgeBatchArgs are the arguments to the ForgeBatch function in the Rollup Smart Contract
 type RollupForgeBatchArgs struct {
-	NewLastIdx            int64
-	NewAccountRoot        *big.Int
-	NewScoreRoot          *big.Int
-	NewVouchRoot          *big.Int
-	NewExitRoot           *big.Int
-	L1UserTxs             []common.L1Tx
-	L1CoordinatorTxs      []common.L1Tx
-	L1CoordinatorTxsAuths [][]byte // Authorization for accountCreations for each L1CoordinatorTx
-	// Circuit selector
-	VerifierIdx uint8
-	L1Batch     bool
-	ProofA      [2]*big.Int
-	ProofB      [2][2]*big.Int
-	ProofC      [2]*big.Int
+	NewLastIdx     int64
+	NewAccountRoot *big.Int
+	NewScoreRoot   *big.Int
+	NewVouchRoot   *big.Int
+	NewExitRoot    *big.Int
+	L1UserTxs      []common.L1Tx
+	VerifierIdx    uint8
+	L1Batch        bool
+	ProofA         [2]*big.Int
+	ProofB         [2][2]*big.Int
+	ProofC         [2]*big.Int
 }
 
 // RollupForgeBatchArgsAux are the arguments to the ForgeBatch function in the Rollup Smart Contract
@@ -569,23 +566,20 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 		return nil, nil, common.Wrap(err)
 	}
 	rollupForgeBatchArgs := RollupForgeBatchArgs{
-		L1Batch:               aux.L1Batch,
-		NewExitRoot:           aux.NewExitRoot,
-		NewLastIdx:            aux.NewLastIdx.Int64(),
-		NewAccountRoot:        aux.NewAccountRoot,
-		NewVouchRoot:          aux.NewVouchRoot,
-		NewScoreRoot:          aux.NewScoreRoot,
-		ProofA:                aux.ProofA,
-		ProofB:                aux.ProofB,
-		ProofC:                aux.ProofC,
-		VerifierIdx:           aux.VerifierIdx,
-		L1CoordinatorTxs:      []common.L1Tx{},
-		L1CoordinatorTxsAuths: [][]byte{},
+		L1Batch:        aux.L1Batch,
+		NewExitRoot:    aux.NewExitRoot,
+		NewLastIdx:     aux.NewLastIdx.Int64(),
+		NewAccountRoot: aux.NewAccountRoot,
+		NewVouchRoot:   aux.NewVouchRoot,
+		NewScoreRoot:   aux.NewScoreRoot,
+		ProofA:         aux.ProofA,
+		ProofB:         aux.ProofB,
+		ProofC:         aux.ProofC,
+		VerifierIdx:    aux.VerifierIdx,
 	}
 	nLevels := c.consts.Verifiers[rollupForgeBatchArgs.VerifierIdx].NLevels
 	lenL1TxsBytes := int((nLevels/8)*2 + common.Float40BytesLength + 1) //nolint:gomnd
 	numBytesL1TxUser := int(l1UserTxsLen) * lenL1TxsBytes
-	numTxsL1Coord := len(aux.EncodedL1CoordinatorTx) / common.RollupConstL1CoordinatorTotalBytes
 	l1UserTxsData := []byte{}
 	if l1UserTxsLen > 0 {
 		l1UserTxsData = aux.L1L2TxsData[:numBytesL1TxUser]
@@ -598,36 +592,6 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 			return nil, nil, common.Wrap(err)
 		}
 		rollupForgeBatchArgs.L1UserTxs = append(rollupForgeBatchArgs.L1UserTxs, *l1Tx)
-	}
-	for i := 0; i < numTxsL1Coord; i++ {
-		bytesL1Coordinator :=
-			aux.EncodedL1CoordinatorTx[i*common.RollupConstL1CoordinatorTotalBytes : (i+1)*common.RollupConstL1CoordinatorTotalBytes] //nolint:lll
-		var signature []byte
-		v := bytesL1Coordinator[0]
-		s := bytesL1Coordinator[1:33]
-		r := bytesL1Coordinator[33:65]
-		signature = append(signature, r[:]...)
-		signature = append(signature, s[:]...)
-		signature = append(signature, v)
-		l1Tx, err := common.L1CoordinatorTxFromBytes(bytesL1Coordinator, c.chainID, c.address)
-		if err != nil {
-			return nil, nil, common.Wrap(err)
-		}
-		rollupForgeBatchArgs.L1CoordinatorTxs = append(rollupForgeBatchArgs.L1CoordinatorTxs, *l1Tx)
-		rollupForgeBatchArgs.L1CoordinatorTxsAuths =
-			append(rollupForgeBatchArgs.L1CoordinatorTxsAuths, signature)
-	}
-	lenFeeIdxCoordinatorBytes := int(nLevels / 8) //nolint:gomnd
-	numFeeIdxCoordinator := len(aux.FeeIdxCoordinator) / lenFeeIdxCoordinatorBytes
-	for i := 0; i < numFeeIdxCoordinator; i++ {
-		var paddedFeeIdx [6]byte
-		if lenFeeIdxCoordinatorBytes < common.AccountIdxBytesLen {
-			copy(paddedFeeIdx[6-lenFeeIdxCoordinatorBytes:],
-				aux.FeeIdxCoordinator[i*lenFeeIdxCoordinatorBytes:(i+1)*lenFeeIdxCoordinatorBytes])
-		} else {
-			copy(paddedFeeIdx[:],
-				aux.FeeIdxCoordinator[i*lenFeeIdxCoordinatorBytes:(i+1)*lenFeeIdxCoordinatorBytes])
-		}
 	}
 	return &rollupForgeBatchArgs, &sender, nil
 }

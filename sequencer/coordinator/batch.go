@@ -86,8 +86,6 @@ type BatchInfo struct {
 	// L1Batch      bool
 	VerifierIdx uint8
 	L1UserTxs   []common.L1Tx
-	// L1CoordTxs            []common.L1Tx
-	L1CoordinatorTxsAuths [][]byte
 
 	ForgeBatchArgs *eth.RollupForgeBatchArgs
 	Auth           *bind.TransactOpts `json:"-"`

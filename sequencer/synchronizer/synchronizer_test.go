@@ -96,7 +96,6 @@ func checkSyncBlock(t *testing.T, s *Synchronizer, blockNum int, block,
 	require.NoError(t, err)
 	dbExits, err := s.historyDB.GetAllExits()
 	require.NoError(t, err)
-	// dbL1CoordinatorTxs := []common.L1Tx{}
 	for i, batch := range block.Rollup.Batches {
 		var dbBatch *common.Batch
 		// Find batch in DB output
@@ -352,7 +351,6 @@ func TestSyncGeneral(t *testing.T) {
 	require.Equal(t, 2, int(blocks[i].Block.Num))
 	require.Equal(t, 4, len(blocks[i].Rollup.L1UserTxs))
 	require.Equal(t, 2, len(blocks[i].Rollup.Batches))
-	// require.Equal(t, 2, len(blocks[i].Rollup.Batches[0].L1CoordinatorTxs))
 
 	// Set StateRoots for batches manually (til doesn't set it)
 	blocks[i].Rollup.Batches[0].Batch.AccountRoot =

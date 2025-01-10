@@ -74,13 +74,9 @@ go run main.go run --mode sync --cfg cfg.toml
 ```
 go run main.go run --mode coord --cfg cfg.toml
 ```
-## To generate .go file of the contract
-```
-npm install solc@0.8.23
-```
-```
-npx solc --bin --abi src/sybil.sol -o build/
-```
-```
-abigen --abi=build/src_mvp_Sybil_sol_Sybil.abi --bin=build/src_mvp_Sybil_sol_Sybil.bin --pkg=sybil --out=Sybil.go
-```
+# Generate .go file from the Sybil contract
+Navigate to the contracts folder inside the tokamak-sybil-resistance-mvp directory.
+
+Run the followig command:
+
+```sh sybil_go.sh```

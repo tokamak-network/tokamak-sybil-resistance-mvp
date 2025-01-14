@@ -2,11 +2,11 @@
 pragma solidity 0.8.23;
 
 import "forge-std/Test.sol";
-import "../../src/mvp/Sybil.sol";
-import "../../src/interfaces/IMVPSybil.sol";
-import "../_helpers/constants.sol";
-import "../_helpers/MVPTransactionTypes.sol";
-import "../../src/stub/VerifierRollupStub.sol";
+import "../src/mvp/Sybil.sol";
+import "../src/interfaces/IMVPSybil.sol";
+import "./utils/Constants.sol";
+import "./types/MVPTransactionTypes.sol";
+import "../src/VerifierRollupStub.sol";
 
 contract MvpTest is Test, TransactionTypeHelper {
     Sybil public sybil;

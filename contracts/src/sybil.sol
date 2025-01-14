@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/ISybil.sol";
 import "./interfaces/IVerifierRollup.sol";
-import "./sybilHelpers.sol";
+import "./types/SybilHelpers.sol";
 
 contract Sybil is Initializable, OwnableUpgradeable, ISybil, SybilHelpers {
     uint48 constant _RESERVED_IDX = 255;

@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "../interfaces/IMVPSybil.sol";
 import "../interfaces/IVerifierRollup.sol";
-import "./SybilHelpers.sol";
+import "../types/mvp/SybilHelpers.sol";
 
 contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers {
     uint48 constant _RESERVED_IDX = 255;

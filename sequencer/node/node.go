@@ -18,6 +18,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"tokamak-sybil-resistance/api/stateapiupdater"
 	"tokamak-sybil-resistance/batchbuilder"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/config"
@@ -47,6 +48,9 @@ const RollupStartBlockNum = 379608
 
 // Node is the Hermez Node
 type Node struct {
+	// nodeAPI         *NodeAPI
+	stateAPIUpdater *stateapiupdater.Updater
+	// debugAPI        *debugapi.DebugAPI
 	// Coordinator
 	coord *coordinator.Coordinator
 
@@ -63,6 +67,49 @@ type Node struct {
 	wg           sync.WaitGroup
 	cancel       context.CancelFunc
 }
+
+// APIServer is a server that only runs the API
+// type APIServer struct {
+// 	nodeAPI *NodeAPI
+// 	mode    Mode
+// 	ctx     context.Context
+// 	wg      sync.WaitGroup
+// 	cancel  context.CancelFunc
+// }
+
+// NodeAPI holds the node http API
+// type NodeAPI struct { //nolint:golint
+// 	api                                     *api.API
+// 	engine                                  *gin.Engine
+// 	addr                                    string
+// 	coordinatorNetwork                      bool
+// 	coordinatorNetworkFindMorePeersInterval time.Duration
+// 	readtimeout                             time.Duration
+// 	writetimeout                            time.Duration
+// }
+
+// NewNodeAPI creates a new NodeAPI (which internally calls api.NewAPI)
+// func NewNodeAPI(
+// 	addr string,
+// 	cfgAPI config.APIConfigParameters,
+// 	apiConfig api.Config,
+// 	coordinatorNetwork bool,
+// 	coordinatorNetworkFindMorePeersInterval time.Duration,
+// ) (*NodeAPI, error) {
+// 	_api, err := api.NewAPI(apiConfig)
+// 	if err != nil {
+// 		return nil, common.Wrap(err)
+// 	}
+// 	return &NodeAPI{
+// 		addr:                                    addr,
+// 		api:                                     _api,
+// 		engine:                                  apiConfig.Server,
+// 		coordinatorNetwork:                      coordinatorNetwork,
+// 		coordinatorNetworkFindMorePeersInterval: coordinatorNetworkFindMorePeersInterval,
+// 		readtimeout:                             cfgAPI.Readtimeout.Duration,
+// 		writetimeout:                            cfgAPI.Writetimeout.Duration,
+// 	}, nil
+// }
 
 // Check if a directory exists and is empty
 func isDirectoryEmpty(path string) (bool, error) {
@@ -259,6 +306,16 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		log.Info("EtherScan method not configured in config file")
 		etherScanService = nil
 	}
+	stateAPIUpdater, err := stateapiupdater.NewUpdater(
+		historyDB,
+		&hdbNodeCfg,
+		initSCVars,
+		&hdbConsts,
+		cfg.Coordinator.Circuit.MaxTx,
+	)
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
 
 	var coord *coordinator.Coordinator
 
@@ -332,17 +389,78 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
+	// }
+	// var nodeAPI *NodeAPI
+	// if cfg.API.Address != "" {
+	// 	if cfg.Debug.GinDebugMode {
+	// 		gin.SetMode(gin.DebugMode)
+	// 	} else {
+	// 		gin.SetMode(gin.ReleaseMode)
+	// 	}
+	// 	server := gin.Default()
+	// 	server.Use(cors.Default())
+	// 	coord := false
+	// 	var coordnetConfig *api.CoordinatorNetworkConfig
+	// 	if mode == ModeCoordinator {
+	// 		coord = cfg.Coordinator.API.Coordinator
+	// 		if cfg.API.CoordinatorNetwork {
+	// 			// Setup coordinators network configuration
+	// 			// Get libp2p addresses of the registered coordinators
+	// 			// to be used as bootstrap nodes for the p2p network
 
+	// 			//TODO: Check if we'll need this
+	// 			// bootstrapAddrs, err := client.GetCoordinatorsLibP2PAddrs()
+	// 			if err != nil {
+	// 				log.Warn("error getting registered addresses from the SMC or no addresses registered. error:", err.Error())
+	// 			}
+	// 			// Get Ethereum private key of the coordinator
+	// 			keyJSON, err := keyStore.Export(*account, keystorePassword, keystorePassword)
+	// 			if err != nil {
+	// 				return nil, common.Wrap(err)
+	// 			}
+	// 			key, err := keystore.DecryptKey(keyJSON, keystorePassword)
+	// 			if err != nil {
+	// 				return nil, common.Wrap(err)
+	// 			}
+	// 			coordnetConfig = &api.CoordinatorNetworkConfig{
+	// 				BootstrapPeers: nil,
+	// 				EthPrivKey:     key.PrivateKey,
+	// 			}
+	// 		}
+	// 	}
+	// 	var err error
+	// 	nodeAPI, err = NewNodeAPI(cfg.API.Address, cfg.API, api.Config{
+	// 		Version:                  version,
+	// 		ExplorerEndpoints:        cfg.API.Explorer,
+	// 		CoordinatorEndpoints:     coord,
+	// 		Server:                   server,
+	// 		HistoryDB:                historyDB,
+	// 		StateDB:                  stateDB,
+	// 		EthClient:                ethClient,
+	// 		ForgerAddress:            &forgerAddress,
+	// 		CoordinatorNetworkConfig: coordnetConfig,
+	// 	}, cfg.API.CoordinatorNetwork, cfg.API.FindPeersCoordinatorNetworkInterval.Duration)
+	// 	if err != nil {
+	// 		return nil, common.Wrap(err)
+	// 	}
+	// }
+
+	// TODO: Update debug API fields
+	// var debugAPI *debugapi.DebugAPI
+	// if cfg.Debug.APIAddress != "" {
+	// 	debugAPI = debugapi.NewDebugAPI(cfg.Debug.APIAddress, stateDB, sync)
+	// }
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Node{
-		coord:        coord,
-		sync:         sync,
-		cfg:          cfg,
-		sqlConnRead:  db,
-		sqlConnWrite: db,
-		historyDB:    historyDB,
-		ctx:          ctx,
-		cancel:       cancel,
+		stateAPIUpdater: stateAPIUpdater,
+		coord:           coord,
+		sync:            sync,
+		cfg:             cfg,
+		sqlConnRead:     db,
+		sqlConnWrite:    db,
+		historyDB:       historyDB,
+		ctx:             ctx,
+		cancel:          cancel,
 	}, nil
 }
 
@@ -350,24 +468,19 @@ func (n *Node) handleReorg(
 	ctx context.Context,
 	stats *synchronizer.Stats,
 	vars *common.SCVariables,
-) {
+) error {
 	n.coord.SendMsg(ctx, coordinator.MsgSyncReorg{
 		Stats: *stats,
 		Vars:  *vars.AsPtr(),
 	})
-}
-
-func (n *Node) handleNewBlock(
-	ctx context.Context,
-	stats *synchronizer.Stats,
-	vars *common.SCVariablesPtr,
-	batches []common.BatchData,
-) {
-	n.coord.SendMsg(ctx, coordinator.MsgSyncBlock{
-		Stats:   *stats,
-		Vars:    *vars,
-		Batches: batches,
-	})
+	n.stateAPIUpdater.SetSCVars(vars.AsPtr())
+	n.stateAPIUpdater.UpdateNetworkInfoBlock(
+		stats.Eth.LastBlock, stats.Sync.LastBlock,
+	)
+	if err := n.stateAPIUpdater.Store(); err != nil {
+		return common.Wrap(err)
+	}
+	return nil
 }
 
 func (n *Node) syncLoopFn(ctx context.Context, lastBlock *common.Block) (*common.Block,
@@ -381,15 +494,18 @@ func (n *Node) syncLoopFn(ctx context.Context, lastBlock *common.Block) (*common
 		// case: reorg
 		log.Infow("Synchronizer.Sync reorg", "discarded", *discarded)
 		vars := n.sync.SCVars()
-		n.handleReorg(ctx, stats, vars)
-
+		if err := n.handleReorg(ctx, stats, vars); err != nil {
+			return nil, time.Duration(0), common.Wrap(err)
+		}
 		return nil, time.Duration(0), nil
 	} else if blockData != nil {
 		// case: new block
 		vars := common.SCVariablesPtr{
 			Rollup: blockData.Rollup.Vars,
 		}
-		n.handleNewBlock(ctx, stats, &vars, blockData.Rollup.Batches)
+		if err := n.handleNewBlock(ctx, stats, &vars); err != nil {
+			return nil, time.Duration(SyncTime), common.Wrap(err)
+		}
 		return &blockData.Block, time.Duration(SyncTime), nil
 	} else {
 		// case: no block
@@ -408,7 +524,9 @@ func (n *Node) StartSynchronizer() {
 	// the last synced one) is synchronized
 	stats := n.sync.Stats()
 	vars := n.sync.SCVars()
-	n.handleNewBlock(n.ctx, stats, vars.AsPtr(), []common.BatchData{})
+	if err := n.handleNewBlock(n.ctx, stats, vars.AsPtr() /*, []common.BatchData{}*/); err != nil {
+		log.Fatalw("Node.handleNewBlock", "err", err)
+	}
 
 	n.wg.Add(1)
 	go func() {
@@ -461,4 +579,43 @@ func (n *Node) Stop() {
 
 	n.coord.TxSelector().LocalAccountsDB().Close()
 	n.coord.BatchBuilder().LocalStateDB().Close()
+}
+
+func (n *Node) handleNewBlock(
+	ctx context.Context,
+	stats *synchronizer.Stats,
+	vars *common.SCVariablesPtr,
+	/*, batches []common.BatchData*/
+) error {
+	n.coord.SendMsg(ctx, coordinator.MsgSyncBlock{
+		Stats: *stats,
+		Vars:  *vars,
+	})
+	n.stateAPIUpdater.SetSCVars(vars)
+
+	/*
+		When the state is out of sync, which means, the last block synchronized by the node is
+		different/smaller from the last block provided by the ethereum, the network info in the state
+		will not be updated. So, in order to get some information on the node state, we need
+		to wait until the node finish the synchronization with the ethereum network.
+
+		Side effects are information like lastBatch, nextForgers, metrics with zeros, defaults or null values
+	*/
+	if stats.Synced() {
+		if err := n.stateAPIUpdater.UpdateNetworkInfo(
+			stats.Eth.LastBlock, stats.Sync.LastBlock,
+			common.BatchNum(stats.Eth.LastBatchNum),
+			// stats.Sync.Auction.CurrentSlot.SlotNum,
+		); err != nil {
+			log.Errorw("ApiStateUpdater.UpdateNetworkInfo", "err", err)
+		}
+	} else {
+		n.stateAPIUpdater.UpdateNetworkInfoBlock(
+			stats.Eth.LastBlock, stats.Sync.LastBlock,
+		)
+	}
+	if err := n.stateAPIUpdater.Store(); err != nil {
+		return common.Wrap(err)
+	}
+	return nil
 }

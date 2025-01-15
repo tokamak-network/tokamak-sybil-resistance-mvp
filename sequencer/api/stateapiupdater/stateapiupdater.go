@@ -80,24 +80,6 @@ func (u *Updater) UpdateNetworkInfo(
 		return common.Wrap(err)
 	}
 
-	bucketUpdates, err := u.hdb.GetBucketUpdatesInternalAPI()
-	if err == sql.ErrNoRows {
-		bucketUpdates = nil
-	} else if err != nil {
-		return common.Wrap(err)
-	}
-
-	u.rw.Lock()
-	// Update NodeInfo struct
-	for i, bucketParams := range u.state.Rollup.Buckets {
-		for _, bucketUpdate := range bucketUpdates {
-			if bucketUpdate.NumBucket == i {
-				bucketParams.Withdrawals = bucketUpdate.Withdrawals
-				u.state.Rollup.Buckets[i] = bucketParams
-				break
-			}
-		}
-	}
 	// Update pending L1s
 	pendingL1s, err := u.hdb.GetUnforgedL1UserTxsCount()
 	if err != nil {

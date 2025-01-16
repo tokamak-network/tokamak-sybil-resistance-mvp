@@ -2,10 +2,10 @@
 pragma solidity 0.8 .23;
 
 import "forge-std/Test.sol";
-import "../../src/Sybil.sol";
-import "../_helpers/constants.sol";
-import "../_helpers/transactionTypes.sol";
-import "../../src/stub/VerifierRollupStub.sol";
+import "../src/Sybil.sol";
+import "./utils/Constants.sol";
+import "./types/TransactionTypes.sol";
+import "../src/VerifierRollupStub.sol";
 
 contract SybilTest is Test, TestHelpers, TransactionTypeHelper {
     Sybil public sybil;

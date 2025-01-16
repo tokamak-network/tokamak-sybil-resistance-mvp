@@ -4,10 +4,10 @@ pragma solidity ^0.8.23;
 import "forge-std/Script.sol";
 import {
     Sybil
-} from "../src/sybil.sol";
+} from "../src/mvp/Sybil.sol";
 import {
     VerifierRollupStub
-} from "../src/stub/VerifierRollupStub.sol";
+} from "../src/VerifierRollupStub.sol";
 
 contract MyScript is Script {
     function run() external {

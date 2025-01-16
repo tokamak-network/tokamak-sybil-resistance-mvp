@@ -99,9 +99,7 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
             revert LoadAmountDoesNotMatch();
         }
 
-        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
-            revert InvalidFromIdx();
-        }
+        _validateFromIdx(fromIdx);
 
         _addTx(msg.sender, fromIdx, loadAmountF, 0, 0);
     }
@@ -109,26 +107,16 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
 
     function vouch(uint48 fromIdx, uint48 toIdx) external {
 
-        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
-            revert InvalidFromIdx();
-        }
-
-        if(((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx))) {
-                revert InvalidToIdx();
-        }
+        _validateFromIdx(fromIdx);
+        _validateToIdx(toIdx);
 
         _addTx(msg.sender, fromIdx, 0, 1, toIdx);
     }
 
     function unvouch(uint48 fromIdx, uint48 toIdx) external {
 
-        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
-            revert InvalidFromIdx();
-        }
-
-        if(((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx))) {
-                revert InvalidToIdx();
-        }
+        _validateFromIdx(fromIdx);
+        _validateToIdx(toIdx);
 
         _addTx(msg.sender, fromIdx, 0, 0, toIdx);
     }
@@ -140,30 +128,24 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
             revert AmountExceedsLimit();
         }
 
-        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
-            revert InvalidFromIdx();
-        }
+        _validateFromIdx(fromIdx);
 
         _addTx(msg.sender, fromIdx, 0, amountF, _EXIT_IDX);
     }
 
     function explodeMultiple(uint48 fromIdx, uint48[] memory toIdxs) external override {
 
-        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
-            revert InvalidFromIdx();
-        }
+        _validateFromIdx(fromIdx);
+
         uint256 length = toIdxs.length;
         for (uint256 i = 0; i < length; ++i) {
-            if((toIdxs[i] <= _RESERVED_IDX) || (toIdxs[i] > lastIdx)) {
-                revert InvalidToIdx();
-            }
+            _validateToIdx(toIdxs[i]);
         }
 
         for (uint256 i = 0; i < length; ++i) {
             _addTx(msg.sender, fromIdx, 0, 2, toIdxs[i]);
         }
     }
-
 
     // Implement the missing function from the IMvp interface
     function forgeBatch(

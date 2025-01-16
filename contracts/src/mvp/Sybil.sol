@@ -8,6 +8,13 @@ import "../interfaces/IVerifierRollup.sol";
 import "../types/mvp/SybilHelpers.sol";
 
 contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers {
+
+    struct VerifierRollup {
+        VerifierRollupInterface verifierInterface;
+        uint256 maxTx; // maximum rollup transactions in a batch: L1-tx transactions
+        uint256 nLevel; // number of levels of the circuit
+    }
+
     uint48 constant _RESERVED_IDX = 255;
     uint48 constant _EXIT_IDX = 1;
     uint48 constant _EXPLODE_IDX = 2;
@@ -28,12 +35,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
 
     // Mapping of exit nullifiers, only allowing each withdrawal to be made once
     mapping(uint32 => mapping(uint48 => bool)) public exitNullifierMap;
-
-    struct VerifierRollup {
-        VerifierRollupInterface verifierInterface;
-        uint256 maxTx; // maximum rollup transactions in a batch: L1-tx transactions
-        uint256 nLevel; // number of levels of the circuit
-    }
 
     // Verifier
     VerifierRollup public rollupVerifier;
@@ -74,36 +75,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         );
     }
 
-    function _addTx(
-        address ethAddress,
-        uint48 fromIdx,
-        uint40 loadAmountF,
-        uint40 amountF,
-        uint48 toIdx
-    ) public override {
-        bytes memory l1Tx = abi.encodePacked(
-            ethAddress,
-            fromIdx,
-            loadAmountF,
-            amountF,
-            toIdx
-        );
-
-        uint256 currentPosition = unprocessedBatchesMap[currentFillingBatch].length /
-            _TXN_TOTALBYTES;
-
-        unprocessedBatchesMap[currentFillingBatch] = bytes.concat(
-            unprocessedBatchesMap[currentFillingBatch],
-            l1Tx
-        );
-
-        emit L1UserTxEvent(currentFillingBatch, uint8(currentPosition), l1Tx);
-
-        if (currentPosition + 1 >= _MAX_TXNS) {
-            currentFillingBatch++;
-        }
-    }
-
     function createAccountDeposit(uint40 loadAmountF) external payable override {
         uint256 loadAmount = _float2Fix(loadAmountF);
         if(loadAmount >= _LIMIT_LOADAMOUNT) {
@@ -113,6 +84,7 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         if(loadAmount != msg.value) {
             revert LoadAmountDoesNotMatch();
         }
+        
         _addTx(msg.sender, 0, loadAmountF, 0, 0);
     }
 
@@ -134,6 +106,32 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         _addTx(msg.sender, fromIdx, loadAmountF, 0, 0);
     }
 
+
+    function vouch(uint48 fromIdx, uint48 toIdx) external {
+
+        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
+            revert InvalidFromIdx();
+        }
+
+        if(((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx))) {
+                revert InvalidToIdx();
+        }
+
+        _addTx(msg.sender, fromIdx, 0, 1, toIdx);
+    }
+
+    function unvouch(uint48 fromIdx, uint48 toIdx) external {
+
+        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
+            revert InvalidFromIdx();
+        }
+
+        if(((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx))) {
+                revert InvalidToIdx();
+        }
+
+        _addTx(msg.sender, fromIdx, 0, 0, toIdx);
+    }
 
     function exit(uint48 fromIdx, uint40 amountF) external override {
         uint256 amount = _float2Fix(amountF);
@@ -166,31 +164,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         }
     }
 
-    function vouch(uint48 fromIdx, uint48 toIdx) external {
-
-        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
-            revert InvalidFromIdx();
-        }
-
-        if(((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx))) {
-                revert InvalidToIdx();
-        }
-
-        _addTx(msg.sender, fromIdx, 0, 1, toIdx);
-    }
-
-    function unvouch(uint48 fromIdx, uint48 toIdx) external {
-
-        if((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
-            revert InvalidFromIdx();
-        }
-
-        if(((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx))) {
-                revert InvalidToIdx();
-        }
-
-        _addTx(msg.sender, fromIdx, 0, 0, toIdx);
-    }
 
     // Implement the missing function from the IMvp interface
     function forgeBatch(
@@ -235,6 +208,115 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         emit ForgeBatch(lastForgedBatch, l1UserTxsLen);
     }
 
+    function withdrawMerkleProof(
+        uint192 amount,
+        uint32 numExitRoot,
+        uint256[] calldata siblings,
+        uint48 idx
+    ) external {
+        uint256[4] memory arrayState = _buildTreeState(amount, msg.sender);
+        uint256 stateHash = _hash4Elements(arrayState);
+
+        uint256 exitRoot = exitRootMap[numExitRoot];
+
+        if (exitNullifierMap[numExitRoot][idx]) {
+            revert WithdrawAlreadyDone();
+        }
+
+        if (!_smtVerifier(exitRoot, siblings, idx, stateHash)) {
+            revert SmtProofInvalid();
+        }
+
+        exitNullifierMap[numExitRoot][idx] = true;
+
+        _withdrawFunds(amount);
+        emit WithdrawEvent(idx, numExitRoot);
+    }
+
+    function getStateRoot(uint32 batchNum) external view override returns (uint256) {
+        return accountRootMap[batchNum];
+    }
+
+    function getLastForgedBatch() external view override returns (uint32) {
+        return lastForgedBatch;
+    }
+
+    function getL1TransactionQueue(uint32 queueIndex) external view override returns (bytes memory) {
+        return unprocessedBatchesMap[queueIndex];
+    }
+
+    function getQueueLength() external view override returns (uint32) {
+        return currentFillingBatch - lastForgedBatch;
+    }
+
+    function _addTx(
+        address ethAddress,
+        uint48 fromIdx,
+        uint40 loadAmountF,
+        uint40 amountF,
+        uint48 toIdx
+    ) public override {
+        bytes memory l1Tx = abi.encodePacked(
+            ethAddress,
+            fromIdx,
+            loadAmountF,
+            amountF,
+            toIdx
+        );
+
+        uint256 currentPosition = unprocessedBatchesMap[currentFillingBatch].length /
+            _TXN_TOTALBYTES;
+
+        unprocessedBatchesMap[currentFillingBatch] = bytes.concat(
+            unprocessedBatchesMap[currentFillingBatch],
+            l1Tx
+        );
+
+        emit L1UserTxEvent(currentFillingBatch, uint8(currentPosition), l1Tx);
+
+        if (currentPosition + 1 >= _MAX_TXNS) {
+            currentFillingBatch++;
+        }
+    }
+
+    function _clearBatchFromQueue() internal returns (uint16) {
+        uint16 l1UserTxsLen = uint16(
+            unprocessedBatchesMap[lastForgedBatch].length / _TXN_TOTALBYTES
+        );
+        delete unprocessedBatchesMap[lastForgedBatch];
+        if (lastForgedBatch + 1 == currentFillingBatch) {
+            currentFillingBatch++;
+        }
+        return l1UserTxsLen;
+    }
+
+    function _safeTransfer(uint256 value) internal {
+        (bool success, ) = msg.sender.call{value: value}(new bytes(0));
+        if (!success) {
+            revert EthTransferFailed();
+        }
+    }
+
+    function _withdrawFunds(uint192 amount) internal {
+        _safeTransfer(amount);
+    }
+
+    function _initializeVerifiers(
+        address _verifier,
+        uint256 _maxTx,
+        uint256 _nLevel
+    ) internal {
+        if (_verifier == address(0)) {
+            revert InvalidVerifierAddress();
+        }
+
+        rollupVerifier = VerifierRollup({
+            verifierInterface: VerifierRollupInterface(_verifier),
+            maxTx: _maxTx,
+            nLevel: _nLevel
+        });
+    }
+
     function _constructCircuitInput(
         uint48 newLastIdx,
         uint256 newAccountRoot,
@@ -261,43 +343,7 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
             txnData
         );
         return uint256(sha256(inputBytes)) % _RFIELD;
-}    
-
-    function _clearBatchFromQueue() internal returns (uint16) {
-        uint16 l1UserTxsLen = uint16(
-            unprocessedBatchesMap[lastForgedBatch].length / _TXN_TOTALBYTES
-        );
-        delete unprocessedBatchesMap[lastForgedBatch];
-        if (lastForgedBatch + 1 == currentFillingBatch) {
-            currentFillingBatch++;
-        }
-        return l1UserTxsLen;
-    }
-
-    function withdrawMerkleProof(
-        uint192 amount,
-        uint32 numExitRoot,
-        uint256[] calldata siblings,
-        uint48 idx
-    ) external {
-        uint256[4] memory arrayState = _buildTreeState(amount, msg.sender);
-        uint256 stateHash = _hash4Elements(arrayState);
-
-        uint256 exitRoot = exitRootMap[numExitRoot];
-
-        if (exitNullifierMap[numExitRoot][idx]) {
-            revert WithdrawAlreadyDone();
-        }
-
-        if (!_smtVerifier(exitRoot, siblings, idx, stateHash)) {
-            revert SmtProofInvalid();
-        }
-
-        exitNullifierMap[numExitRoot][idx] = true;
-
-        _withdrawFunds(amount);
-        emit WithdrawEvent(idx, numExitRoot);
-    }
+    }    
 
     function _buildTreeState(uint192 amount, address user) internal pure returns (uint256[4] memory) {
         uint256[4] memory state;
@@ -306,33 +352,6 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         state[2] = 0;
         state[3] = 0;
         return state;
-    }
-
-    function _withdrawFunds(uint192 amount) internal {
-        _safeTransfer(amount);
-    }
-
-    function _safeTransfer(uint256 value) internal {
-        (bool success, ) = msg.sender.call{value: value}(new bytes(0));
-        if (!success) {
-            revert EthTransferFailed();
-        }
-    }
-
-    function getStateRoot(uint32 batchNum) external view override returns (uint256) {
-        return accountRootMap[batchNum];
-    }
-
-    function getLastForgedBatch() external view override returns (uint32) {
-        return lastForgedBatch;
-    }
-
-    function getL1TransactionQueue(uint32 queueIndex) external view override returns (bytes memory) {
-        return unprocessedBatchesMap[queueIndex];
-    }
-
-    function getQueueLength() external view override returns (uint32) {
-        return currentFillingBatch - lastForgedBatch;
     }
 
     function _float2Fix(uint40 floatVal) internal pure returns(uint256) {
@@ -345,19 +364,4 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         return fix;
     }
 
-    function _initializeVerifiers(
-        address _verifier,
-        uint256 _maxTx,
-        uint256 _nLevel
-    ) internal {
-        if (_verifier == address(0)) {
-            revert InvalidVerifierAddress();
-        }
-
-        rollupVerifier = VerifierRollup({
-            verifierInterface: VerifierRollupInterface(_verifier),
-            maxTx: _maxTx,
-            nLevel: _nLevel
-        });
-    }
 }

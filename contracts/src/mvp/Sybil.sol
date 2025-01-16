@@ -354,6 +354,12 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         return state;
     }
 
+    function _validateFromIdx(uint48 fromIdx) internal view {
+        if ((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
+            revert InvalidFromIdx();
+        }
+    }
+
     function _float2Fix(uint40 floatVal) internal pure returns(uint256) {
         uint256 m = floatVal & 0x7FFFFFFFF;
         uint256 e = floatVal >> 35;

@@ -78,7 +78,7 @@ template BatchTxStates() {
 
     // Identify transaction types
     signal isTransfer;
-    signal isVouchTx;
+    signal output isVouchTx;
     signal isDeleteVouchTx;
 
 
@@ -115,6 +115,12 @@ template BatchTxStates() {
     key4 <== concatKey4.out;
 
     // Processor functions
+    // fnc[0]  fnc[1]
+    // 0       0             NOP
+    // 0       1             UPDATE
+    // 1       0             INSERT
+    // 1       1             DELETE
+
     // Account tree (P1)
     isP1Insert <== newAccount;
     P1_fnc0 <== isP1Insert * isFinalFromIdx;
@@ -127,12 +133,11 @@ template BatchTxStates() {
 
     // Vouch tree (P3, P4)
     // P3: handles fromIdx|toIdx vouch
-    P3_fnc0 <== (isVouchTx + isDeleteVouchTx) * (1 - nop); // UPDATE (delete for transfer)
-    P3_fnc1 <== isVouchTx * (1 - nop); // INSERT (only for vouch creation)
-
+    P3_fnc0 <== 0; // Never INSERT
+    P3_fnc1 <== (isVouchTx + isDeleteVouchTx) * (1 - nop); // Always UPDATE (1->Vouch, 0->unVouch)
     // P4: handles toIdx|fromIdx vouch
-    P4_fnc0 <== isDeleteVouchTx * (1 - nop); // UPDATE (delete for deleteVouch/transfer)
-    P4_fnc1 <== 0; // Never INSERT
+    P4_fnc0 <== 0; // Never INSERT
+    P4_fnc1 <== isDeleteVouchTx * (1 - nop); // UPDATE (delete for deleteVouch/transfer)
 
     // Amount processing for transfer
     component minAmount = LessThan(192);

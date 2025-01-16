@@ -165,7 +165,7 @@ template BatchTx(nLevels) {
     processor3.oldValue <== oldValue3;
     processor3.isOld0 <== isOld0_3;
     processor3.newKey <== states.key3;
-    processor3.newValue <== 1; // Set to 1 for vouch creation
+    processor3.newValue <== states.isVouchTx; // 1 for vouch, 0 for unvouch
     processor3.fnc[0] <== states.P3_fnc0;
     processor3.fnc[1] <== states.P3_fnc1;
 

@@ -6,6 +6,8 @@ include "../../node_modules/circomlib/circuits/mux1.circom";
 include "../../node_modules/circomlib/circuits/poseidon.circom";
 
 template BatchTxStates() {
+    var EXPLODE_AMOUNT = 1; // TODO: have to define real value
+
     // Inputs
     signal input fromIdx;          // 48 bits
     signal input toIdx;            // 48 bits

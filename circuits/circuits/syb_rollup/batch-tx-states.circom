@@ -81,14 +81,16 @@ template BatchTxStates() {
     signal output isVouchTx;
     signal isDeleteVouchTx;
 
+    signal notExitNop <== (1 - isExit) * (1 - nop);
 
     // Transfer : splited explode tx
-    isTransfer <== (1 - isExit) * (1 - nop) * isAmount * (1 - isLoadAmount);
+    signal tempIsTransfer <== notExitNop * isAmount;
+    isTransfer <== tempIsTransfer * (1 - isLoadAmount);
 
     // VouchTx
-    isVouchTx <== (1 - isTransfer) * (1 - isExit) * (1 - nop);
+    isVouchTx <== (1 - isTransfer) * notExitNop;
     // DeleteVouchTx: includes both explicit delete and transfer (which implicitly deletes vouches)
-    isDeleteVouchTx <== ((1 - isExit) * (1 - nop) * (1 - isVouchTx)) + isTransfer;
+    isDeleteVouchTx <== (notExitNop * (1 - isVouchTx)) + isTransfer;
 
 
     // Account tree keys (P1, P2)
@@ -149,7 +151,12 @@ template BatchTxStates() {
     amountSelector.c[1] <== balance;
     amountSelector.s <== minAmount.out;
 
-    effectiveAmount <== isTransfer * amountSelector.out + (1 - isTransfer) * amount;
+    component effectiveAmountSelector = Mux1();
+    effectiveAmountSelector.c[0] <== amount;
+    effectiveAmountSelector.c[1] <== amountSelector.out;
+    effectiveAmountSelector.s <== isTransfer;
+
+    effectiveAmount <== effectiveAmountSelector.out;
 
     // Nullifier logic
     signal shouldCheckEthAddr;

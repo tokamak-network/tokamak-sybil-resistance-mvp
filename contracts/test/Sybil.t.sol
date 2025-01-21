@@ -2,7 +2,7 @@
 pragma solidity 0.8 .23;
 
 import "forge-std/Test.sol";
-import "../src/Sybil.sol";
+import "../src/sybil.sol";
 import "./utils/Constants.sol";
 import "./types/TransactionTypes.sol";
 import "../src/VerifierRollupStub.sol";

@@ -39,11 +39,11 @@ template BatchTx(nLevels) {
     signal input oldValue2;
 
     // Vouch states
-    signal input siblings3[nLevels + 1];
+    signal input siblings3[2*nLevels + 1];
     signal input isOld0_3;
     signal input oldKey3;
     signal input oldValue3;
-    signal input siblings4[nLevels + 1];
+    signal input siblings4[2*nLevels + 1];
     signal input isOld0_4;
     signal input oldKey4;
     signal input oldValue4;
@@ -156,9 +156,9 @@ template BatchTx(nLevels) {
     processor2.fnc[1] <== states.P2_fnc1 * balanceUpdater.isP2Nop;
 
     // Vouch tree processor 3 (fromIdx|toIdx)
-    component processor3 = SMTProcessor(nLevels + 1);
+    component processor3 = SMTProcessor(2*nLevels + 1);
     processor3.oldRoot <== oldVouchRoot;
-    for (i = 0; i < nLevels + 1; i++) {
+    for (i = 0; i < 2*nLevels + 1; i++) {
         processor3.siblings[i] <== siblings3[i];
     }
     processor3.oldKey <== oldKey3;
@@ -170,9 +170,9 @@ template BatchTx(nLevels) {
     processor3.fnc[1] <== states.P3_fnc1;
 
     // Vouch tree processor 4 (toIdx|fromIdx)
-    component processor4 = SMTProcessor(nLevels + 1);
+    component processor4 = SMTProcessor(2*nLevels + 1);
     processor4.oldRoot <== processor3.newRoot;
-    for (i = 0; i < nLevels + 1; i++) {
+    for (i = 0; i < 2*nLevels + 1; i++) {
         processor4.siblings[i] <== siblings4[i];
     }
     processor4.oldKey <== oldKey4;

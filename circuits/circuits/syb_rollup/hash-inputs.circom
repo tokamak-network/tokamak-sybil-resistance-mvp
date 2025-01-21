@@ -18,8 +18,7 @@ template HashInputs(nLevels, nTx) {
     signal input newAccountRoot;
     signal input newVouchRoot;
     signal input newExitRoot;
-    //signal input oldScoreRoot;
-    //signal input newScoreRoot;
+
     signal input L1TxsData[bitsL1TxsData];
 
     //output

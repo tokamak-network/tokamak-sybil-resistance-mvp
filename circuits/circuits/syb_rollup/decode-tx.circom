@@ -28,14 +28,14 @@ template DecodeTx(nLevels){
     // decode txCompressedData
     signal output fromIdx; // 48 0..47
     signal output toIdx; // 48 48..95
-    signal output nonce; // 40 96..135
+    //signal output nonce; // 40 96..135
 
     signal output amount;
 
     var i;
 
-    // Parse txCompressedData
-    component n2bData = Num2Bits(136);
+    // Parse txCompressedData (96 bits total: fromIdx[48], toIdx[48])
+    component n2bData = Num2Bits(96);
     n2bData.in <== txCompressedData;
 
     // fromIdx
@@ -63,13 +63,6 @@ template DecodeTx(nLevels){
         paddingTo += n2bData.out[48 + i];
     }
     paddingTo === 0;
-
-    // nonce
-    component b2nNonce = Bits2Num(40);
-    for (i = 0; i < 40; i++) {
-        b2nNonce.in[i] <== n2bData.out[96 + i];
-    }
-    b2nNonce.out ==> nonce;
 
     // Parse amount
     component n2bAmount = Num2Bits(40);

@@ -58,8 +58,8 @@ type StateAPI struct {
 // Constants contains network constants
 type Constants struct {
 	common.SCConsts
-	ChainID       uint64
-	HermezAddress ethCommon.Address
+	ChainID    uint64
+	TonAddress ethCommon.Address
 }
 
 // NodeInfo contains information about he node used when serving the API
@@ -129,5 +129,8 @@ func (hdb *HistoryDB) GetConstants() (*Constants, error) {
 		hdb.dbRead, &nodeInfo,
 		"SELECT constants FROM node_info WHERE item_id = 1;",
 	)
-	return nodeInfo.Constants, common.Wrap(err)
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+	return nodeInfo.Constants, nil
 }

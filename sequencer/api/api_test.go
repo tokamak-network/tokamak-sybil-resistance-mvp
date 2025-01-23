@@ -319,7 +319,7 @@ func doGoodReqPaginated(
 	appendIter func(res interface{}),
 ) error {
 	var next uint64
-	firstIte := false
+	firstIte := true
 	expectedTotal := 0
 	totalReceived := 0
 	for {

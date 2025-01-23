@@ -21,13 +21,16 @@ template LessThan(n) {
 }
 
 template Score(num_verts) {
-	signal input vouchMatrix[num_verts][num_verts];
-	signal input balances[num_verts];
-	signal output old_scores[num_verts];
-  signal adjacencyMatrix[num_verts][num_verts];
-  signal degreeVector[num_verts];
-	signal laztTransitionMatrix[num_verts][num_verts];
-	signal pagerankvectors[num_verts][num_verts];
+signal input vouchMatrix[num_verts][num_verts];
+signal input balances[num_verts];
+signal output old_scores[num_verts];
+signal adjacencyMatrix[num_verts][num_verts];
+signal degreeVector[num_verts];
+signal lazyTransitionMatrix[num_verts][num_verts];
+signal pagerankvectors[num_verts][num_verts];
+signal permutationmatrices[num_verts][num_verts][num_verts];
+signal sortedvectors[num_verts][num_verts];
+
   for (var i = 0; i<num_verts; i+=1){ 
      var sum = 0;
      for (var j= 0; j<num_verts; j+=1){ 
@@ -35,9 +38,27 @@ template Score(num_verts) {
      }
      degreeVector[i] <== sum;
   }
+  for (var i = 0; i<num_verts; i+=1){ 
+     for (var j= 0; j<num_verts; j+=1){ 
+        var delta = i==j? 1 : 0;
+        2*lazyTransitionMatrix[i][j]*degreeVector[i] == degreeVector[i]+adjacencyMatrix[i][j];
+     }
+  }
 
+  for (var i = 0; i<num_verts; i+=1){ 
+     for (var j= 0; j<num_verts; j+=1){ 
+        var delta = i==j? 1 : 0;
+        var sum = 0;
+        for (var k= 0;k<num_verts; k+=1){ 
+           sum =sum + permutationmatrices[i][k]*lazyTransitionMatrix[k][j];
+        }
+        permutationmatrices[i][j] <== 0.5*delta+0.5*sum;
+     }
+  }
 
-	component lt[num_verts][num_subsets];
+sortedvectors
+
+component lt[num_verts][num_subsets];
     var sum = 0;
     var size = 0;
     var rem = 0;

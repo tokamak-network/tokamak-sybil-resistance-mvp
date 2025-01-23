@@ -21,6 +21,7 @@ template BatchTx(nLevels) {
     signal input newAccount;
     signal input newExit;
     signal input fromEthAddr;
+    signal input EXPLODE_AMOUNT;   // For batch-tx-states
 
     // State 1 (sender)
     signal input balance1;
@@ -87,6 +88,7 @@ template BatchTx(nLevels) {
     states.newExit <== newExit;
     states.newAccount <== newAccount;
     states.balance <== balance1;
+    states.EXPLODE_AMOUNT <== EXPLODE_AMOUNT;
 
     // B - Compute Old State Hashes
     component oldSt1Hash = HashState();

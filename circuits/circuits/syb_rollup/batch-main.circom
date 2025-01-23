@@ -1,7 +1,5 @@
 pragma circom 2.0.0;
 
-include "../../node_modules/circomlib/circuits/smt/smtprocessor.circom";
-include "../../node_modules/circomlib/circuits/poseidon.circom";
 include "../../node_modules/circomlib/circuits/gates.circom";
 include "../../node_modules/circomlib/circuits/mux1.circom";
 
@@ -10,8 +8,11 @@ include "./batch-tx.circom";
 include "./hash-inputs.circom";
 
 template BatchMain(nTx, nLevels) {
-    // Unique public signal
+    // public signal
     signal output hashGlobalInputs;
+
+    // public system parameter set in the contract
+    signal input EXPLODE_AMOUNT;
 
     // private signals taking part of the hash-input
     signal input oldLastIdx;
@@ -28,7 +29,6 @@ template BatchMain(nTx, nLevels) {
     signal input fromEthAddr[nTx];
     signal input toEthAddr[nTx];
     signal input newAccount[nTx];
-    signal input newExit[nTx];
 
     // Account State 1(from)
     signal input balance1[nTx];
@@ -42,6 +42,7 @@ template BatchMain(nTx, nLevels) {
     signal input balance2[nTx];
     signal input ethAddr2[nTx];
     signal input siblings2[nTx][nLevels + 1];
+    signal input newExit[nTx];
     signal input isOld0_2[nTx];
     signal input oldKey2[nTx];
     signal input oldValue2[nTx];
@@ -66,7 +67,6 @@ template BatchMain(nTx, nLevels) {
     // A - Check binary signals
     for (i = 0; i < nTx; i++) {
         newAccount[i] * (newAccount[i] - 1) === 0;
-        //newExit[i] * (newExit[i] - 1) === 0;
         isOld0_1[i] * (isOld0_1[i] - 1) === 0;
         isOld0_2[i] * (isOld0_2[i] - 1) === 0;
         isOld0_3[i] * (isOld0_3[i] - 1) === 0;
@@ -91,7 +91,6 @@ template BatchMain(nTx, nLevels) {
         decodeTx[i].auxFromIdx <== auxFromIdx[i];
     }
 
-
     //C - batch-tx : process batch transactions
     for (i = 0; i < nTx; i++) {
         batchTx[i] = BatchTx(nLevels);
@@ -104,6 +103,7 @@ template BatchMain(nTx, nLevels) {
         batchTx[i].newAccount <== newAccount[i];
         batchTx[i].newExit <== newExit[i];
         batchTx[i].fromEthAddr <== fromEthAddr[i];
+        batchTx[i].EXPLODE_AMOUNT <== EXPLODE_AMOUNT;
 
         // State 1
         batchTx[i].balance1 <== balance1[i];
@@ -149,7 +149,6 @@ template BatchMain(nTx, nLevels) {
         }
     }
 
-
     //D - hash-inputs : compute global hash input
     component hasherInputs = HashInputs(nLevels, nTx);
 
@@ -170,5 +169,4 @@ template BatchMain(nTx, nLevels) {
     }
 
     hashGlobalInputs <== hasherInputs.hashInputsOut;
-
 }

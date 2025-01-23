@@ -3,11 +3,8 @@ pragma circom 2.0.0;
 include "../../node_modules/circomlib/circuits/comparators.circom";
 include "../../node_modules/circomlib/circuits/mux2.circom";
 include "../../node_modules/circomlib/circuits/mux1.circom";
-include "../../node_modules/circomlib/circuits/poseidon.circom";
 
 template BatchTxStates() {
-    var EXPLODE_AMOUNT = 1; // TODO: have to define real value
-
     // Inputs
     signal input fromIdx;          // 48 bits
     signal input toIdx;            // 48 bits
@@ -20,6 +17,7 @@ template BatchTxStates() {
     signal input newExit;          // bool
     signal input newAccount;       // bool
     signal input balance;          // 192 bits
+    signal input EXPLODE_AMOUNT;   // Penalty amount set in the system. It is set in the contract.
     //signal input isExplode;        // bool
 
     // Outputs

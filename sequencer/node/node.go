@@ -88,7 +88,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		return nil, common.Wrap(fmt.Errorf("dbUtils.InitSQLDB: %w", err))
 	}
 
-	historyDB := historydb.NewHistoryDB(db, db)
+	historyDB := historydb.NewHistoryDB(db, db, nil)
 
 	ethClient, err := ethclient.Dial(cfg.Web3.URL)
 	if err != nil {
@@ -244,8 +244,8 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		SCConsts: common.SCConsts{
 			Rollup: scConsts.Rollup,
 		},
-		ChainID:       chainIDU64,
-		HermezAddress: cfg.SmartContracts.Rollup,
+		ChainID:    chainIDU64,
+		TonAddress: cfg.SmartContracts.Rollup,
 	}
 	if err := historyDB.SetConstants(&hdbConsts); err != nil {
 		return nil, common.Wrap(err)

@@ -2,6 +2,7 @@ package statedb
 
 import (
 	"errors"
+	"math/big"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/database/kvdb"
 	"tokamak-sybil-resistance/log"
@@ -105,6 +106,17 @@ func (s *Last) GetAccount(idx common.AccountIdx) (*common.Account, error) {
 	return GetAccountInTreeDB(s.db, idx)
 }
 
+// GetCurrentBatch returns the current BatchNum stored in Last.db
+func (s *Last) GetCurrentBatch() (common.BatchNum, error) {
+	cbBytes, err := s.db.Get(kvdb.KeyCurrentBatch)
+	if common.Unwrap(err) == db.ErrNotFound {
+		return 0, nil
+	} else if err != nil {
+		return 0, common.Wrap(err)
+	}
+	return common.BatchNumFromBytes(cbBytes)
+}
+
 // DB returns the underlying storage of Last
 func (s *Last) DB() db.Storage {
 	return s.db
@@ -162,6 +174,37 @@ func (s *StateDB) LastGetAccount(idx common.AccountIdx) (*common.Account, error)
 		return nil, common.Wrap(err)
 	}
 	return account, nil
+}
+
+// LastGetCurrentBatch is a thread-safe method to get the current BatchNum in
+// the last checkpoint of the StateDB.
+func (s *StateDB) LastGetCurrentBatch() (common.BatchNum, error) {
+	var batchNum common.BatchNum
+	if err := s.LastRead(func(sdb *Last) error {
+		var err error
+		batchNum, err = sdb.GetCurrentBatch()
+		return err
+	}); err != nil {
+		return 0, common.Wrap(err)
+	}
+	return batchNum, nil
+}
+
+// LastMTGetRoot returns the root of the underlying Merkle Tree in the last
+// checkpoint of the StateDB.
+func (s *StateDB) LastMTGetRoot() (*big.Int, error) {
+	var root *big.Int
+	if err := s.LastRead(func(sdb *Last) error {
+		mt, err := merkletree.NewMerkleTree(sdb.DB().WithPrefix(PrefixKeyMTAcc), s.cfg.NLevels)
+		if err != nil {
+			return common.Wrap(err)
+		}
+		root = mt.Root().BigInt()
+		return nil
+	}); err != nil {
+		return nil, common.Wrap(err)
+	}
+	return root, nil
 }
 
 // Close closes the StateDB.

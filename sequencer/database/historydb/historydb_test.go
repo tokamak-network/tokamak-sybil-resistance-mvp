@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	historyDB = NewHistoryDB(db, db)
+	historyDB = NewHistoryDB(db, db, nil)
 	// apiConnCon := database.NewAPIConnectionController(1, time.Second)
 	// historyDBWithACC = NewHistoryDB(db, db, apiConnCon)
 

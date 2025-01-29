@@ -21,6 +21,7 @@ contract FunctionScript is Script {
         address poseidon2Elements = vm.envAddress("POSEIDON2ELEMENTS");
         address poseidon3Elements = vm.envAddress("POSEIDON3ELEMENTS");
         address poseidon4Elements = vm.envAddress("POSEIDON4ELEMENTS");
+        address adminRole = msg.sender;
 
         vm.startBroadcast();
         // Deploy the Sybil contract
@@ -33,7 +34,8 @@ contract FunctionScript is Script {
             nLevel,
             poseidon2Elements,
             poseidon3Elements,
-            poseidon4Elements
+            poseidon4Elements,
+            adminRole
         );
 
         vm.stopBroadcast();

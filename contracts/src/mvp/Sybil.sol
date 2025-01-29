@@ -2,13 +2,12 @@
 pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "../interfaces/IMVPSybil.sol";
 import "../interfaces/IVerifierRollup.sol";
 import "../types/mvp/SybilHelpers.sol";
 
-contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers {
+contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHelpers {
 
     struct VerifierRollup {
         VerifierRollupInterface verifierInterface;
@@ -54,6 +53,8 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         uint48 indexed idx,
         uint32 indexed numExitRoot
     );
+    event ExplodeAmountUpdated(uint256 explodeAmount);
+    event MinBalanceUpdated(uint256 minBalance);
 
     function initialize(
         address verifier,

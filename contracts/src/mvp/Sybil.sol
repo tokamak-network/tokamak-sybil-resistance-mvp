@@ -26,6 +26,8 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     uint48 public lastIdx;
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
+    uint256 public minBalance;
+    uint256 public explodeAmount;
 
     mapping(uint32 => uint256) public accountRootMap;
     mapping(uint32 => uint256) public vouchRootMap;

@@ -16,6 +16,7 @@ contract MvpTest is Test, TransactionTypeHelper {
         PoseidonUnit2 mockPoseidon2 = new PoseidonUnit2();
         PoseidonUnit3 mockPoseidon3 = new PoseidonUnit3();
         PoseidonUnit4 mockPoseidon4 = new PoseidonUnit4();
+        address adminRole = address(this);
         emit log_address(address(mockPoseidon2));
         emit log_address(address(mockPoseidon3));
         emit log_address(address(mockPoseidon4));
@@ -34,7 +35,8 @@ contract MvpTest is Test, TransactionTypeHelper {
             nLevels, 
             address(mockPoseidon2), 
             address(mockPoseidon3), 
-            address(mockPoseidon4)
+            address(mockPoseidon4),
+            adminRole
         );
     }
 
@@ -692,7 +694,8 @@ contract MvpTest is Test, TransactionTypeHelper {
             nLevels, 
             invalidAddress, 
             address(mockPoseidon3), 
-            address(mockPoseidon4)
+            address(mockPoseidon4),
+            address(this)
         );
 
         // Expect revert for invalid poseidon3Elements address
@@ -703,7 +706,8 @@ contract MvpTest is Test, TransactionTypeHelper {
             nLevels, 
             address(mockPoseidon2), 
             invalidAddress, 
-            address(mockPoseidon4)
+            address(mockPoseidon4),
+            address(this)
         );
 
         // Expect revert for invalid poseidon4Elements address
@@ -714,7 +718,8 @@ contract MvpTest is Test, TransactionTypeHelper {
             nLevels, 
             address(mockPoseidon2), 
             address(mockPoseidon3),
-            invalidAddress
+            invalidAddress,
+            address(this)
         );
     }
 
@@ -737,7 +742,8 @@ contract MvpTest is Test, TransactionTypeHelper {
             nLevel, 
             address(mockPoseidon2), 
             address(mockPoseidon3), 
-            address(mockPoseidon4)
+            address(mockPoseidon4),
+            address(this)
         );
     }
 
@@ -919,6 +925,40 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256 fix = m * exp;
 
         return fix;
+    }
+
+    function testUpdateExplodeAmount() public {
+        uint256 newExplodeAmount = 500;
+        vm.prank(address(this));
+        sybil.updateExplodeAmount(newExplodeAmount);
+
+        assertEq(sybil.explodeAmount(), newExplodeAmount);
+    }
+
+    function testUpdateMinBalance() public {
+        uint256 newMinBalance = 1000;
+        vm.prank(address(this));
+        sybil.updateMinBalance(newMinBalance);
+
+        assertEq(sybil.minBalance(), newMinBalance);
+    }
+
+    function testUpdateExplodeAmountByNonAdmin() public {
+        uint256 newExplodeAmount = 500;
+        address user = address(0);
+
+        vm.prank(user);
+        vm.expectRevert();
+        sybil.updateExplodeAmount(newExplodeAmount);
+    }
+
+    function testUpdateMinBalanceByNonAdmin() public {
+        uint256 newMinBalance = 1000;
+        address user = address(0);
+
+        vm.prank(user);
+        vm.expectRevert();
+        sybil.updateMinBalance(newMinBalance);
     }
 
     receive() external payable { }

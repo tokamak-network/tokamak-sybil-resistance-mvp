@@ -2,12 +2,12 @@
 pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "../interfaces/IMVPSybil.sol";
 import "../interfaces/IVerifierRollup.sol";
 import "../types/mvp/SybilHelpers.sol";
 
-contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers {
+contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHelpers {
 
     struct VerifierRollup {
         VerifierRollupInterface verifierInterface;
@@ -22,10 +22,13 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
     uint256 constant _MAX_TXNS = 1000; // Max transactions per batch
     uint256 constant _LIMIT_LOADAMOUNT = (1 << 128); // Max loadAmount per call
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     uint48 public lastIdx;
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
+    uint256 public minBalance;
+    uint256 public explodeAmount;
 
     mapping(uint32 => uint256) public accountRootMap;
     mapping(uint32 => uint256) public vouchRootMap;
@@ -50,6 +53,8 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         uint48 indexed idx,
         uint32 indexed numExitRoot
     );
+    event ExplodeAmountUpdated(uint256 explodeAmount);
+    event MinBalanceUpdated(uint256 minBalance);
 
     function initialize(
         address verifier,
@@ -57,10 +62,14 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
         uint256 nLevel,
         address _poseidon2Elements,
         address _poseidon3Elements,
-        address _poseidon4Elements
+        address _poseidon4Elements,
+        address _adminRole
     ) public initializer {
         lastIdx = _RESERVED_IDX;
         currentFillingBatch = 1;
+
+        __AccessControl_init();
+        _grantRole(ADMIN_ROLE, _adminRole);
 
         _initializeVerifiers(
             verifier,
@@ -213,6 +222,16 @@ contract Sybil is Initializable, OwnableUpgradeable, IMVPSybil, MVPSybilHelpers 
 
         _withdrawFunds(amount);
         emit WithdrawEvent(idx, numExitRoot);
+    }
+
+    function updateExplodeAmount(uint256 _explodeAmount) external override onlyRole(ADMIN_ROLE) {
+        explodeAmount = _explodeAmount;
+        emit ExplodeAmountUpdated(explodeAmount);
+    }
+
+    function updateMinBalance(uint256 _minBalance) external override onlyRole(ADMIN_ROLE){
+        minBalance = _minBalance;
+        emit MinBalanceUpdated(explodeAmount);
     }
 
     function getStateRoot(uint32 batchNum) external view override returns (uint256) {

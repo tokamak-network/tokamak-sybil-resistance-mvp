@@ -20,7 +20,8 @@ interface IMVPSybil {
         uint256 nLevel,
         address _poseidon2Elements,
         address _poseidon3Elements,
-        address _poseidon4Elements
+        address _poseidon4Elements,
+        address _adminRole
     ) external;
 
     // L1 Transaction functions
@@ -78,5 +79,9 @@ interface IMVPSybil {
         uint256[] calldata siblings,
         uint48 idx
     ) external;
+
+    // setter functions
+    function updateExplodeAmount(uint256 _explodeAmount) external;
+    function updateMinBalance(uint256 _minBalance) external;
 
 }

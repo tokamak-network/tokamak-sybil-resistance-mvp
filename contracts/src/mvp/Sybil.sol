@@ -56,6 +56,19 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
     event ExplodeAmountUpdated(uint256 explodeAmount);
     event MinBalanceUpdated(uint256 minBalance);
 
+    /**
+     * @dev Initializes the contract with the specified parameters.
+     * This function can only be called once during the deployment of the contract.
+     *
+     * @param verifier The address of the verifier contract to be used for rollup verification.
+     * @param maxTx The maximum number of transactions allowed in a single batch.
+     * @param nLevel The number of levels in the verification circuit.
+     * @param _poseidon2Elements The address of the Poseidon hash function elements for 2 elements.        
+     * @param _poseidon3Elements The address of the Poseidon hash function elements for 3 elements.                   
+     * @param _poseidon4Elements The address of the Poseidon hash function elements for 4 elements.
+     *
+     * @notice The deployer of the contract will be granted the `ADMIN_ROLE`.
+    */
     function initialize(
         address verifier,
         uint256 maxTx,
@@ -84,6 +97,19 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         );
     }
 
+    /**
+     * @dev Allows a user to create an account deposit.
+     * 
+     * This function accepts a specified amount of Ether, which is converted from a fixed-point 
+     * representation to a standard uint256 value.
+     * 
+     * @param loadAmountF The amount of Ether to deposit, represented as a fixed-point number
+     * 
+     * Requirements:
+     * 
+     * - The `loadAmountF` must be less than the maximum load amount defined by `_LIMIT_LOADAMOUNT`.
+     * - The amount of Ether sent with the transaction must match the converted `loadAmount`.
+    */
     function createAccountDeposit(uint40 loadAmountF) external payable override {
         uint256 loadAmount = _float2Fix(loadAmountF);
         if(loadAmount >= _LIMIT_LOADAMOUNT) {
@@ -97,6 +123,20 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         _addTx(msg.sender, 0, loadAmountF, 0, 0);
     }
 
+    /**
+     * @dev Allows a user to deposit Ether into their account.
+     *
+     * This function accepts a specified amount of Ether, which is converted from a fixed-point 
+     * representation to a standard uint256 value.
+     *
+     * @param fromIdx The index of the account to which the deposit is being made.
+     * @param loadAmountF The amount of Ether to deposit, represented as a fixed-point number 
+     * 
+     * Requirements:
+     * 
+     * - The `loadAmountF` must be less than the maximum load amount defined by `_LIMIT_LOADAMOUNT`.
+     * - The amount of Ether sent with the transaction must match the converted `loadAmount`.
+    */
     function deposit(uint48 fromIdx, uint40 loadAmountF) external payable override {
         uint256 loadAmount = _float2Fix(loadAmountF);
 
@@ -113,7 +153,15 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         _addTx(msg.sender, fromIdx, loadAmountF, 0, 0);
     }
 
-
+    /**
+     * @dev Allows a user to vouch for another account.
+     *
+     * @param fromIdx The index of the account that is vouching.
+     * @param toIdx The index of the account being vouched for.
+     * 
+     * Requirement:
+     * - Both `fromIdx` and `toIdx` must be valid indices.
+    */
     function vouch(uint48 fromIdx, uint48 toIdx) external {
 
         _validateFromIdx(fromIdx);
@@ -121,7 +169,15 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
 
         _addTx(msg.sender, fromIdx, 0, 1, toIdx);
     }
-
+    /**
+     * @dev Allows a user to remove their vouch for another account.
+     *
+     * @param fromIdx The index of the account that is unvouching.
+     * @param toIdx The index of the account being unvouched for.
+     * 
+     * Requirement:
+     * - Both `fromIdx` and `toIdx` must be valid indices.
+    */
     function unvouch(uint48 fromIdx, uint48 toIdx) external {
 
         _validateFromIdx(fromIdx);
@@ -130,6 +186,15 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         _addTx(msg.sender, fromIdx, 0, 0, toIdx);
     }
 
+    /**
+     * @dev Allows a user to exit their account by withdrawing a specified amount of Ether.
+     *
+     * @param fromIdx The index of the account that is exiting.
+     * @param amountF The amount of Ether to withdraw, represented as a fixed-point number 
+     *
+     * Requirement:
+     * - The `amountF` must be less than the maximum load amount defined by `_LIMIT_LOADAMOUNT`.
+    */
     function exit(uint48 fromIdx, uint40 amountF) external override {
         uint256 amount = _float2Fix(amountF);
 
@@ -142,6 +207,18 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         _addTx(msg.sender, fromIdx, 0, amountF, _EXIT_IDX);
     }
 
+    /**
+     * @dev Allows a user to explode multiple accounts from a specified index.
+     *
+     * This function enables a user to explode (or transfer) their account to multiple 
+     * specified indices. The transaction is added to the queue for processing.
+     *
+     * @param fromIdx The index of the account that is explodeMultiple.
+     * @param toIdxs An array of indices representing the accounts being exploded for.
+     * 
+     * Requirement:
+     * - All indices in `toIdxs` must be valid.
+    */
     function explodeMultiple(uint48 fromIdx, uint48[] memory toIdxs) external override {
 
         _validateFromIdx(fromIdx);
@@ -156,7 +233,22 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         }
     }
 
-    // Implement the missing function from the IMvp interface
+    /**
+     * @dev Processes a batch of transactions and verifies the associated proof.
+     *
+     * @param newLastIdx The new last index to be set for the batch.
+     * @param newAccountRoot The new account root to be set for the batch.
+     * @param newVouchRoot The new vouch root to be set for the batch.
+     * @param newScoreRoot The new score root to be set for the batch.
+     * @param newExitRoot The new exit root to be set for the batch.
+     * @param proofA The first part of the proof used for verification.
+     * @param proofB The second part of the proof used for verification.
+     * @param proofC The third part of the proof used for verification.
+     *
+     * @notice The function will revert if the provided proof is invalid.
+     *
+     * @dev Emits a {ForgeBatch} event indicating the new batch has been forged.
+    */
     function forgeBatch(
         uint48 newLastIdx,
         uint256 newAccountRoot,
@@ -199,6 +291,19 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         emit ForgeBatch(lastForgedBatch, l1UserTxsLen);
     }
 
+    /**
+     * @dev Allows a user to withdraw funds based on a Merkle proof.
+     *
+     * @param amount The amount of funds to withdraw
+     * @param numExitRoot The index of the exit root to be used for verification.
+     * @param siblings An array of sibling hashes used in the Merkle proof.
+     * @param idx The index of the account from which the funds are being withdrawn.
+     *
+     * @notice The function will revert if the withdrawal has already been processed or if 
+     *         the proof is invalid.
+     *
+     * @dev Emits a {WithdrawEvent} indicating the withdrawal has been processed.
+    */
     function withdrawMerkleProof(
         uint192 amount,
         uint32 numExitRoot,
@@ -224,32 +329,79 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         emit WithdrawEvent(idx, numExitRoot);
     }
 
+    /**
+     * @dev Updates the amount used for the explode operation.
+     *
+     * @param _explodeAmount The new amount to be set.
+     *
+     * @notice This function can only be called by an account with the `ADMIN_ROLE`.
+    */
     function updateExplodeAmount(uint256 _explodeAmount) external override onlyRole(ADMIN_ROLE) {
         explodeAmount = _explodeAmount;
         emit ExplodeAmountUpdated(explodeAmount);
     }
 
+    /**
+     * @dev Updates the minimum balance required for accounts.
+     *
+     * @param _minBalance The new minimum balance to be set.
+     *
+     * @notice This function can only be called by an account with the `ADMIN_ROLE`.
+    */
     function updateMinBalance(uint256 _minBalance) external override onlyRole(ADMIN_ROLE){
         minBalance = _minBalance;
         emit MinBalanceUpdated(explodeAmount);
     }
 
+    /**
+     * @dev Retrieves the state root for a specific batch number.
+     *
+     * @param batchNum The batch number associated with the state root.
+     * @return The account root of the specified batch number.
+    */
     function getStateRoot(uint32 batchNum) external view override returns (uint256) {
         return accountRootMap[batchNum];
     }
 
+    /**
+     * @dev Retrieves the last forged batch number.
+     *
+     * @return The last forged batch number.
+    */
     function getLastForgedBatch() external view override returns (uint32) {
         return lastForgedBatch;
     }
 
+    /**
+     * @dev Retrieves the transaction queue for a specific index.
+     * 
+     * @param queueIndex The index of the transaction queue.
+     * @return A bytes array containing the unprocessed transactions for the specified index.
+    */
     function getL1TransactionQueue(uint32 queueIndex) external view override returns (bytes memory) {
         return unprocessedBatchesMap[queueIndex];
     }
 
+    /**
+     * @dev Retrieves the length of the transaction queue.
+     *
+     * @return The number of batches in the transaction queue.
+    */
     function getQueueLength() external view override returns (uint32) {
         return currentFillingBatch - lastForgedBatch;
     }
 
+    /**
+     * @dev Adds a transaction to the current filling batch.
+     *
+     * @param ethAddress The Ethereum address associated with the transaction.
+     * @param fromIdx The index of the account from which the transaction originates.
+     * @param loadAmountF The amount of Ether to load, represented as a fixed-point number 
+     * @param amountF The amount of Ether to transfer, represented as a fixed-point number 
+     * @param toIdx The index of the account to which the transaction is directed.
+     *
+     * @dev Emits a {L1User TxEvent} event.
+    */
     function _addTx(
         address ethAddress,
         uint48 fromIdx,
@@ -280,6 +432,11 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         }
     }
 
+    /**
+     * @dev Clears the processed batch from the transaction queue.
+     * 
+     * @return The number of transactions that were in the cleared batch.
+    */
     function _clearBatchFromQueue() internal returns (uint16) {
         uint16 l1UserTxsLen = uint16(
             unprocessedBatchesMap[lastForgedBatch].length / _TXN_TOTALBYTES
@@ -291,6 +448,13 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         return l1UserTxsLen;
     }
 
+    /**
+     * @dev Transfers Ether to the specified address.
+     *
+     * @param value The amount of Ether to transfer, specified in wei.
+     *
+     * @dev Reverts with `EthTransferFailed` if the transfer is unsuccessful.
+    */
     function _safeTransfer(uint256 value) internal {
         (bool success, ) = msg.sender.call{value: value}(new bytes(0));
         if (!success) {
@@ -298,10 +462,24 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         }
     }
 
+    /**
+     * @dev Withdraws a specified amount of funds from the contract.
+     *
+     * @param amount The amount of Ether to withdraw, specified in wei.
+    */
     function _withdrawFunds(uint192 amount) internal {
         _safeTransfer(amount);
     }
 
+    /**
+     * @dev Initializes the rollup verifier with the specified parameters.
+     *
+     * @param _verifier The address of the verifier contract to be used.
+     * @param _maxTx The maximum number of transactions allowed in a batch.
+     * @param _nLevel The number of levels in the verification circuit.
+     *
+     * @dev Reverts with `InvalidVerifierAddress` if the provided verifier address is zero.
+    */
     function _initializeVerifiers(
         address _verifier,
         uint256 _maxTx,
@@ -318,6 +496,17 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         });
     }
 
+    /**
+     * @dev Constructs the input for the verification circuit.
+     *
+     * @param newLastIdx The new last index to be included in the input.
+     * @param newAccountRoot The new account root to be included in the input.
+     * @param newVouchRoot The new vouch root to be included in the input.
+     * @param newScoreRoot The new score root to be included in the input.
+     * @param newExitRoot The new exit root to be included in the input.
+     * 
+     * @return The hashed input for the verification circuit, reduced modulo `_RFIELD`.
+    */
     function _constructCircuitInput(
         uint48 newLastIdx,
         uint256 newAccountRoot,
@@ -346,6 +535,14 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         return uint256(sha256(inputBytes)) % _RFIELD;
     }    
 
+    /**
+     * @dev Builds the state for the Merkle tree.
+     *
+     * @param amount The amount to be included in the state.
+     * @param user The address of the user associated with the state.
+     * 
+     * @return A uint256 array representing the state for the Merkle tree.
+    */
     function _buildTreeState(uint192 amount, address user) internal pure returns (uint256[4] memory) {
         uint256[4] memory state;
         state[0] = amount;
@@ -355,18 +552,40 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         return state;
     }
 
+    /**
+     * @dev Validates the `fromIdx` parameter to ensure it is within acceptable bounds.
+     *
+     * @param fromIdx The index to validate.
+     *
+     * @dev Reverts with `InvalidFromIdx` if validation fails.
+    */
     function _validateFromIdx(uint48 fromIdx) internal view {
         if ((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
             revert InvalidFromIdx();
         }
     }
 
+    /**
+     * @dev Validates the `toIdx` parameter to ensure it is within acceptable bounds.
+     *
+     * @param toIdx The index to validate.
+     *
+     * @dev Reverts with `InvalidToIdx` if validation fails.
+    
+    
     function _validateToIdx(uint48 toIdx) internal view {
         if ((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx)) {
             revert InvalidToIdx();
         }
     }
 
+    /**
+     * @dev Converts a fixed-point representation to a standard uint256 value.
+     *
+     * @param floatVal The fixed-point number to convert
+     * 
+     * @return The converted value as a uint256.
+    */
     function _float2Fix(uint40 floatVal) internal pure returns(uint256) {
         uint256 m = floatVal & 0x7FFFFFFFF;
         uint256 e = floatVal >> 35;

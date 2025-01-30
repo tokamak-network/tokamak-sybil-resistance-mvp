@@ -240,10 +240,14 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		}
 	}
 
+	println(lastSavedBlock)
 	var nextBlockNum int64 // next block number to sync
 	if lastSavedBlock == nil {
+		println("---------------- Here")
 		// Get lastSavedBlock from History DB
 		lastSavedBlock, err = s.historyDB.GetLastBlock()
+		// TODO: Change blocknum here
+		// lastSavedBlock.Num = 7553897
 		if err != nil && common.Unwrap(err) != sql.ErrNoRows {
 			log.Errorw("Sync GetLastBlock", "err", err)
 			return nil, nil, common.Wrap(err)
@@ -265,6 +269,7 @@ func (s *Synchronizer) Sync(ctx context.Context,
 	}
 
 	ethBlock, err := s.EthClient.EthBlockByNumber(ctx, nextBlockNum)
+	println(ethBlock)
 	if common.Unwrap(err) == ethereum.NotFound {
 		return nil, nil, nil
 	} else if err != nil {

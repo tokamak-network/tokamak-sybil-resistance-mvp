@@ -485,6 +485,7 @@ func (n *Node) handleReorg(
 
 func (n *Node) syncLoopFn(ctx context.Context, lastBlock *common.Block) (*common.Block,
 	time.Duration, error) {
+	println(lastBlock, "------------------ sync loop fn")
 	blockData, discarded, err := n.sync.Sync(ctx, lastBlock)
 	stats := n.sync.Stats()
 	if err != nil {
@@ -540,6 +541,8 @@ func (n *Node) StartSynchronizer() {
 				n.wg.Done()
 				return
 			case <-time.After(waitDuration):
+				println("------------------ Here inside loop")
+				println(lastBlock)
 				if lastBlock, waitDuration, err = n.syncLoopFn(n.ctx,
 					lastBlock); err != nil {
 					if n.ctx.Err() != nil {

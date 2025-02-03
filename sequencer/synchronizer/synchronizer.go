@@ -246,6 +246,7 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		println("---------------- Here")
 		// Get lastSavedBlock from History DB
 		lastSavedBlock, err = s.historyDB.GetLastBlock()
+		println(lastSavedBlock, lastSavedBlock.Num)
 		// TODO: Change blocknum here
 		// lastSavedBlock.Num = 7553897
 		if err != nil && common.Unwrap(err) != sql.ErrNoRows {
@@ -257,6 +258,7 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		if common.Unwrap(err) == sql.ErrNoRows || lastSavedBlock.Num == 0 {
 			nextBlockNum = s.startBlockNum
 			lastSavedBlock = nil
+			println(nextBlockNum, lastSavedBlock)
 		}
 	}
 	if lastSavedBlock != nil {
@@ -570,10 +572,13 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// the expected one.
 	rollupEvents, err := s.EthClient.RollupEventsByBlock(blockNum, &ethBlock.Hash)
 	if err != nil && err.Error() == errStrUnknownBlock {
+		println(err, "----------------------------- ERROR")
 		return nil, common.Wrap(ErrUnknownBlock)
 	} else if err != nil {
+		println(err, "----------------------------- ERROR")
 		return nil, common.Wrap(fmt.Errorf("RollupEventsByBlock: %w", err))
 	}
+	println(rollupEvents)
 	// No events in this block
 	if rollupEvents == nil {
 		return &rollupData, nil
@@ -593,8 +598,10 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// Get L1UserTX
 	rollupData.L1UserTxs, err = getL1UserTx(rollupEvents.L1UserTx, blockNum)
 	if err != nil {
+		println(err, "----------------------------- ERROR L1UserTx")
 		return nil, common.Wrap(err)
 	}
+	println(rollupData.L1UserTxs, "----------------------------- rollupdata l1user tx")
 
 	// Get ForgeBatch events to get the L1CoordinatorTxs
 	for _, evtForgeBatch := range rollupEvents.ForgeBatch {

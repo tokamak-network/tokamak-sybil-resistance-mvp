@@ -44,7 +44,7 @@ import (
 const SyncTime = 24 * 60 * time.Minute
 
 // block number of the Smart contract to sync from
-const RollupStartBlockNum = 379608
+const RollupStartBlockNum = 7553890
 
 // Node is the Hermez Node
 type Node struct {
@@ -487,6 +487,7 @@ func (n *Node) syncLoopFn(ctx context.Context, lastBlock *common.Block) (*common
 	time.Duration, error) {
 	println(lastBlock, "------------------ sync loop fn")
 	blockData, discarded, err := n.sync.Sync(ctx, lastBlock)
+	println(blockData, discarded, "--------------------------------- Block Data")
 	stats := n.sync.Stats()
 	if err != nil {
 		// case: error
@@ -533,14 +534,17 @@ func (n *Node) StartSynchronizer() {
 	go func() {
 		var err error
 		var lastBlock *common.Block
-		waitDuration := time.Duration(0)
+		waitDuration := time.Duration(10 * time.Second)
+		ticker := time.NewTicker(waitDuration)
+		defer ticker.Stop()
+		println(waitDuration, "------------------ wait duration")
 		for {
 			select {
 			case <-n.ctx.Done():
 				log.Info("Synchronizer done")
 				n.wg.Done()
 				return
-			case <-time.After(waitDuration):
+			case <-ticker.C:
 				println("------------------ Here inside loop")
 				println(lastBlock)
 				if lastBlock, waitDuration, err = n.syncLoopFn(n.ctx,
@@ -556,6 +560,7 @@ func (n *Node) StartSynchronizer() {
 						log.Errorw("Synchronizer.Sync", "err", err)
 					}
 				}
+				println(lastBlock, waitDuration, err, "---------------- ERROR ------------------")
 			}
 		}
 	}()

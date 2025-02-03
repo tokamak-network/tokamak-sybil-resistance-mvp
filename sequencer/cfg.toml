@@ -6,7 +6,7 @@ Keep = 256
 
 [Web3]
 ### Url of the web3 ethereum-node RPC server. Only geth is officially supported
-URL = "https://rpc.thanos-sepolia.tokamak.network"
+URL = "https://1rpc.io/sepolia"
 
 [Synchronizer]
 ### Interval between attempts to synchronize a new block from an ethereum node
@@ -18,7 +18,7 @@ StatsUpdateFrequencyDivider = 100
 
 [SmartContracts]
 ## Smart contract address of the rollup contract
-Rollup   = "0xd2Fcf423780E5D4e6F8fD4F3c7aa931454DFB9c4"
+Rollup   = "0xA27212B7608e5a73e6a807DEC84B3190AaB12f7C"
 
 [Coordinator]
 ## Ethereum address that the coordinator is using to forge batches

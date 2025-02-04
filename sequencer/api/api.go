@@ -12,13 +12,13 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-// API serves HTTP requests to allow external interaction with the Hermez node
+// API serves HTTP requests to allow external interaction with the Sybil node
 type API struct {
-	historyDB     *historydb.HistoryDB
-	config        *configAPI
-	stateDB       *statedb.StateDB
-	hermezAddress ethCommon.Address
-	validate      *validator.Validate
+	historyDB  *historydb.HistoryDB
+	config     *configAPI
+	stateDB    *statedb.StateDB
+	tonAddress ethCommon.Address
+	validate   *validator.Validate
 }
 
 // Config wraps the parameters needed to start the API
@@ -49,9 +49,10 @@ func NewAPI(setup Config) (*API, error) {
 			RollupConstants: *newRollupConstants(consts.Rollup),
 			ChainID:         consts.ChainID,
 		},
-		stateDB:       setup.StateDB,
-		hermezAddress: consts.TonAddress,
-		validate:      nil, //TODO: Add validations
+		stateDB:    setup.StateDB,
+		tonAddress: consts.TonAddress,
+		// validate:   newValidate(),
+		validate: nil,
 	}
 
 	// Setup http interface
@@ -70,8 +71,7 @@ func NewAPI(setup Config) (*API, error) {
 	// Add explorer endpoints
 	if setup.ExplorerEndpoints {
 		// Account
-		v1.GET("/accounts", a.getAccounts)
-		// v1.GET("/accounts/:accountIndex", a.getAccount)
+		v1.GET("/accounts/:accountIndex", a.getAccount)
 		// // Transaction
 		// v1.GET("/transactions-history", a.getHistoryTxs)
 		// v1.GET("/transactions-history/:id", a.getHistoryTx)
@@ -83,3 +83,18 @@ func NewAPI(setup Config) (*API, error) {
 
 	return a, nil
 }
+
+// func newValidate() *validator.Validate {
+// 	validate := validator.New()
+// 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+// 		name := strings.SplitN(fld.Tag.Get("form"), ",", 2)[0]
+// 		if name == "-" {
+// 			return ""
+// 		}
+// 		return name
+// 	})
+
+// 	validate.RegisterStructValidation(parsers.AccountsFiltersStructValidation, parsers.AccountsFilters{})
+
+// 	return validate
+// }

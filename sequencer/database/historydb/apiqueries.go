@@ -2,7 +2,6 @@ package historydb
 
 import (
 	"errors"
-	"fmt"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/database"
 
@@ -32,25 +31,48 @@ func (hdb *HistoryDB) getBatchAPI(d meddler.DB, batchNum common.BatchNum) (*Batc
 	return batch, nil
 }
 
+// GetAccountAPI returns an account by its index
+func (hdb *HistoryDB) GetAccountAPI(idx common.AccountIdx) (*AccountAPI, error) {
+	cancel, err := hdb.apiConnCon.Acquire()
+	defer cancel()
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+	defer hdb.apiConnCon.Release()
+	account := &AccountAPI{}
+	err = meddler.QueryRow(hdb.dbRead, account, `SELECT account.item_id, ton_idx(account.idx) as idx,
+		account.batch_num, account.eth_addr, account_update.nonce, account_update.balance 
+		FROM account inner JOIN (
+			SELECT idx, nonce, balance 
+			FROM account_update
+			WHERE idx = $1
+			ORDER BY item_id DESC LIMIT 1
+		) AS account_update ON account_update.idx = account.idx
+		WHERE account.idx = $1;`, idx)
+
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+
+	return account, nil
+}
+
 // GetAccountsAPIRequest is an API request struct for getting accounts
 type GetAccountsAPIRequest struct {
-	EthAddr  *ethCommon.Address
-	FromItem *uint
-	Limit    *uint
-	Order    string
+	EthAddr *ethCommon.Address
 }
 
 // GetAccountsAPI returns a list of accounts from the DB and pagination info
 func (hdb *HistoryDB) GetAccountsAPI(
 	request GetAccountsAPIRequest,
-) ([]AccountAPI, uint64, error) {
+) ([]AccountAPI, error) {
 	if request.EthAddr == nil {
-		return nil, 0, common.Wrap(errors.New("ethAddr is required"))
+		return nil, common.Wrap(errors.New("ethAddr is required"))
 	}
 	cancel, err := hdb.apiConnCon.Acquire()
 	defer cancel()
 	if err != nil {
-		return nil, 0, common.Wrap(err)
+		return nil, common.Wrap(err)
 	}
 	defer hdb.apiConnCon.Release()
 	var query string
@@ -65,51 +87,24 @@ func (hdb *HistoryDB) GetAccountsAPI(
 		FROM account_update
 		WINDOW w as (PARTITION BY idx ORDER BY item_id DESC)
 	) AS account_update ON account_update.idx = account.idx `
-	// Apply filters
-	nextIsAnd := false
 	// ethAddr filter
 	if request.EthAddr != nil {
 		queryStr += "WHERE account.eth_addr = ? "
-		nextIsAnd = true
 		args = append(args, request.EthAddr)
-	}
-	if request.FromItem != nil {
-		if nextIsAnd {
-			queryStr += "AND "
-		} else {
-			queryStr += "WHERE "
-		}
-		if request.Order == "Asc" {
-			queryStr += "account.item_id >= ? "
-		} else {
-			queryStr += "account.item_id <= ? "
-		}
-		args = append(args, request.FromItem)
-	}
-	// pagination
-	queryStr += "ORDER BY account.item_id "
-	if request.Order == "Asc" {
-		queryStr += " ASC "
-	} else {
-		queryStr += " DESC "
-	}
-	if request.Limit != nil {
-		queryStr += fmt.Sprintf("LIMIT %d;", *request.Limit)
 	}
 	query, argsQ, err := sqlx.In(queryStr, args...)
 	if err != nil {
-		return nil, 0, common.Wrap(err)
+		return nil, common.Wrap(err)
 	}
 	query = hdb.dbRead.Rebind(query)
 
 	accounts := []*AccountAPI{}
 	if err := meddler.QueryAll(hdb.dbRead, &accounts, query, argsQ...); err != nil {
-		return nil, 0, common.Wrap(err)
+		return nil, common.Wrap(err)
 	}
 	if len(accounts) == 0 {
-		return []AccountAPI{}, 0, nil
+		return []AccountAPI{}, nil
 	}
 
-	return database.SlicePtrsToSlice(accounts).([]AccountAPI),
-		accounts[0].TotalItems - uint64(len(accounts)), nil
+	return database.SlicePtrsToSlice(accounts).([]AccountAPI), nil
 }

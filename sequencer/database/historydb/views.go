@@ -162,13 +162,10 @@ func NewRollupVariablesAPI(rollupVariables *common.RollupVariables) *RollupVaria
 // AccountAPI is a representation of a account with additional information
 // required by the API
 type AccountAPI struct {
-	ItemID     uint64              `meddler:"item_id"`
-	Idx        apitypes.TonIdx     `meddler:"idx"`
-	BatchNum   common.BatchNum     `meddler:"batch_num"`
-	EthAddr    apitypes.TonEthAddr `meddler:"eth_addr"`
-	Nonce      common.Nonce        `meddler:"nonce"`   // max of 40 bits used
-	Balance    *apitypes.BigIntStr `meddler:"balance"` // max of 192 bits used
-	TotalItems uint64              `meddler:"total_items"`
-	FirstItem  uint64              `meddler:"first_item"`
-	LastItem   uint64              `meddler:"last_item"`
+	ItemID   uint64              `meddler:"item_id"`
+	Idx      apitypes.TonIdx     `meddler:"idx"`
+	BatchNum common.BatchNum     `meddler:"batch_num"`
+	EthAddr  apitypes.TonEthAddr `meddler:"eth_addr"`
+	Nonce    common.Nonce        `meddler:"nonce"`   // max of 40 bits used
+	Balance  *apitypes.BigIntStr `meddler:"balance"` // max of 192 bits used
 }

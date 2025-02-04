@@ -1,14 +1,10 @@
 package parsers
 
 import (
-	"fmt"
-	"strings"
+	"strconv"
 	"tokamak-sybil-resistance/common"
-	"tokamak-sybil-resistance/database/historydb"
 
-	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/go-playground/validator.v9"
 )
 
 // AccountFilter for parsing /accounts/{accountIndex} request to struct
@@ -16,51 +12,27 @@ type AccountFilter struct {
 	AccountIndex string `uri:"accountIndex" binding:"required"`
 }
 
-// AccountsFilters for parsing /accounts query params to struct
-type AccountsFilters struct {
-	Addr string `form:"tonEthereumAddress"`
-
-	Pagination
+// ParseAccountFilter parses account filter to the account index
+func ParseAccountFilter(c *gin.Context) (*common.AccountIdx, error) {
+	var accountFilter AccountFilter
+	if err := c.ShouldBindUri(&accountFilter); err != nil {
+		return nil, common.Wrap(err)
+	}
+	return stringToAccountIdx(accountFilter.AccountIndex)
 }
 
-// ParseAccountsFilters parsing /accounts query params to GetAccountsAPIRequest
-func ParseAccountsFilters(c *gin.Context, v *validator.Validate) (historydb.GetAccountsAPIRequest, error) {
-	var accountsFilter AccountsFilters
-
-	if err := c.BindQuery(&accountsFilter); err != nil {
-		return historydb.GetAccountsAPIRequest{}, err
-	}
-
-	fmt.Println(accountsFilter.FromItem)
-
-	// if err := v.Struct(accountsFilter); err != nil {
-	// 	return historydb.GetAccountsAPIRequest{}, common.Wrap(err)
-	// }
-
-	addr, err := tonStringToEthAddr(accountsFilter.Addr, "tonEthereumAddress")
-	if err != nil {
-		return historydb.GetAccountsAPIRequest{}, err
-	}
-
-	return historydb.GetAccountsAPIRequest{
-		EthAddr:  addr,
-		FromItem: accountsFilter.FromItem,
-		Order:    *accountsFilter.Order,
-		Limit:    accountsFilter.Limit,
-	}, nil
-}
-
-// tonStringToEthAddr converts ton ethereum address to ethereum address
-func tonStringToEthAddr(addrStr, name string) (*ethCommon.Address, error) {
-	if addrStr == "" {
+// StringToIdx converts string to account index
+func stringToAccountIdx(idxStr string) (*common.AccountIdx, error) {
+	if idxStr == "" {
 		return nil, nil
 	}
-	splitted := strings.Split(addrStr, "ton:")
-	if len(splitted) != 2 || len(splitted[1]) != 42 {
-		return nil, common.Wrap(fmt.Errorf(
-			"Invalid %s, must follow this regex: ^hez:0x[a-fA-F0-9]{40}$", name))
-	}
-	var addr ethCommon.Address
-	err := addr.UnmarshalText([]byte(splitted[1]))
-	return &addr, common.Wrap(err)
+	// splitted := strings.Split(idxStr, ":")
+	// const expectedLen = 2
+	// if len(splitted) != expectedLen || splitted[0] != "ton" {
+	// 	return nil, common.Wrap(fmt.Errorf(
+	// 		"invalid format, must follow this: ton:index"))
+	// }
+	idxInt, err := strconv.Atoi(idxStr)
+	idx := common.AccountIdx(idxInt)
+	return &idx, common.Wrap(err)
 }

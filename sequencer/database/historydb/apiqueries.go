@@ -125,16 +125,13 @@ func (hdb *HistoryDB) GetTxAPI(txID common.TxID) (*TxAPI, error) {
 	tx := &TxAPI{}
 	err = meddler.QueryRow(
 		hdb.dbRead, tx, `SELECT tx.item_id, tx.is_l1, tx.id, tx.type, tx.position, 
-		ton_idx(tx.effective_from_idx) AS from_idx, tx.from_eth_addr, tx.from_bjj,
-		ton_idx(tx.to_idx) AS to_idx, tx.to_eth_addr, tx.to_bjj,
-		tx.amount, tx.amount_success, tx.token_id, tx.amount_usd, 
+		ton_idx(tx.effective_from_idx) AS from_idx, tx.from_eth_addr,
+		ton_idx(tx.to_idx) AS to_idx, tx.to_eth_addr,
+		tx.amount, tx.amount_success,
 		tx.batch_num, tx.eth_block_num, tx.to_forge_l1_txs_num, tx.user_origin, tx.eth_tx_hash, tx.l1_fee,
-		tx.deposit_amount, tx.deposit_amount_usd, tx.deposit_amount_success, tx.nonce,
-		token.token_id, token.item_id AS token_item_id, token.eth_block_num AS token_block,
-		token.eth_addr, token.name, token.symbol, token.decimals, token.usd,
-		token.usd_update, block.timestamp
-		FROM tx INNER JOIN token ON tx.token_id = token.token_id 
-		INNER JOIN block ON tx.eth_block_num = block.eth_block_num 
+		tx.deposit_amount, tx.deposit_amount_success,
+		block.timestamp
+		FROM tx INNER JOIN block ON tx.eth_block_num = block.eth_block_num 
 		WHERE tx.id = $1;`, txID,
 	)
 	return tx, common.Wrap(err)
@@ -178,7 +175,7 @@ func (hdb *HistoryDB) GetTxsAPI(
 	ton_idx(tx.to_idx) AS to_idx, tx.to_eth_addr,
 	tx.amount, tx.amount_success,
 	tx.batch_num, tx.eth_block_num, tx.to_forge_l1_txs_num, tx.user_origin, tx.eth_tx_hash, tx.l1_fee,
-	tx.deposit_amount, tx.deposit_amount_usd, tx.deposit_amount_success,
+	tx.deposit_amount, tx.deposit_amount_success,
 	block.timestamp, count(*) OVER() AS total_items 
 	FROM tx INNER JOIN block ON tx.eth_block_num = block.eth_block_num `
 	// Apply filters

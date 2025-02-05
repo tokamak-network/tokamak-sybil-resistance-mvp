@@ -124,8 +124,8 @@ func L2TxFromBytesDataAvailability(b []byte, nLevels int) (*L2Tx, error) {
 	tx := &L2Tx{}
 	var err error
 
-	var paddedFromIdxBytes [3]byte
-	copy(paddedFromIdxBytes[3-idxLen:], b[0:idxLen])
+	var paddedFromIdxBytes [6]byte
+	copy(paddedFromIdxBytes[6-idxLen:], b[0:idxLen])
 	tx.FromIdx, err = AccountIdxFromBytes(paddedFromIdxBytes[:])
 	if err != nil {
 		return nil, Wrap(err)

@@ -271,12 +271,12 @@ func L1TxFromDataAvailability(b []byte, nLevels uint32) (*L1Tx, error) {
 	amountBytes := b[idxLen*2 : idxLen*2+Float40BytesLength]
 
 	l1tx := L1Tx{}
-	fromIdx, err := AccountIdxFromBytes(ethCommon.LeftPadBytes(fromIdxBytes, 3))
+	fromIdx, err := AccountIdxFromBytes(ethCommon.LeftPadBytes(fromIdxBytes, 6))
 	if err != nil {
 		return nil, Wrap(err)
 	}
 	l1tx.FromIdx = fromIdx
-	toIdx, err := AccountIdxFromBytes(ethCommon.LeftPadBytes(toIdxBytes, 3))
+	toIdx, err := AccountIdxFromBytes(ethCommon.LeftPadBytes(toIdxBytes, 6))
 	if err != nil {
 		return nil, Wrap(err)
 	}

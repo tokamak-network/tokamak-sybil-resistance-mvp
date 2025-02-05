@@ -30,10 +30,10 @@ func (idx VouchIdx) Bytes() ([2 * NLevelsAsBytes]byte, error) {
 	if idx > maxVouchIdxValue {
 		return [2 * NLevelsAsBytes]byte{}, Wrap(ErrIdxOverflow)
 	}
-	var idxBytes [8]byte
+	var idxBytes [14]byte
 	binary.BigEndian.PutUint64(idxBytes[:], uint64(idx))
 	var b [2 * NLevelsAsBytes]byte
-	copy(b[:], idxBytes[8-2*NLevelsAsBytes:])
+	copy(b[:], idxBytes[14-2*NLevelsAsBytes:])
 	return b, nil
 }
 
@@ -51,8 +51,8 @@ func VouchIdxFromBytes(b []byte) (VouchIdx, error) {
 		return 0, Wrap(fmt.Errorf("can not parse Idx, bytes len %d, expected %d",
 			len(b), VouchIdxBytesLen))
 	}
-	var idxBytes [8]byte
-	copy(idxBytes[8-2*NLevelsAsBytes:], b[:])
+	var idxBytes [14]byte
+	copy(idxBytes[14-2*NLevelsAsBytes:], b[:])
 	idx := binary.BigEndian.Uint64(idxBytes[:])
 	return VouchIdx(idx), nil
 }

@@ -65,7 +65,7 @@ func (idx AccountIdx) Bytes() ([NLevelsAsBytes]byte, error) {
 	var idxBytes [4]byte
 	binary.BigEndian.PutUint32(idxBytes[:], uint32(idx))
 	var b [NLevelsAsBytes]byte
-	copy(b[:], idxBytes[4-NLevelsAsBytes:])
+	copy(b[:], idxBytes[7-NLevelsAsBytes:])
 	return b, nil
 }
 
@@ -75,8 +75,8 @@ func AccountIdxFromBytes(b []byte) (AccountIdx, error) {
 		return 0, Wrap(fmt.Errorf("can not parse Idx, bytes len %d, expected %d",
 			len(b), AccountIdxBytesLen))
 	}
-	var idxBytes [4]byte
-	copy(idxBytes[4-NLevelsAsBytes:], b[:])
+	var idxBytes [7]byte
+	copy(idxBytes[7-NLevelsAsBytes:], b[:])
 	idx := binary.BigEndian.Uint32(idxBytes[:])
 	return AccountIdx(idx), nil
 }

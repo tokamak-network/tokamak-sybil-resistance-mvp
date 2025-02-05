@@ -485,11 +485,8 @@ func (n *Node) handleReorg(
 
 func (n *Node) syncLoopFn(ctx context.Context, lastBlock *common.Block) (*common.Block,
 	time.Duration, error) {
-	println(lastBlock, "------------------ sync loop fn")
 	blockData, discarded, err := n.sync.Sync(ctx, lastBlock)
-	println(blockData, discarded, "--------------------------------- Block Data")
 	stats := n.sync.Stats()
-	println(stats, "-------------------- Stats")
 	if err != nil {
 		// case: error
 		return nil, n.cfg.Synchronizer.SyncLoopInterval.Duration, common.Wrap(err)
@@ -502,7 +499,6 @@ func (n *Node) syncLoopFn(ctx context.Context, lastBlock *common.Block) (*common
 		}
 		return nil, time.Duration(0), nil
 	} else if blockData != nil {
-		println("---------------------- Block Data")
 		// case: new block
 		vars := common.SCVariablesPtr{
 			Rollup: blockData.Rollup.Vars,
@@ -539,7 +535,6 @@ func (n *Node) StartSynchronizer() {
 		waitDuration := time.Duration(10 * time.Second)
 		ticker := time.NewTicker(waitDuration)
 		defer ticker.Stop()
-		println(waitDuration, "------------------ wait duration")
 		for {
 			select {
 			case <-n.ctx.Done():
@@ -547,8 +542,6 @@ func (n *Node) StartSynchronizer() {
 				n.wg.Done()
 				return
 			case <-ticker.C:
-				println("------------------ Here inside loop")
-				println(lastBlock)
 				if lastBlock, waitDuration, err = n.syncLoopFn(n.ctx,
 					lastBlock); err != nil {
 					if n.ctx.Err() != nil {
@@ -562,7 +555,6 @@ func (n *Node) StartSynchronizer() {
 						log.Errorw("Synchronizer.Sync", "err", err)
 					}
 				}
-				println(lastBlock, waitDuration, err, "---------------- ERROR ------------------")
 			}
 		}
 	}()

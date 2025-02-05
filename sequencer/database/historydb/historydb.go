@@ -762,7 +762,6 @@ func (hdb *HistoryDB) AddBlockSCData(blockData *common.BlockData) (err error) {
 	// the batch that forges those txs is inserted
 	userL1s := make(map[common.BatchNum][]common.L1Tx)
 	for i := range blockData.Rollup.L1UserTxs {
-		println("------------------------ Here inside Add Block SC Data loop")
 		batchThatForgesIsInTheBlock := false
 		for _, batch := range blockData.Rollup.Batches {
 			if batch.Batch.ForgeL1TxsNum != nil &&
@@ -785,7 +784,6 @@ func (hdb *HistoryDB) AddBlockSCData(blockData *common.BlockData) (err error) {
 
 	// Add Batches
 	for i := range blockData.Rollup.Batches {
-		println("----------------- Here Batches add inside")
 		batch := &blockData.Rollup.Batches[i]
 		batch.Batch.GasPrice = big.NewInt(0)
 

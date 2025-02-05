@@ -388,7 +388,6 @@ func (c *RollupClient) RollupEventsByBlock(blockNum int64,
 			if err != nil {
 				return nil, common.Wrap(err)
 			}
-			println(L1Tx, "--------------------- L1Tx")
 			toForgeL1TxsNum := new(big.Int).SetBytes(vLog.Topics[1][:]).Int64()
 			L1Tx.ToForgeL1TxsNum = &toForgeL1TxsNum
 			L1Tx.Position = int(new(big.Int).SetBytes(vLog.Topics[2][:]).Int64())
@@ -403,7 +402,6 @@ func (c *RollupClient) RollupEventsByBlock(blockNum int64,
 			L1Tx.L1Fee = l1Fee
 			L1UserTx.L1UserTx = *L1Tx
 			rollupEvents.L1UserTx = append(rollupEvents.L1UserTx, L1UserTx)
-			println(rollupEvents.L1UserTx, "---------------------- L1UserTx")
 		case logSYBForgeBatch:
 			var forgeBatch RollupEventForgeBatch
 			err := c.contractAbi.UnpackIntoInterface(&forgeBatch, "ForgeBatch", vLog.Data)

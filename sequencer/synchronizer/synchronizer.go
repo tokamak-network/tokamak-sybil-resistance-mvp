@@ -240,13 +240,10 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		}
 	}
 
-	println(lastSavedBlock)
 	var nextBlockNum int64 // next block number to sync
 	if lastSavedBlock == nil {
-		println("---------------- Here")
 		// Get lastSavedBlock from History DB
 		lastSavedBlock, err = s.historyDB.GetLastBlock()
-		println(lastSavedBlock, lastSavedBlock.Num)
 		// TODO: Change blocknum here
 		// lastSavedBlock.Num = 7553897
 		if err != nil && common.Unwrap(err) != sql.ErrNoRows {
@@ -258,7 +255,6 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		if common.Unwrap(err) == sql.ErrNoRows || lastSavedBlock.Num == 0 {
 			nextBlockNum = s.startBlockNum
 			lastSavedBlock = nil
-			println(nextBlockNum, lastSavedBlock)
 		}
 	}
 	if lastSavedBlock != nil {
@@ -271,7 +267,6 @@ func (s *Synchronizer) Sync(ctx context.Context,
 	}
 
 	ethBlock, err := s.EthClient.EthBlockByNumber(ctx, nextBlockNum)
-	println(ethBlock)
 	if common.Unwrap(err) == ethereum.NotFound {
 		return nil, nil, nil
 	} else if err != nil {
@@ -327,7 +322,6 @@ func (s *Synchronizer) Sync(ctx context.Context,
 
 	// Get data from the rollup contract
 	rollupData, err := s.rollupSync(ethBlock)
-	println(rollupData, "---------------------------- RollUp Data")
 	if err != nil {
 		return nil, nil, common.Wrap(err)
 	}
@@ -355,14 +349,11 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		Block:  *ethBlock,
 		Rollup: *rollupData,
 	}
-	println(blockData, "---------------------- HERE DATA")
 	err = s.historyDB.AddBlockSCData(blockData)
 	if err != nil {
 		return nil, nil, common.Wrap(err)
 	}
-	println(rollupData.Batches, "------------------------- Batches")
 	batchesLen := len(rollupData.Batches)
-	println(batchesLen, "--------------- batch len")
 	if batchesLen == 0 {
 		s.stats.UpdateSync(ethBlock, nil, nil, nil)
 	} else {
@@ -574,13 +565,10 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// the expected one.
 	rollupEvents, err := s.EthClient.RollupEventsByBlock(blockNum, &ethBlock.Hash)
 	if err != nil && err.Error() == errStrUnknownBlock {
-		println(err, "----------------------------- ERROR")
 		return nil, common.Wrap(ErrUnknownBlock)
 	} else if err != nil {
-		println(err, "----------------------------- ERROR")
 		return nil, common.Wrap(fmt.Errorf("RollupEventsByBlock: %w", err))
 	}
-	println(rollupEvents, "----------------------------------------------")
 	// No events in this block
 	if rollupEvents == nil {
 		return &rollupData, nil
@@ -600,14 +588,11 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// Get L1UserTX
 	rollupData.L1UserTxs, err = getL1UserTx(rollupEvents.L1UserTx, blockNum)
 	if err != nil {
-		println(err, "----------------------------- ERROR L1UserTx")
 		return nil, common.Wrap(err)
 	}
-	println(rollupData.L1UserTxs, "----------------------------- rollupdata l1user tx")
 
 	// Get ForgeBatch events to get the L1CoordinatorTxs
 	for _, evtForgeBatch := range rollupEvents.ForgeBatch {
-		println("-------------------------- HERE ForgeBatch")
 		batchData := common.NewBatchData()
 		// Get the input for each Tx
 		forgeBatchArgs, sender, err := s.EthClient.RollupForgeBatchArgs(evtForgeBatch.EthTxHash,
@@ -803,7 +788,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 
 	rollupData.UpdateBucketWithdraw = make([]common.BucketUpdate, 0, len(rollupEvents.UpdateBucketWithdraw))
 	for _, evt := range rollupEvents.UpdateBucketWithdraw {
-		println("---------------------------- HERE BW")
 		rollupData.UpdateBucketWithdraw = append(rollupData.UpdateBucketWithdraw,
 			common.BucketUpdate{
 				EthBlockNum: blockNum,
@@ -815,7 +799,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 
 	rollupData.Withdrawals = make([]common.WithdrawInfo, 0, len(rollupEvents.Withdraw))
 	for _, evt := range rollupEvents.Withdraw {
-		println("---------------------------- HERE Withdrawal")
 		rollupData.Withdrawals = append(rollupData.Withdrawals, common.WithdrawInfo{
 			Idx:             common.AccountIdx(evt.Idx),
 			NumExitRoot:     common.BatchNum(evt.NumExitRoot),

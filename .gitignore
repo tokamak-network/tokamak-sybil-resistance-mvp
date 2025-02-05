@@ -15,9 +15,12 @@ circuits/build/
 #zkey
 *.zkey
 verification_key.json
-verifier.sol
+# verifier.sol
 
 #proof
 proof.json
 public.json
 *.wtns
+
+# Circom test circuits
+*.test.circom

@@ -170,3 +170,6 @@ template BatchMain(nTx, nLevels) {
 
     hashGlobalInputs <== hasherInputs.hashInputsOut;
 }
+
+component main = BatchMain(3,16); //constraints = 323K
+//component main = BatchMain(10,16); //constraints = 874K (need trustedsetup_20)

@@ -12,12 +12,11 @@ import (
 )
 
 type testAccount struct {
-	ItemID   uint64              `json:"itemId"`
-	Idx      common.AccountIdx   `json:"accountIndex"`
-	BatchNum common.BatchNum     `json:"batchNum"`
-	EthAddr  apitypes.TonEthAddr `json:"tonEthereumAddress"`
-	Nonce    common.Nonce        `json:"nonce"`
-	Balance  *apitypes.BigIntStr `json:"balance"`
+	ItemID  uint64              `json:"itemId"`
+	Idx     apitypes.TonIdx     `json:"accountIndex"`
+	EthAddr apitypes.TonEthAddr `json:"tonEthereumAddress"`
+	Nonce   common.Nonce        `json:"nonce"`
+	Balance *apitypes.BigIntStr `json:"balance"`
 }
 
 func genTestAccounts(accounts []common.Account) []testAccount {
@@ -25,7 +24,7 @@ func genTestAccounts(accounts []common.Account) []testAccount {
 	for x, account := range accounts {
 		tAccount := testAccount{
 			ItemID:  uint64(x + 1),
-			Idx:     account.Idx,
+			Idx:     apitypes.TonIdx(common.IdxToTon(account.Idx)),
 			EthAddr: apitypes.NewTonEthAddr(account.EthAddr),
 			Nonce:   account.Nonce,
 			Balance: apitypes.NewBigIntStr(account.Balance),

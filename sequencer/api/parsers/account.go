@@ -1,7 +1,9 @@
 package parsers
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 	"tokamak-sybil-resistance/common"
 
 	"github.com/gin-gonic/gin"
@@ -26,13 +28,13 @@ func stringToAccountIdx(idxStr string) (*common.AccountIdx, error) {
 	if idxStr == "" {
 		return nil, nil
 	}
-	// splitted := strings.Split(idxStr, ":")
-	// const expectedLen = 2
-	// if len(splitted) != expectedLen || splitted[0] != "ton" {
-	// 	return nil, common.Wrap(fmt.Errorf(
-	// 		"invalid format, must follow this: ton:index"))
-	// }
-	idxInt, err := strconv.Atoi(idxStr)
+	splitted := strings.Split(idxStr, ":")
+	const expectedLen = 2
+	if len(splitted) != expectedLen || splitted[0] != "ton" {
+		return nil, common.Wrap(fmt.Errorf(
+			"invalid format, must follow this: ton:index"))
+	}
+	idxInt, err := strconv.Atoi(splitted[1])
 	idx := common.AccountIdx(idxInt)
 	return &idx, common.Wrap(err)
 }

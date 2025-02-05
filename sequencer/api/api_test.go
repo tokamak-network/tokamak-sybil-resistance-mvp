@@ -224,17 +224,21 @@ func TestMain(m *testing.M) {
 	for i := 0; i < len(accounts); i++ {
 		balance := new(big.Int)
 		balance.SetString(string(*accounts[i].Balance), 10)
+		queryAccount, err := common.StringToIdx(string(accounts[i].Idx))
+		if err != nil {
+			panic(err)
+		}
 		accUpdates = append(accUpdates, common.AccountUpdate{
 			EthBlockNum: 0,
 			BatchNum:    1,
-			Idx:         accounts[i].Idx,
+			Idx:         *queryAccount.AccountIndex,
 			Nonce:       0,
 			Balance:     balance,
 		})
 		accUpdates = append(accUpdates, common.AccountUpdate{
 			EthBlockNum: 0,
 			BatchNum:    1,
-			Idx:         accounts[i].Idx,
+			Idx:         *queryAccount.AccountIndex,
 			Nonce:       accounts[i].Nonce,
 			Balance:     balance,
 		})

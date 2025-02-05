@@ -1,6 +1,7 @@
 package historydb
 
 import (
+	"encoding/json"
 	"math/big"
 	"time"
 	"tokamak-sybil-resistance/common"
@@ -9,6 +10,16 @@ import (
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/iden3/go-iden3-crypto/babyjub"
 )
+
+// AccountAPIJSON is a representation of the JSON structure returned
+// by the serialization method
+type AccountAPIJSON struct {
+	ItemID             uint64              `json:"itemId"`
+	AccountIndex       apitypes.TonIdx     `json:"accountIndex"`
+	Nonce              common.Nonce        `json:"nonce"`
+	Balance            *apitypes.BigIntStr `json:"balance"`
+	TonEthereumAddress apitypes.TonEthAddr `json:"tonEthereumAddress"`
+}
 
 // txWrite is an representatiion that merges common.L1Tx
 // in order to perform inserts into tx table
@@ -168,4 +179,17 @@ type AccountAPI struct {
 	EthAddr  apitypes.TonEthAddr `meddler:"eth_addr"`
 	Nonce    common.Nonce        `meddler:"nonce"`   // max of 40 bits used
 	Balance  *apitypes.BigIntStr `meddler:"balance"` // max of 192 bits used
+}
+
+// MarshalJSON is used to neast some of the fields of AccountAPI
+// without the need of auxiliar structs
+func (account AccountAPI) MarshalJSON() ([]byte, error) {
+	act := AccountAPIJSON{
+		ItemID:             account.ItemID,
+		AccountIndex:       account.Idx,
+		Nonce:              account.Nonce,
+		Balance:            account.Balance,
+		TonEthereumAddress: account.EthAddr,
+	}
+	return json.Marshal(act)
 }

@@ -571,8 +571,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
      * @param toIdx The index to validate.
      *
      * @dev Reverts with `InvalidToIdx` if validation fails.
-    
-    
+    */
     function _validateToIdx(uint48 toIdx) internal view {
         if ((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx)) {
             revert InvalidToIdx();

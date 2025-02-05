@@ -255,18 +255,6 @@ func TestMain(m *testing.M) {
 		router:     router,
 		rollupVars: rollupVars,
 	}
-	if err := api.historyDB.AddAccountUpdates(accUpdates); err != nil {
-		panic(err)
-	}
-	tc = testCommon{
-		blocks: commonBlocks,
-		// batches:     testBatches,
-		// fullBatches: testFullBatches,
-		accounts: accounts,
-		// txs:         testTxs,
-		router:     router,
-		rollupVars: rollupVars,
-	}
 
 	// Run tests
 	result := m.Run()

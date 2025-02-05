@@ -45,6 +45,6 @@ func TestGetAccounts(t *testing.T) {
 
 	// 400
 	path = fmt.Sprintf("%s/ton:12345", endpoint)
-	err := doBadReq("GET", path, nil, 400)
+	err := doBadReq("GET", path, nil, 404)
 	require.NoError(t, err)
 }

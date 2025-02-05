@@ -542,7 +542,7 @@ func (n *Node) StartSynchronizer() {
 				n.wg.Done()
 				return
 			case <-ticker.C:
-				if lastBlock, waitDuration, err = n.syncLoopFn(n.ctx,
+				if _, _, err = n.syncLoopFn(n.ctx,
 					lastBlock); err != nil {
 					if n.ctx.Err() != nil {
 						continue

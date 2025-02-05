@@ -571,7 +571,6 @@ func (hdb *HistoryDB) GetAllL1CoordinatorTxs() ([]common.L1Tx, error) {
 	return database.SlicePtrsToSlice(txs).([]common.L1Tx), common.Wrap(err)
 }
 
-
 // GetUnforgedL1UserTxs gets L1 User Txs to be forged in the L1Batch with toForgeL1TxsNum.
 func (hdb *HistoryDB) GetUnforgedL1UserTxs(toForgeL1TxsNum int64) ([]common.L1Tx, error) {
 	var txs []*common.L1Tx
@@ -763,6 +762,7 @@ func (hdb *HistoryDB) AddBlockSCData(blockData *common.BlockData) (err error) {
 	// the batch that forges those txs is inserted
 	userL1s := make(map[common.BatchNum][]common.L1Tx)
 	for i := range blockData.Rollup.L1UserTxs {
+		println("------------------------ Here inside Add Block SC Data loop")
 		batchThatForgesIsInTheBlock := false
 		for _, batch := range blockData.Rollup.Batches {
 			if batch.Batch.ForgeL1TxsNum != nil &&
@@ -785,6 +785,7 @@ func (hdb *HistoryDB) AddBlockSCData(blockData *common.BlockData) (err error) {
 
 	// Add Batches
 	for i := range blockData.Rollup.Batches {
+		println("----------------- Here Batches add inside")
 		batch := &blockData.Rollup.Batches[i]
 		batch.Batch.GasPrice = big.NewInt(0)
 

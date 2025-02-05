@@ -44,7 +44,7 @@ import (
 const SyncTime = 24 * 60 * time.Minute
 
 // block number of the Smart contract to sync from
-const RollupStartBlockNum = 7553890
+const RollupStartBlockNum = 7553896
 
 // Node is the Hermez Node
 type Node struct {
@@ -489,6 +489,7 @@ func (n *Node) syncLoopFn(ctx context.Context, lastBlock *common.Block) (*common
 	blockData, discarded, err := n.sync.Sync(ctx, lastBlock)
 	println(blockData, discarded, "--------------------------------- Block Data")
 	stats := n.sync.Stats()
+	println(stats, "-------------------- Stats")
 	if err != nil {
 		// case: error
 		return nil, n.cfg.Synchronizer.SyncLoopInterval.Duration, common.Wrap(err)
@@ -501,6 +502,7 @@ func (n *Node) syncLoopFn(ctx context.Context, lastBlock *common.Block) (*common
 		}
 		return nil, time.Duration(0), nil
 	} else if blockData != nil {
+		println("---------------------- Block Data")
 		// case: new block
 		vars := common.SCVariablesPtr{
 			Rollup: blockData.Rollup.Vars,

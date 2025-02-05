@@ -37,7 +37,7 @@ const (
 	maxBalanceBytes = 24
 
 	// AccountIdxBytesLen idx bytes
-	AccountIdxBytesLen = 3
+	AccountIdxBytesLen = 6
 
 	// maxAccountIdxValue is the maximum value that AccountIdx can have (24 bits:
 	// maxAccountIdxValue=2**24-1)

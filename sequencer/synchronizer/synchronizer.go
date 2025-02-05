@@ -327,6 +327,7 @@ func (s *Synchronizer) Sync(ctx context.Context,
 
 	// Get data from the rollup contract
 	rollupData, err := s.rollupSync(ethBlock)
+	println(rollupData, "---------------------------- RollUp Data")
 	if err != nil {
 		return nil, nil, common.Wrap(err)
 	}
@@ -354,13 +355,14 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		Block:  *ethBlock,
 		Rollup: *rollupData,
 	}
-
+	println(blockData, "---------------------- HERE DATA")
 	err = s.historyDB.AddBlockSCData(blockData)
 	if err != nil {
 		return nil, nil, common.Wrap(err)
 	}
-
+	println(rollupData.Batches, "------------------------- Batches")
 	batchesLen := len(rollupData.Batches)
+	println(batchesLen, "--------------- batch len")
 	if batchesLen == 0 {
 		s.stats.UpdateSync(ethBlock, nil, nil, nil)
 	} else {
@@ -578,7 +580,7 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 		println(err, "----------------------------- ERROR")
 		return nil, common.Wrap(fmt.Errorf("RollupEventsByBlock: %w", err))
 	}
-	println(rollupEvents)
+	println(rollupEvents, "----------------------------------------------")
 	// No events in this block
 	if rollupEvents == nil {
 		return &rollupData, nil
@@ -605,6 +607,7 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 
 	// Get ForgeBatch events to get the L1CoordinatorTxs
 	for _, evtForgeBatch := range rollupEvents.ForgeBatch {
+		println("-------------------------- HERE ForgeBatch")
 		batchData := common.NewBatchData()
 		// Get the input for each Tx
 		forgeBatchArgs, sender, err := s.EthClient.RollupForgeBatchArgs(evtForgeBatch.EthTxHash,
@@ -800,6 +803,7 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 
 	rollupData.UpdateBucketWithdraw = make([]common.BucketUpdate, 0, len(rollupEvents.UpdateBucketWithdraw))
 	for _, evt := range rollupEvents.UpdateBucketWithdraw {
+		println("---------------------------- HERE BW")
 		rollupData.UpdateBucketWithdraw = append(rollupData.UpdateBucketWithdraw,
 			common.BucketUpdate{
 				EthBlockNum: blockNum,
@@ -811,6 +815,7 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 
 	rollupData.Withdrawals = make([]common.WithdrawInfo, 0, len(rollupEvents.Withdraw))
 	for _, evt := range rollupEvents.Withdraw {
+		println("---------------------------- HERE Withdrawal")
 		rollupData.Withdrawals = append(rollupData.Withdrawals, common.WithdrawInfo{
 			Idx:             common.AccountIdx(evt.Idx),
 			NumExitRoot:     common.BatchNum(evt.NumExitRoot),

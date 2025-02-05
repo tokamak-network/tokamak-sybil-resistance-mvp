@@ -2,8 +2,10 @@ package historydb
 
 import (
 	"errors"
+	"fmt"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/database"
+	"tokamak-sybil-resistance/log"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/jmoiron/sqlx"
@@ -107,4 +109,200 @@ func (hdb *HistoryDB) GetAccountsAPI(
 	}
 
 	return database.SlicePtrsToSlice(accounts).([]AccountAPI), nil
+}
+
+// GetTxAPI returns a tx from the DB given a TxID
+func (hdb *HistoryDB) GetTxAPI(txID common.TxID) (*TxAPI, error) {
+	// Warning: amount_success and deposit_amount_success have true as default for
+	// performance reasons. The expected default value is false (when txs are unforged)
+	// this case is handled at the function func (tx TxAPI) MarshalJSON() ([]byte, error)
+	cancel, err := hdb.apiConnCon.Acquire()
+	defer cancel()
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+	defer hdb.apiConnCon.Release()
+	tx := &TxAPI{}
+	err = meddler.QueryRow(
+		hdb.dbRead, tx, `SELECT tx.item_id, tx.is_l1, tx.id, tx.type, tx.position, 
+		ton_idx(tx.effective_from_idx) AS from_idx, tx.from_eth_addr, tx.from_bjj,
+		ton_idx(tx.to_idx) AS to_idx, tx.to_eth_addr, tx.to_bjj,
+		tx.amount, tx.amount_success, tx.token_id, tx.amount_usd, 
+		tx.batch_num, tx.eth_block_num, tx.to_forge_l1_txs_num, tx.user_origin, tx.eth_tx_hash, tx.l1_fee,
+		tx.deposit_amount, tx.deposit_amount_usd, tx.deposit_amount_success, tx.nonce,
+		token.token_id, token.item_id AS token_item_id, token.eth_block_num AS token_block,
+		token.eth_addr, token.name, token.symbol, token.decimals, token.usd,
+		token.usd_update, block.timestamp
+		FROM tx INNER JOIN token ON tx.token_id = token.token_id 
+		INNER JOIN block ON tx.eth_block_num = block.eth_block_num 
+		WHERE tx.id = $1;`, txID,
+	)
+	return tx, common.Wrap(err)
+}
+
+// GetTxsAPIRequest is an API request struct for getting txs
+type GetTxsAPIRequest struct {
+	EthAddr           *ethCommon.Address
+	FromEthAddr       *ethCommon.Address
+	ToEthAddr         *ethCommon.Address
+	Idx               *common.AccountIdx
+	FromIdx           *common.AccountIdx
+	ToIdx             *common.AccountIdx
+	BatchNum          *uint
+	TxType            *common.TxType
+	IncludePendingL1s *bool
+
+	FromItem *uint
+	Limit    *uint
+	Order    string
+}
+
+// GetTxsAPI returns a list of txs from the DB using the HistoryTx struct
+// and pagination info
+func (hdb *HistoryDB) GetTxsAPI(
+	request GetTxsAPIRequest,
+) ([]TxAPI, uint64, error) {
+	// Warning: amount_success and deposit_amount_success have true as default for
+	// performance reasons. The expected default value is false (when txs are unforged)
+	// this case is handled at the function func (tx TxAPI) MarshalJSON() ([]byte, error)
+	cancel, err := hdb.apiConnCon.Acquire()
+	defer cancel()
+	if err != nil {
+		return nil, 0, common.Wrap(err)
+	}
+	defer hdb.apiConnCon.Release()
+	var query string
+	var args []interface{}
+	queryStr := `SELECT tx.item_id, tx.is_l1, tx.id, tx.type, tx.position, 
+	ton_idx(tx.effective_from_idx) AS from_idx, tx.from_eth_addr,
+	ton_idx(tx.to_idx) AS to_idx, tx.to_eth_addr,
+	tx.amount, tx.amount_success,
+	tx.batch_num, tx.eth_block_num, tx.to_forge_l1_txs_num, tx.user_origin, tx.eth_tx_hash, tx.l1_fee,
+	tx.deposit_amount, tx.deposit_amount_usd, tx.deposit_amount_success,
+	block.timestamp, count(*) OVER() AS total_items 
+	FROM tx INNER JOIN block ON tx.eth_block_num = block.eth_block_num `
+	// Apply filters
+	nextIsAnd := false
+	// ethAddr filter
+	if request.EthAddr != nil {
+		queryStr += "WHERE (tx.from_eth_addr = ? OR tx.to_eth_addr = ?) "
+		nextIsAnd = true
+		args = append(args, request.EthAddr, request.EthAddr)
+	} else if request.FromEthAddr != nil && request.ToEthAddr != nil {
+		queryStr += "WHERE (tx.from_eth_addr = ? AND tx.to_eth_addr = ?) "
+		nextIsAnd = true
+		args = append(args, request.FromEthAddr, request.ToEthAddr)
+	} else if request.FromEthAddr != nil {
+		queryStr += "WHERE tx.from_eth_addr = ? "
+		nextIsAnd = true
+		args = append(args, request.FromEthAddr)
+	} else if request.ToEthAddr != nil {
+		queryStr += "WHERE tx.to_eth_addr = ? "
+		nextIsAnd = true
+		args = append(args, request.ToEthAddr)
+	}
+	// idx filter
+	if request.Idx != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "(tx.effective_from_idx = ? OR tx.to_idx = ?) "
+		args = append(args, request.Idx, request.Idx)
+		nextIsAnd = true
+	} else if request.FromIdx != nil && request.ToIdx != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "(tx.effective_from_idx = ? AND tx.to_idx = ?) "
+		args = append(args, request.FromIdx, request.ToIdx)
+		nextIsAnd = true
+	} else if request.FromIdx != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "tx.effective_from_idx = ? "
+		args = append(args, request.FromIdx)
+		nextIsAnd = true
+	} else if request.ToIdx != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "tx.to_idx = ? "
+		args = append(args, request.ToIdx)
+		nextIsAnd = true
+	}
+	// batchNum filter
+	if request.BatchNum != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "tx.batch_num = ? "
+		args = append(args, request.BatchNum)
+		nextIsAnd = true
+	}
+	// txType filter
+	if request.TxType != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "tx.type = ? "
+		args = append(args, request.TxType)
+		nextIsAnd = true
+	}
+	if request.FromItem != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		if request.Order == "ASC" {
+			queryStr += "tx.item_id >= ? "
+		} else {
+			queryStr += "tx.item_id <= ? "
+		}
+		args = append(args, request.FromItem)
+		nextIsAnd = true
+	}
+
+	// Include pending L1 txs? (default false)
+	if request.IncludePendingL1s == nil || (request.IncludePendingL1s != nil && !*request.IncludePendingL1s) {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "tx.batch_num IS NOT NULL "
+	}
+
+	// pagination
+	queryStr += "ORDER BY tx.item_id "
+	if request.Order == "ASC" {
+		queryStr += " ASC "
+	} else {
+		queryStr += " DESC "
+	}
+	queryStr += fmt.Sprintf("LIMIT %d;", *request.Limit)
+	query = hdb.dbRead.Rebind(queryStr)
+	log.Debug(query)
+	txsPtrs := []*TxAPI{}
+	if err := meddler.QueryAll(hdb.dbRead, &txsPtrs, query, args...); err != nil {
+		return nil, 0, common.Wrap(err)
+	}
+	txs := database.SlicePtrsToSlice(txsPtrs).([]TxAPI)
+	if len(txs) == 0 {
+		return txs, 0, nil
+	}
+	return txs, txs[0].TotalItems - uint64(len(txs)), nil
 }

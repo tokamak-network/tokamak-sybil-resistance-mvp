@@ -139,6 +139,157 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error500'  
+  '/transactions-history':
+    get:
+      tags:
+        - Explorer
+      summary: Get details and status of transactions that have been forged.
+      description: >-
+        Get historical transactions. This endpoint will return all the different types of **forged** transactions, this means that:
+          * L1 transactions sent by users that have not been forged yet are not included. These transactions can be fetched using `GET /transactions-history/{id}`.
+      operationId: getHistoryTxs
+      parameters:
+        - name: tonEthereumAddress
+          in: query
+          required: false
+          description: Only get transactions sent from or to an account associated with an Ethereum address. Incompatible with the queries `accountIndex`, and `fromAccountIndex`, `toAccountIndex`, `toTonEthereumAddress`, `fromTonEthereumAddress`.
+          schema:
+            $ref: '#/components/schemas/TonEthereumAddress'
+        - name: fromTonEthereumAddress
+          in: query
+          required: false
+          description: Only get transactions sent from an account associated with an Ethereum address. Incompatible with the queries `accountIndex`, and `fromAccountIndex`, `toAccountIndex`, `tonEthereumAddress`.
+          schema:
+            $ref: '#/components/schemas/TonEthereumAddress'
+        - name: toTonEthereumAddress
+          in: query
+          required: false
+          description: Only get transactions sent to an account associated with an Ethereum address. Incompatible with the queries `accountIndex`, and `fromAccountIndex`, `toAccountIndex`, `tonEthereumAddress`.
+          schema:
+            $ref: '#/components/schemas/TonEthereumAddress'
+        - name: accountIndex
+          in: query
+          required: false
+          description: Only get transactions sent from and to a specific account. Incompatible with the queries `fromAccountIndex`, `toAccountIndex`, and `tonEthereumAddress`, `fromTonEthereumAddress`, `toTonEthereumAddress`.
+          schema:
+            $ref: '#/components/schemas/AccountIndex'
+        - name: fromAccountIndex
+          in: query
+          required: false
+          description: Only get transactions sent from a specific account. Incompatible with the queries `accountIndex`, and `tonEthereumAddress`, `fromTonEthereumAddress`, `toTonEthereumAddress`.
+          schema:
+            $ref: '#/components/schemas/AccountIndex'
+        - name: toAccountIndex
+          in: query
+          required: false
+          description: Only get transactions sent to a specific account. Incompatible with the queries `accountIndex`, and `tonEthereumAddress`, `fromTonEthereumAddress`, `toTonEthereumAddress`.
+          schema:
+            $ref: '#/components/schemas/AccountIndex'
+        - name: batchNum
+          in: query
+          required: false
+          description: Only get transactions forged in a specific batch.
+          schema:
+            $ref: '#/components/schemas/BatchNum'
+        - name: type
+          in: query
+          required: false
+          description: Only get transactions of a specific type.
+          schema:
+            $ref: '#/components/schemas/TransactionType'
+        - name: fromItem
+          in: query
+          required: false
+          description: Indicates the desired first item (using the itemId property) to be included in the response.
+          schema:
+            type: number
+        - name: order
+          in: query
+          required: false
+          description: Order of the returned items. History transactions will be ordered by (batchNum, position).
+          schema:
+            type: string
+            default: ASC
+            enum:
+                - ASC
+                - DESC
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of items to be returned.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 2049
+        - name: includePendingL1s
+          in: query
+          required: false
+          description: |
+            If set to true L1 transactions that have been added to the smart contract queue but haven't been forged yet are returned.
+            Warning: the correctness of the order is not guaranteed when using this filter, as the unforged transactions may change their position
+            once they are forged. 
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryTransactions'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error500'
+  '/transactions-history/{id}':
+    get:
+      tags:
+        - Explorer
+      summary: Get details and status of a specific historical transaction.
+      description: >-
+        Get transaction by its ID. There are other options to filter transactions using query string parameters. Please check for more details below.
+        This endpoint will return all the different types of transactions except those that are still in the pool of any coordinator.
+      operationId: getHistoryTx
+      parameters:
+        - name: id
+          in: path
+          description: Transaction identifier.
+          required: true
+          schema:
+            $ref: '#/components/schemas/TransactionId'
+      responses:
+        '200':
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryTransaction'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error404'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error500'
 
 components:
   schemas:
@@ -152,15 +303,24 @@ components:
       example: "0xaa942cfcd25ad4d90a62358b0dd84f33b398262a" 
     TonEthereumAddress:
       type: string
-      description: "Address of an Ethereum account linked to the Hermez Network."
+      description: "Address of an Ethereum account linked to the Sybil Network."
       pattern: "^ton:0x[a-fA-F0-9]{40}$"
       example: "ton:0xaa942cfcd25ad4d90a62358b0dd84f33b398262a" 
     AccountIndex:
       type: string
       description: >-
         Identifier of an account. It references the position where the account is inside the state Merkle tree.
-        The identifier is built using: `ton:` + `token symbol:` + `index`
-      example: "ton:DAI:4444"
+        The identifier is built using: `ton:` + `index`
+      example: "ton:4444"
+    TransactionType:
+      type: string
+      description: Type of transaction.
+      enum:
+      - Deposit
+      - CreateAccountDeposit
+      - ForceExit
+      - CreateVouch
+      - DeleteVouch
     BigInt:
       type: string
       description: BigInt is an integer encoded as a string for numbers that are very large.
@@ -172,6 +332,12 @@ components:
       minimum: 0
       maximum: 1.84467440737096e+19
       example: 121
+    BatchNum:
+      type: integer
+      description: Identifier of a batch. Every new forged batch increments by one the batchNum, starting at 0.
+      minimum: 0
+      maximum: 4294967295
+      example: 5432
     Account:
       type: object
       description: State tree leaf. It contains balance and nonce of an account.
@@ -226,6 +392,229 @@ components:
       required:
         - accounts
         - pendingItems
+    TransactionId:
+      type: string
+      description: Identifier for transactions. Used for any kind of transaction.
+      example: "0x00000000000001e240004700" 
+    HistoryTransaction:
+      type: object
+      description: Transaction of the Sybil Network
+      properties:
+        id:
+          $ref: '#/components/schemas/TransactionId'
+        itemId:
+          $ref: '#/components/schemas/ItemId'
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        position:
+          $ref: '#/components/schemas/TransactionPosition'
+        fromAccountIndex:
+          type: string
+          description: >-
+            Identifier of an account. It references the position where the account is inside the state Merkle tree.
+            The identifier is built using: `ton:` + `index`
+          example: "ton:4444"
+          nullable: true
+        fromTonEthereumAddress:
+          type: string
+          description: "Address of an Ethereum account linked to the Hermez Network."
+          pattern: "^ton:0x[a-fA-F0-9]{40}$"
+          example: "ton:0xaa942cfcd25ad4d90a62358b0dd84f33b398262a"
+          nullable: true
+        toAccountIndex:
+          allOf:
+            - $ref: '#/components/schemas/AccountIndex'
+            - example: "ton:672"
+        toTonEthereumAddress:
+          type: string
+          description: "Address of an Ethereum account linked to the Sybil Network."
+          pattern: "^ton:0x[a-fA-F0-9]{40}$"
+          example: "ton:0xaa942cfcd25ad4d90a62358b0dd84f33b398262a"
+          nullable: true
+        amount:
+          allOf:
+            - $ref: '#/components/schemas/BigInt'
+            - description: Amount of tokens to be sent.
+            -  example: "4903020000000000000"
+        batchNum:
+          type: integer
+          description: Batch in which the transaction was forged. Null indicates not forged yet.
+          minimum: 0
+          maximum: 4294967295
+          example: 5432
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          description: In the case of L1 indicates the moment where the transaction was added in the smart contract.
+        L1Info:
+          type: object
+          description: Additional information that only applies to L1 transactions.
+          nullable: true
+          properties:
+            toForgeL1TransactionsNum:
+              $ref: '#/components/schemas/ToForgeL1TransactionsNum'
+            userOrigin:
+              type: boolean
+              description: True if the transaction was sent by a user. False if it was sent by a coordinator.
+            depositAmount:
+              allOf:
+                - $ref: '#/components/schemas/BigInt'
+                - description: Tokens transfered from L1 to L2.
+                - example: "4900000000000000000"
+            amountSuccess:
+              type: boolean
+              description: >-
+                Indicates if the amount specified by the user has been sent propperly. If false, the amount that actualy has been sent is 0.
+                If the transaction hasn't been forged yet (`batchNum == null`), this value will be false, as it's unknown if it has succeed or not.
+                An example were this value could be false: a user send a `DepositTransfer` transaction, but when the tx is forged there are not
+                enougth founds in the account. In this case the transfer part of the transaction won't be effective making the amount have a real value of 0.
+              example: true
+            depositAmountSuccess:
+              type: boolean
+              description: >-
+                Indicates if the deposit amount specified by the user has been sent propperly. If false, the deposit amount that actualy has been sent is 0.
+                If the transaction hasn't been forged yet (`batchNum == null`), this value will be false, as it's unknown if it has succeed or not.
+                An example were this value could be false: a user send a `Deposit` transaction, but when the tx is forged the token id is not registered on the network.
+                In this case transaction won't be effective making the deposit amount have a real value of 0.
+              example: true
+            historicDepositAmountUSD:
+              type: number
+              description: Deposit amount in USD, at the moment the transaction was made.
+              example: 3.897
+              nullable: true
+            ethereumBlockNum:
+              allOf:
+                - $ref: '#/components/schemas/EthBlockNum'
+                - description: Ethereum block in which the transaction was added to the smart contract forge queue.
+                - example: 258723049
+            ethereumTxHash:
+              type: string
+              description: hash of the Ethereum transaction in which the tx was mined
+              example: "0xae98c94d860f01a17f961bf4bdfb6e0c6cd10d3fda5cc861e805ca1240c58553"
+            l1Fee:
+              type: string
+              description: fee spent by the user
+              example: "50000000"
+              nullable: true
+          required:
+            - toForgeL1TransactionsNum
+            - userOrigin
+            - depositAmount
+            - amountSuccess
+            - depositAmountSuccess
+            - historicDepositAmountUSD
+            - ethereumBlockNum
+            - ethereumTxHash
+            - l1Fee
+          additionalProperties: false
+      example:
+        L1Info:
+          ethereumBlockNum: 1
+          historicDepositAmountUSD: 232.47
+          depositAmount: '261'
+          toForgeL1TransactionsNum: 10
+          userOrigin: true
+          ethereumTxHash: "0xae98c94d860f01a17f961bf4bdfb6e0c6cd10d3fda5cc861e805ca1240c58553"
+          l1Fee: "5000000"
+        amount: '261'
+        batchNum: 1
+        fromAccountIndex: ton:276
+        fromHezEthereumAddress: ton:0x0000000000000000000000000000000000000114
+        id: '0x00000000000000000a000400'
+        itemId: 2
+        position: 4
+        timestamp: '2020-11-17T14:08:12.197554Z'
+        toAccountIndex: ton:276
+        toTonEthereumAddress: ton:0x0000000000000000000000000000000000000114
+        type: CreateAccountDeposit
+      required:
+        - id
+        - itemId
+        - type
+        - position
+        - fromAccountIndex
+        - fromTonEthereumAddress
+        - toAccountIndex
+        - toTonEthereumAddress
+        - amount
+        - batchNum
+        - timestamp
+        - L1Info
+      additionalProperties: false
+    HistoryTransactions:
+      type: object
+      properties:
+        transactions:
+          type: array
+          description: List of history transactions.
+          items: 
+            $ref: '#/components/schemas/HistoryTransaction'
+        pendingItems:
+          $ref: '#/components/schemas/PendingItems'
+      example:
+        transactions:
+          - L1Info:
+              ethereumBlockNum: 3
+              historicDepositAmountUSD: 
+              depositAmount: '0'
+              toForgeL1TransactionsNum: 7
+              userOrigin: true
+              ethereumTxHash: "0xae98c94d860f01a17f961bf4bdfb6e0c6cd10d3fda5cc861e805ca1240c58553"
+              l1Fee: "5000000"
+            amount: '88888800000000000'
+            batchNum: 9
+            fromAccountIndex: ton:262
+            fromTonEthereumAddress: ton:0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF
+            id: '0x000000000000000007000300'
+            itemId: 28
+            position: 3
+            timestamp: '2020-11-26T09:18:40.004749Z'
+            toAccountIndex: ton:1
+            toTonEthereumAddress: 
+            type: ForceExit
+          - L1Info:
+              ethereumBlockNum: 3
+              historicDepositAmountUSD: 14099.9999859
+              depositAmount: '33333333300000000000'
+              toForgeL1TransactionsNum: 2
+              userOrigin: true
+              ethereumTxHash: "0xae98c94d860f01a17f961bf4bdfb6e0c6cd10d3fda5cc861e805ca1240c58553"
+              l1Fee: "5000000"
+            amount: '0'
+            batchNum: 4
+            fromAccountIndex: ton:0
+            fromTonEthereumAddress: ton:0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf
+            id: '0x000000000000000002000000'
+            itemId: 9
+            position: 0
+            timestamp: '2020-11-26T09:18:40.004749Z'
+            toAccountIndex: ton:0
+            toTonEthereumAddress: 
+            type: CreateAccountDeposit
+        pendingItems: 23
+      required:
+        - transactions
+        - pendingItems
+      additionalProperties: false
+    EthBlockNum:
+      type: integer
+      description: Ethereum block number
+      minimum: 0
+      maximum: 1.84467440737096e+19
+      example: 762375478
+    ToForgeL1TransactionsNum:
+      type: integer
+      description: Reference to know in which batch a L1 transaction was forged / will be forged.
+      minimum: 0
+      maximum: 4294967295
+      example: 784
+      nullable: true
+    TransactionPosition:
+      type: integer
+      description: Position that a transaction occupies in a batch.
+      minimum: 0
+      example: 5
     PendingItems:
       type: integer
       description: Amount of items that will be returned in subsequent calls to the endpoint, as long as they are done with same filters. When the value is 0 it means that all items have been sent.

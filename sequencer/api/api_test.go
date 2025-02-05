@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 	"tokamak-sybil-resistance/api/stateapiupdater"
@@ -60,8 +61,6 @@ ForceExit B: 80
 CreateVouch C-A
 CreateVouch C-B
 CreateVouch C-D
-// Exit C: 50
-// Exit D: 30
 
 > batchL1 // forge L1UserTxs{nil}, freeze defined L1UserTxs{2}
 > batchL1 // forge L1UserTxs{2}, freeze defined L1UserTxs{nil}
@@ -72,8 +71,8 @@ type testCommon struct {
 	blocks []common.Block
 	// batches     []testBatch
 	// fullBatches []testFullBatch
-	accounts []testAccount
-	// txs         []testTx
+	accounts   []testAccount
+	txs        []testTx
 	router     *swagger.Router
 	rollupVars common.RollupVariables
 }
@@ -216,7 +215,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Generate test data, as expected to be received/sended from/to the API
-	// testTxs := genTestTxs(commonL1Txs, commonAccounts, commonBlocks)
+	testTxs := genTestTxs(commonL1Txs, commonAccounts, commonBlocks)
 	// testBatches, testFullBatches := genTestBatches(commonBlocks, commonBatches, testTxs)
 	// Add balance and nonce to historyDB
 	accounts := genTestAccounts(commonAccounts)
@@ -224,7 +223,7 @@ func TestMain(m *testing.M) {
 	for i := 0; i < len(accounts); i++ {
 		balance := new(big.Int)
 		balance.SetString(string(*accounts[i].Balance), 10)
-		queryAccount, err := common.StringToIdx(string(accounts[i].Idx))
+		queryAccount, err := common.StringToIdx(string(accounts[i].Idx), "foo")
 		if err != nil {
 			panic(err)
 		}
@@ -250,8 +249,8 @@ func TestMain(m *testing.M) {
 		blocks: commonBlocks,
 		// batches:     testBatches,
 		// fullBatches: testFullBatches,
-		accounts: accounts,
-		// txs:         testTxs,
+		accounts:   accounts,
+		txs:        testTxs,
 		router:     router,
 		rollupVars: rollupVars,
 	}
@@ -304,55 +303,55 @@ func AddAdditionalInformation(blocks []common.BlockData) {
 	}
 }
 
-// func doGoodReqPaginated(
-// 	path, order string,
-// 	iterStruct Pendinger,
-// 	appendIter func(res interface{}),
-// ) error {
-// 	var next uint64
-// 	firstIte := true
-// 	expectedTotal := 0
-// 	totalReceived := 0
-// 	for {
-// 		// Calculate fromItem
-// 		iterPath := path
-// 		if !firstIte {
-// 			iterPath += "&fromItem=" + strconv.Itoa(int(next))
-// 		}
-// 		// Call API to get this iteration items
-// 		iterStruct = iterStruct.New()
-// 		if err := doGoodReq(
-// 			"GET", iterPath+"&order="+order, nil,
-// 			iterStruct,
-// 		); err != nil {
-// 			return common.Wrap(err)
-// 		}
-// 		appendIter(iterStruct)
-// 		// Keep iterating?
-// 		remaining, lastID := iterStruct.GetPending()
-// 		if remaining == 0 {
-// 			break
-// 		}
-// 		if order == "DESC" {
-// 			next = lastID - 1
-// 		} else {
-// 			next = lastID + 1
-// 		}
-// 		// Check that the expected amount of items is consistent across iterations
-// 		totalReceived += iterStruct.Len()
-// 		if firstIte {
-// 			firstIte = false
-// 			expectedTotal = totalReceived + int(remaining)
-// 		}
-// 		if expectedTotal != totalReceived+int(remaining) {
-// 			panic(fmt.Sprintf(
-// 				"pagination error, totalReceived + remaining should be %d, but is %d",
-// 				expectedTotal, totalReceived+int(remaining),
-// 			))
-// 		}
-// 	}
-// 	return nil
-// }
+func doGoodReqPaginated(
+	path, order string,
+	iterStruct Pendinger,
+	appendIter func(res interface{}),
+) error {
+	var next uint64
+	firstIte := true
+	expectedTotal := 0
+	totalReceived := 0
+	for {
+		// Calculate fromItem
+		iterPath := path
+		if !firstIte {
+			iterPath += "&fromItem=" + strconv.Itoa(int(next))
+		}
+		// Call API to get this iteration items
+		iterStruct = iterStruct.New()
+		if err := doGoodReq(
+			"GET", iterPath+"&order="+order, nil,
+			iterStruct,
+		); err != nil {
+			return common.Wrap(err)
+		}
+		appendIter(iterStruct)
+		// Keep iterating?
+		remaining, lastID := iterStruct.GetPending()
+		if remaining == 0 {
+			break
+		}
+		if order == "DESC" {
+			next = lastID - 1
+		} else {
+			next = lastID + 1
+		}
+		// Check that the expected amount of items is consistent across iterations
+		totalReceived += iterStruct.Len()
+		if firstIte {
+			firstIte = false
+			expectedTotal = totalReceived + int(remaining)
+		}
+		if expectedTotal != totalReceived+int(remaining) {
+			panic(fmt.Sprintf(
+				"pagination error, totalReceived + remaining should be %d, but is %d",
+				expectedTotal, totalReceived+int(remaining),
+			))
+		}
+	}
+	return nil
+}
 
 func doGoodReq(method, path string, reqBody io.Reader, returnStruct interface{}) error {
 	ctx := context.Background()

@@ -1,7 +1,6 @@
 package historydb
 
 import (
-	"fmt"
 	"math/big"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/database"
@@ -365,7 +364,6 @@ func (hdb *HistoryDB) addAccounts(d meddler.DB, accounts []common.Account) error
 	var testAccounts []TestAccounts
 
 	for _, account := range accounts {
-		fmt.Println(account.EthAddr)
 		testAccounts = append(testAccounts, TestAccounts{
 			Idx:      account.Idx,
 			BatchNum: account.BatchNum,

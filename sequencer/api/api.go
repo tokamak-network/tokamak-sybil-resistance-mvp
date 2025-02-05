@@ -72,9 +72,9 @@ func NewAPI(setup Config) (*API, error) {
 	if setup.ExplorerEndpoints {
 		// Account
 		v1.GET("/accounts/:accountIndex", a.getAccount)
-		// // Transaction
-		// v1.GET("/transactions-history", a.getHistoryTxs)
-		// v1.GET("/transactions-history/:id", a.getHistoryTx)
+		// Transaction
+		v1.GET("/transactions-history", a.getHistoryTxs)
+		v1.GET("/transactions-history/:id", a.getHistoryTx)
 		// // Batches
 		// v1.GET("/batches", a.getBatches)
 		// v1.GET("/batches/:batchNum", a.getBatch)

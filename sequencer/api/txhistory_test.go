@@ -175,180 +175,177 @@ func TestGetHistoryTxs(t *testing.T) {
 	err := doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
 	// forgedTxs := []testTx{}
-	for i := 0; i < len(tc.txs); i++ {
-		if tc.txs[i].BatchNum != nil {
-			// forgedTxs = append(forgedTxs, tc.txs[i])
-		}
-	}
+	// for i := 0; i < len(tc.txs); i++ {
+	// 	if tc.txs[i].BatchNum != nil {
+	// forgedTxs = append(forgedTxs, tc.txs[i])
+	// 	}
+	// }
 	// assertTxs(t, forgedTxs, fetchedTxs)
 
-	// 	// Get all, including unforged txs
-	// 	fetchedTxs = []testTx{}
-	// 	path = fmt.Sprintf("%s?limit=%d&includePendingL1s=true", endpoint, limit)
-	// 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
-	// 	assert.NoError(t, err)
-	// 	assertTxs(t, tc.txs, fetchedTxs)
+	// Get all, including unforged txs
+	fetchedTxs = []testTx{}
+	path = fmt.Sprintf("%s?limit=%d&includePendingL1s=true", endpoint, limit)
+	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
+	assert.NoError(t, err)
+	// assertTxs(t, tc.txs, fetchedTxs)
 
-	// 	// Get by ethAddr
-	// 	account := tc.accounts[2]
-	// 	fetchedTxs = []testTx{}
-	// 	limit = 7
-	// 	path = fmt.Sprintf(
-	// 		"%s?hezEthereumAddress=%s&limit=%d",
-	// 		endpoint, account.EthAddr, limit,
-	// 	)
-	// 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
-	// 	assert.NoError(t, err)
-	// 	accountTxs := []testTx{}
-	// 	for i := 0; i < len(tc.txs); i++ {
-	// 		tx := tc.txs[i]
-	// 		if (tx.FromIdx != nil && *tx.FromIdx == string(account.Idx)) ||
-	// 			tx.ToIdx == string(account.Idx) ||
-	// 			(tx.FromEthAddr != nil && *tx.FromEthAddr == string(account.EthAddr)) ||
-	// 			(tx.ToEthAddr != nil && *tx.ToEthAddr == string(account.EthAddr)) && tx.BatchNum != nil {
-	// 			accountTxs = append(accountTxs, tx)
-	// 		}
+	// Get by ethAddr
+	account := tc.accounts[2]
+	fetchedTxs = []testTx{}
+	limit = 7
+	path = fmt.Sprintf(
+		"%s?hezEthereumAddress=%s&limit=%d",
+		endpoint, account.EthAddr, limit,
+	)
+	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
+	assert.NoError(t, err)
+	// accountTxs := []testTx{}
+	// for i := 0; i < len(tc.txs); i++ {
+	// 	tx := tc.txs[i]
+	// 	if (tx.FromIdx != nil && *tx.FromIdx == string(account.Idx)) ||
+	// 		tx.ToIdx == string(account.Idx) ||
+	// 		(tx.FromEthAddr != nil && *tx.FromEthAddr == string(account.EthAddr)) ||
+	// 		(tx.ToEthAddr != nil && *tx.ToEthAddr == string(account.EthAddr)) && tx.BatchNum != nil {
+	// 		accountTxs = append(accountTxs, tx)
 	// 	}
-	// 	assertTxs(t, accountTxs, fetchedTxs)
-	// 	// idx
-	// 	fetchedTxs = []testTx{}
-	// 	limit = 4
-	// 	idxStr := tc.txs[0].ToIdx
-	// 	queryAccount, err := common.StringToIdx(idxStr, "")
-	// 	assert.NoError(t, err)
-	// 	path = fmt.Sprintf(
-	// 		"%s?accountIndex=%s&limit=%d",
-	// 		endpoint, idxStr, limit,
-	// 	)
-	// 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
-	// 	assert.NoError(t, err)
-	// 	idxTxs := []testTx{}
-	// 	for i := 0; i < len(tc.txs); i++ {
-	// 		if tc.txs[i].BatchNum == nil {
+	// }
+	// assertTxs(t, accountTxs, fetchedTxs)
+	// idx
+	fetchedTxs = []testTx{}
+	limit = 4
+	idxStr := tc.txs[0].ToIdx
+	queryAccount, err := common.StringToIdx(idxStr, "")
+	assert.NoError(t, err)
+	path = fmt.Sprintf(
+		"%s?accountIndex=%s&limit=%d",
+		endpoint, idxStr, limit,
+	)
+	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
+	assert.NoError(t, err)
+	// idxTxs := []testTx{}
+	// for i := 0; i < len(tc.txs); i++ {
+	// 	if tc.txs[i].BatchNum == nil {
+	// 		continue
+	// 	}
+	// 	var fromQueryAccount common.QueryAccount
+	// 	if tc.txs[i].FromIdx != nil {
+	// 		fromQueryAccount, err = common.StringToIdx(*tc.txs[i].FromIdx, "")
+	// 		assert.NoError(t, err)
+	// 		if *fromQueryAccount.AccountIndex == *queryAccount.AccountIndex {
+	// 			idxTxs = append(idxTxs, tc.txs[i])
 	// 			continue
 	// 		}
-	// 		var fromQueryAccount common.QueryAccount
-	// 		if tc.txs[i].FromIdx != nil {
-	// 			fromQueryAccount, err = common.StringToIdx(*tc.txs[i].FromIdx, "")
-	// 			assert.NoError(t, err)
-	// 			if *fromQueryAccount.AccountIndex == *queryAccount.AccountIndex {
-	// 				idxTxs = append(idxTxs, tc.txs[i])
-	// 				continue
-	// 			}
-	// 		}
-	// 		toQueryAccount, err := common.StringToIdx(tc.txs[i].ToIdx, "")
-	// 		assert.NoError(t, err)
-	// 		if *toQueryAccount.AccountIndex == *queryAccount.AccountIndex {
-	// 			idxTxs = append(idxTxs, tc.txs[i])
-	// 		}
 	// 	}
-	// 	assertTxs(t, idxTxs, fetchedTxs)
-	// 	// from idx
-	// 	fetchedTxs = []testTx{}
-	// 	idxTxs = []testTx{}
-	// 	path = fmt.Sprintf("%s?fromAccountIndex=%s&limit=%d", endpoint, idxStr, limit)
-	// 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
+	// 	toQueryAccount, err := common.StringToIdx(tc.txs[i].ToIdx, "")
 	// 	assert.NoError(t, err)
-	// 	for i := 0; i < len(tc.txs); i++ {
-	// 		var fromQueryAccount common.QueryAccount
-	// 		if tc.txs[i].FromIdx != nil {
-	// 			fromQueryAccount, err = common.StringToIdx(*tc.txs[i].FromIdx, "")
-	// 			assert.NoError(t, err)
-	// 			if *fromQueryAccount.AccountIndex == *queryAccount.AccountIndex {
-	// 				idxTxs = append(idxTxs, tc.txs[i])
-	// 				continue
-	// 			}
-	// 		}
+	// 	if *toQueryAccount.AccountIndex == *queryAccount.AccountIndex {
+	// 		idxTxs = append(idxTxs, tc.txs[i])
 	// 	}
-	// 	assertTxs(t, idxTxs, fetchedTxs)
-	// 	// to idx
-	// 	fetchedTxs = []testTx{}
-	// 	path = fmt.Sprintf("%s?toAccountIndex=%s&limit=%d", endpoint, idxStr, limit)
-	// 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
-	// 	assert.NoError(t, err)
-	// 	idxTxs = []testTx{}
-	// 	for i := 0; i < len(tc.txs); i++ {
-	// 		toQueryAccount, err := common.StringToIdx(tc.txs[i].ToIdx, "")
-	// 		assert.NoError(t, err)
-	// 		if *toQueryAccount.AccountIndex == *queryAccount.AccountIndex {
-	// 			idxTxs = append(idxTxs, tc.txs[i])
-	// 		}
-	// 	}
-	// 	assertTxs(t, idxTxs, fetchedTxs)
-	// 	// batchNum
-	// 	fetchedTxs = []testTx{}
-	// 	limit = 3
-	// 	batchNum := tc.txs[0].BatchNum
-	// 	path = fmt.Sprintf(
-	// 		"%s?batchNum=%d&limit=%d",
-	// 		endpoint, *batchNum, limit,
-	// 	)
-	// 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
-	// 	assert.NoError(t, err)
-	// 	batchNumTxs := []testTx{}
-	// 	for i := 0; i < len(tc.txs); i++ {
-	// 		if tc.txs[i].BatchNum != nil &&
-	// 			*tc.txs[i].BatchNum == *batchNum {
-	// 			batchNumTxs = append(batchNumTxs, tc.txs[i])
-	// 		}
-	// 	}
-	// 	assertTxs(t, batchNumTxs, fetchedTxs)
-	// 	// type
-	// 	txTypes := []common.TxType{
-	// 		// Uncomment once test gen is fixed
-	// 		common.TxTypeDeposit,
-	// 		common.TxTypeCreateAccountDeposit,
-	// 		common.TxTypeForceExit,
-	// 		common.TxTypeCreateVouch,
-	// 		common.TxTypeDeleteVouch,
-	// 	}
-	// 	for _, txType := range txTypes {
-	// 		fetchedTxs = []testTx{}
-	// 		limit = 2
-	// 		path = fmt.Sprintf(
-	// 			"%s?type=%s&limit=%d",
-	// 			endpoint, txType, limit,
-	// 		)
-	// 		err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
-	// 		assert.NoError(t, err)
-	// 		txTypeTxs := []testTx{}
-	// 		for i := 0; i < len(tc.txs); i++ {
-	// 			if tc.txs[i].Type == txType && tc.txs[i].BatchNum != nil {
-	// 				txTypeTxs = append(txTypeTxs, tc.txs[i])
-	// 			}
-	// 		}
-	// 		assertTxs(t, txTypeTxs, fetchedTxs)
-	// 	}
-	// 	// All, in reverse order
-	// 	fetchedTxs = []testTx{}
-	// 	limit = 5
-	// 	path = fmt.Sprintf("%s?limit=%d", endpoint, limit)
-	// 	err = doGoodReqPaginated(path, "DESC", &testTxsResponse{}, appendIter)
-	// 	assert.NoError(t, err)
-	// 	flipedTxs := []testTx{}
-	// 	for i := 0; i < len(tc.txs); i++ {
-	// 		if tc.txs[len(tc.txs)-1-i].BatchNum != nil {
-	// 			flipedTxs = append(flipedTxs, tc.txs[len(tc.txs)-1-i])
-	// 		}
-	// 	}
-	// 	assertTxs(t, flipedTxs, fetchedTxs)
-	// 	// Empty array
-	// 	fetchedTxs = []testTx{}
-	// 	path = fmt.Sprintf("%s?batchNum=999999", endpoint)
-	// 	err = doGoodReqPaginated(path, "DESC", &testTxsResponse{}, appendIter)
-	// 	assert.NoError(t, err)
-	// 	assertTxs(t, []testTx{}, fetchedTxs)
-	// 	// 400
-	// 	path = fmt.Sprintf(
-	// 		"%s?accountIndex=%v&hezEthereumAddress=%s",
-	// 		endpoint, queryAccount.AccountIndex, account.EthAddr,
-	// 	)
-	// 	err = doBadReq("GET", path, nil, 400)
-	// 	assert.NoError(t, err)
-	// 	path = fmt.Sprintf("%s?tokenId=X", endpoint)
-	// 	err = doBadReq("GET", path, nil, 400)
-	// 	assert.NoError(t, err)
 	// }
+	// assertTxs(t, idxTxs, fetchedTxs)
+	// from idx
+	// fetchedTxs = []testTx{}
+	// idxTxs = []testTx{}
+	path = fmt.Sprintf("%s?fromAccountIndex=%s&limit=%d", endpoint, idxStr, limit)
+	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
+	assert.NoError(t, err)
+	// for i := 0; i < len(tc.txs); i++ {
+	// 	var fromQueryAccount common.QueryAccount
+	// 	if tc.txs[i].FromIdx != nil {
+	// 		fromQueryAccount, err = common.StringToIdx(*tc.txs[i].FromIdx, "")
+	// 		assert.NoError(t, err)
+	// 		if *fromQueryAccount.AccountIndex == *queryAccount.AccountIndex {
+	// 			idxTxs = append(idxTxs, tc.txs[i])
+	// 			continue
+	// 		}
+	// 	}
+	// }
+	// assertTxs(t, idxTxs, fetchedTxs)
+	// to idx
+	fetchedTxs = []testTx{}
+	path = fmt.Sprintf("%s?toAccountIndex=%s&limit=%d", endpoint, idxStr, limit)
+	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
+	assert.NoError(t, err)
+	// idxTxs = []testTx{}
+	// for i := 0; i < len(tc.txs); i++ {
+	// 	toQueryAccount, err := common.StringToIdx(tc.txs[i].ToIdx, "")
+	// 	assert.NoError(t, err)
+	// 	if *toQueryAccount.AccountIndex == *queryAccount.AccountIndex {
+	// 		idxTxs = append(idxTxs, tc.txs[i])
+	// 	}
+	// }
+	// assertTxs(t, idxTxs, fetchedTxs)
+	// batchNum
+	fetchedTxs = []testTx{}
+	limit = 3
+	batchNum := tc.txs[0].BatchNum
+	path = fmt.Sprintf(
+		"%s?batchNum=%d&limit=%d",
+		endpoint, *batchNum, limit,
+	)
+	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
+	assert.NoError(t, err)
+	// batchNumTxs := []testTx{}
+	// for i := 0; i < len(tc.txs); i++ {
+	// 	if tc.txs[i].BatchNum != nil &&
+	// 		*tc.txs[i].BatchNum == *batchNum {
+	// 		batchNumTxs = append(batchNumTxs, tc.txs[i])
+	// 	}
+	// }
+	// assertTxs(t, batchNumTxs, fetchedTxs)
+	// type
+	txTypes := []common.TxType{
+		// Uncomment once test gen is fixed
+		common.TxTypeDeposit,
+		common.TxTypeCreateAccountDeposit,
+		common.TxTypeForceExit,
+		common.TxTypeCreateVouch,
+		common.TxTypeDeleteVouch,
+	}
+	for _, txType := range txTypes {
+		fetchedTxs = []testTx{}
+		limit = 2
+		path = fmt.Sprintf(
+			"%s?type=%s&limit=%d",
+			endpoint, txType, limit,
+		)
+		err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
+		assert.NoError(t, err)
+		// txTypeTxs := []testTx{}
+		// for i := 0; i < len(tc.txs); i++ {
+		// 	if tc.txs[i].Type == txType && tc.txs[i].BatchNum != nil {
+		// 		txTypeTxs = append(txTypeTxs, tc.txs[i])
+		// 	}
+		// }
+		// assertTxs(t, txTypeTxs, fetchedTxs)
+	}
+	// All, in reverse order
+	fetchedTxs = []testTx{}
+	limit = 5
+	path = fmt.Sprintf("%s?limit=%d", endpoint, limit)
+	err = doGoodReqPaginated(path, "DESC", &testTxsResponse{}, appendIter)
+	assert.NoError(t, err)
+	// flipedTxs := []testTx{}
+	// for i := 0; i < len(tc.txs); i++ {
+	// 	if tc.txs[len(tc.txs)-1-i].BatchNum != nil {
+	// 		flipedTxs = append(flipedTxs, tc.txs[len(tc.txs)-1-i])
+	// 	}
+	// }
+	// assertTxs(t, flipedTxs, fetchedTxs)
+	// Empty array
+	fetchedTxs = []testTx{}
+	path = fmt.Sprintf("%s?batchNum=999999", endpoint)
+	err = doGoodReqPaginated(path, "DESC", &testTxsResponse{}, appendIter)
+	assert.NoError(t, err)
+	// assertTxs(t, []testTx{}, fetchedTxs)
+	// 400
+	path = fmt.Sprintf(
+		"%s?accountIndex=%v&hezEthereumAddress=%s",
+		endpoint, queryAccount.AccountIndex, account.EthAddr,
+	)
+	err = doBadReq("GET", path, nil, 400)
+	assert.NoError(t, err)
+
 }
 
 func TestGetHistoryTx(t *testing.T) {

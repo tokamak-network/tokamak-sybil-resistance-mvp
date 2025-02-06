@@ -303,3 +303,112 @@ func (hdb *HistoryDB) GetTxsAPI(
 	}
 	return txs, txs[0].TotalItems - uint64(len(txs)), nil
 }
+
+// GetBatchAPI return the batch with the given batchNum
+func (hdb *HistoryDB) GetBatchAPI(batchNum common.BatchNum) (*BatchAPI, error) {
+	cancel, err := hdb.apiConnCon.Acquire()
+	defer cancel()
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+	defer hdb.apiConnCon.Release()
+	return hdb.getBatchAPI(hdb.dbRead, batchNum)
+}
+
+// GetBatchesAPIRequest is an API request struct for getting batches
+type GetBatchesAPIRequest struct {
+	MinBatchNum *uint
+	MaxBatchNum *uint
+	ForgerAddr  *ethCommon.Address
+
+	FromItem *uint
+	Limit    *uint
+	Order    string
+}
+
+// GetBatchesAPI return the batches applying the given filters
+func (hdb *HistoryDB) GetBatchesAPI(
+	request GetBatchesAPIRequest,
+) ([]BatchAPI, uint64, error) {
+	cancel, err := hdb.apiConnCon.Acquire()
+	defer cancel()
+	if err != nil {
+		return nil, 0, common.Wrap(err)
+	}
+	defer hdb.apiConnCon.Release()
+	var query string
+	var args []interface{}
+	queryStr := `SELECT batch.item_id, batch.batch_num, batch.eth_block_num,
+	batch.forger_addr, batch.num_accounts, batch.exit_root, batch.forge_l1_txs_num,
+	batch.eth_tx_hash, block.timestamp, block.hash,
+	COALESCE ((SELECT COUNT(*) FROM tx WHERE batch_num = batch.batch_num), 0) AS forged_txs,
+	count(*) OVER() AS total_items
+	FROM batch INNER JOIN block ON batch.eth_block_num = block.eth_block_num `
+	// Apply filters
+	nextIsAnd := false
+	// minBatchNum filter
+	if request.MinBatchNum != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "batch.batch_num > ? "
+		args = append(args, request.MinBatchNum)
+		nextIsAnd = true
+	}
+	// maxBatchNum filter
+	if request.MaxBatchNum != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "batch.batch_num < ? "
+		args = append(args, request.MaxBatchNum)
+		nextIsAnd = true
+	}
+	// forgerAddr filter
+	if request.ForgerAddr != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		queryStr += "batch.forger_addr = ? "
+		args = append(args, request.ForgerAddr)
+		nextIsAnd = true
+	}
+	// pagination
+	if request.FromItem != nil {
+		if nextIsAnd {
+			queryStr += "AND "
+		} else {
+			queryStr += "WHERE "
+		}
+		if request.Order == "ASC" {
+			queryStr += "batch.item_id >= ? "
+		} else {
+			queryStr += "batch.item_id <= ? "
+		}
+		args = append(args, request.FromItem)
+	}
+	queryStr += "ORDER BY batch.item_id "
+	if request.Order == "ASC" {
+		queryStr += " ASC "
+	} else {
+		queryStr += " DESC "
+	}
+	queryStr += fmt.Sprintf("LIMIT %d;", *request.Limit)
+	query = hdb.dbRead.Rebind(queryStr)
+	// log.Debug(query)
+	batchPtrs := []*BatchAPI{}
+	if err := meddler.QueryAll(hdb.dbRead, &batchPtrs, query, args...); err != nil {
+		return nil, 0, common.Wrap(err)
+	}
+	batches := database.SlicePtrsToSlice(batchPtrs).([]BatchAPI)
+	if len(batches) == 0 {
+		return batches, 0, nil
+	}
+	return batches, batches[0].TotalItems - uint64(len(batches)), nil
+}

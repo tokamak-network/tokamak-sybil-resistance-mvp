@@ -290,6 +290,157 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error500'
+  '/batches':
+    get:
+      tags:
+        - Explorer
+      summary: Get information about forged batches.
+      description: >-
+        Get information about forged batches.
+      operationId: getBatches
+      parameters:
+        - name: minBatchNum
+          in: query
+          required: false
+          description: Include only `batchNum > minBatchNum` batches.
+          schema:
+            $ref: '#/components/schemas/BatchNum'
+        - name: maxBatchNum
+          in: query
+          required: false
+          description: Include only `batchNum < maxBatchNum` batches.
+          schema:
+            type: number
+        - name: forgerAddr
+          in: query
+          required: false
+          description: Include only batches forged by `forgerAddr`
+          schema:
+            $ref: '#/components/schemas/EthereumAddress'
+        - name: fromItem
+          in: query
+          required: false
+          description: Indicates the desired first item (using the itemId property) to be included in the response.
+          schema:
+            type: number
+        - name: order
+          in: query
+          required: false
+          description: Order of the returned items. Batches will be ordered by increasing `batchNum`.
+          schema:
+            type: string
+            default: ASC
+            enum:
+                - ASC
+                - DESC
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of items to be returned.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 2049
+      responses:
+        '200':
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batches'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error500'                
+  '/batches/{batchNum}':
+    get:
+      tags:
+        - Explorer
+      summary: Get a specific batch.
+      description: >-
+        Get a specific batch.
+      operationId: getBatch
+      parameters:
+        - name: batchNum
+          in: path
+          description: Batch identifier.
+          required: true
+          schema:
+            $ref: '#/components/schemas/BatchNum'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error404'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error500'
+  '/full-batches/{batchNum}':
+    get:
+      tags:
+        - Explorer
+      summary: Get a full batch.
+      description: >-
+        Get a specific batch, including the associated transactions. The object returned in this method can be a bit heavy. 
+        If you're devloping a front end, you may consider using a combinaton of `GET /batches/{batchnum}` and `GET /history-transactions?batchNum={batchNum}`.
+      operationId: getFullBatch
+      parameters:
+        - name: batchNum
+          in: path
+          description: Batch identifier
+          required: true
+          schema:
+            $ref: '#/components/schemas/BatchNum'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullBatch'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error404'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error500'
 
 components:
   schemas:
@@ -615,6 +766,95 @@ components:
       description: Position that a transaction occupies in a batch.
       minimum: 0
       example: 5
+    Batch:
+      type: object
+      description: Group of transactions forged in a coordinator and sent and validated in Ethereum.
+      properties:
+        itemId:
+          $ref: '#/components/schemas/ItemId'
+        batchNum:
+          $ref: '#/components/schemas/BatchNum'
+        ethereumBlockNum:
+          $ref: '#/components/schemas/EthBlockNum'
+        ethereumBlockHash:
+          type: string
+          description: hash of the Ethereum block in which the batch was forged
+          example: "0xfe88c94d860f01a17f961bf4bdfb6e0c6cd10d3fda5cc861e805ca1240c58553"
+        ethereumTxHash:
+          type: string
+          description: hash of the Ethereum transaction in which the batch was forged
+          example: "0xae98c94d860f01a17f961bf4bdfb6e0c6cd10d3fda5cc861e805ca1240c58553"
+        timestamp:
+          type: string
+          format: date-time
+          description: Time in which the batch was forged.
+        forgerAddr:
+          $ref: '#/components/schemas/EthereumAddress'
+        numAccounts:
+          type: integer
+          description: Number of registered accounts in this batch.
+        exitRoot:
+          allOf:
+            - $ref: '#/components/schemas/Hash'
+            - description: Root of the exit Merkle Tree associated to this batch.
+            - example: "2734657026572a8708d883"
+        forgeL1TransactionsNum:
+          type: integer
+          description: Identifier that corresponds to the group of L1 transactions forged in the current batch.
+          example: 5
+          nullable: true
+        forgedTransactions:
+          type: integer
+          description: Amount of forged transactions in this batch.
+          example: 318
+      additionalProperties: false
+      required:
+          - itemId
+          - batchNum
+          - ethereumTxHash
+          - ethereumBlockNum
+          - ethereumBlockHash
+          - timestamp
+          - forgerAddr
+          - accountRoot
+          - numAccounts
+          - exitRoot
+          - forgeL1TransactionsNum
+          - forgedTransactions
+    FullBatch:
+      type: object
+      description: Group of transactions forged in a coordinator and sent and validated in Ethereum.
+      properties:
+        batch:
+          $ref: '#/components/schemas/Batch'
+        transactions:
+          type: array
+          description: List of forged transactions in the batch
+          items:
+            $ref: '#/components/schemas/HistoryTransaction'
+          nullable: true
+      additionalProperties: false
+      required:
+        - batch
+        - transactions
+    Hash:
+      type: string
+      description: hashed data
+      example: "2734657026572a8708d883"
+    Batches:
+      type: object
+      properties:
+        batches:
+          type: array
+          description: List of batches.
+          items:
+            $ref: '#/components/schemas/Batch'
+        pendingItems:
+          $ref: '#/components/schemas/PendingItems'
+      additionalProperties: false
+      required:
+        - batches
+        - pendingItems
     PendingItems:
       type: integer
       description: Amount of items that will be returned in subsequent calls to the endpoint, as long as they are done with same filters. When the value is 0 it means that all items have been sent.

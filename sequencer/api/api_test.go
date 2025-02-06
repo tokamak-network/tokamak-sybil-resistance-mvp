@@ -68,13 +68,13 @@ CreateVouch C-D
 `
 
 type testCommon struct {
-	blocks []common.Block
-	// batches     []testBatch
-	// fullBatches []testFullBatch
-	accounts   []testAccount
-	txs        []testTx
-	router     *swagger.Router
-	rollupVars common.RollupVariables
+	blocks      []common.Block
+	batches     []testBatch
+	fullBatches []testFullBatch
+	accounts    []testAccount
+	txs         []testTx
+	router      *swagger.Router
+	rollupVars  common.RollupVariables
 }
 
 var tc testCommon
@@ -173,6 +173,7 @@ func TestMain(m *testing.M) {
 
 	// Extract til generated data, and add it to HistoryDB
 	var commonBlocks []common.Block
+	var commonBatches []common.Batch
 	var commonAccounts []common.Account
 	var commonL1Txs []common.L1Tx
 
@@ -189,7 +190,7 @@ func TestMain(m *testing.M) {
 				batch.CreatedAccounts[i].Nonce = common.Nonce(i)
 				commonAccounts = append(commonAccounts, batch.CreatedAccounts[i])
 			}
-			// commonBatches = append(commonBatches, batch.Batch)
+			commonBatches = append(commonBatches, batch.Batch)
 			commonL1Txs = append(commonL1Txs, batch.L1UserTxs...)
 		}
 	}
@@ -216,7 +217,7 @@ func TestMain(m *testing.M) {
 
 	// Generate test data, as expected to be received/sended from/to the API
 	testTxs := genTestTxs(commonL1Txs, commonAccounts, commonBlocks)
-	// testBatches, testFullBatches := genTestBatches(commonBlocks, commonBatches, testTxs)
+	testBatches, testFullBatches := genTestBatches(commonBlocks, commonBatches, testTxs)
 	// Add balance and nonce to historyDB
 	accounts := genTestAccounts(commonAccounts)
 	accUpdates := []common.AccountUpdate{}
@@ -246,13 +247,13 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	tc = testCommon{
-		blocks: commonBlocks,
-		// batches:     testBatches,
-		// fullBatches: testFullBatches,
-		accounts:   accounts,
-		txs:        testTxs,
-		router:     router,
-		rollupVars: rollupVars,
+		blocks:      commonBlocks,
+		batches:     testBatches,
+		fullBatches: testFullBatches,
+		accounts:    accounts,
+		txs:         testTxs,
+		router:      router,
+		rollupVars:  rollupVars,
 	}
 
 	// Run tests

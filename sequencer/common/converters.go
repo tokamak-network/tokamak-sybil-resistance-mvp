@@ -66,3 +66,13 @@ func StringToTxType(txType string) (*TxType, error) {
 		))
 	}
 }
+
+// StringToEthAddr converts string to ethereum address
+func StringToEthAddr(ethAddrStr string) (*ethCommon.Address, error) {
+	if ethAddrStr == "" {
+		return nil, nil
+	}
+	var addr ethCommon.Address
+	err := addr.UnmarshalText([]byte(ethAddrStr))
+	return &addr, Wrap(err)
+}

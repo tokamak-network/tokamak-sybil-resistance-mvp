@@ -75,10 +75,10 @@ func NewAPI(setup Config) (*API, error) {
 		// Transaction
 		v1.GET("/transactions-history", a.getHistoryTxs)
 		v1.GET("/transactions-history/:id", a.getHistoryTx)
-		// // Batches
-		// v1.GET("/batches", a.getBatches)
-		// v1.GET("/batches/:batchNum", a.getBatch)
-		// v1.GET("/full-batches/:batchNum", a.getFullBatch)
+		// Batches
+		v1.GET("/batches", a.getBatches)
+		v1.GET("/batches/:batchNum", a.getBatch)
+		v1.GET("/full-batches/:batchNum", a.getFullBatch)
 	}
 
 	return a, nil

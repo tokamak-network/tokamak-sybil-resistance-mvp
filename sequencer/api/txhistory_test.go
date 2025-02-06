@@ -11,7 +11,6 @@ import (
 
 	"github.com/mitchellh/copystructure"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type testL1Info struct {
@@ -175,10 +174,10 @@ func TestGetHistoryTxs(t *testing.T) {
 	path := fmt.Sprintf("%s?limit=%d", endpoint, limit)
 	err := doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
-	forgedTxs := []testTx{}
+	// forgedTxs := []testTx{}
 	for i := 0; i < len(tc.txs); i++ {
 		if tc.txs[i].BatchNum != nil {
-			forgedTxs = append(forgedTxs, tc.txs[i])
+			// forgedTxs = append(forgedTxs, tc.txs[i])
 		}
 	}
 	// assertTxs(t, forgedTxs, fetchedTxs)
@@ -355,12 +354,12 @@ func TestGetHistoryTxs(t *testing.T) {
 func TestGetHistoryTx(t *testing.T) {
 	// Get all txs by their ID
 	endpoint := apiURL + "transactions-history/"
-	fetchedTxs := []testTx{}
+	// fetchedTxs := []testTx{}
 	for _, tx := range tc.txs {
 		fetchedTx := testTx{}
 		err := doGoodReq("GET", endpoint+tx.TxID.String(), nil, &fetchedTx)
 		assert.NoError(t, err)
-		fetchedTxs = append(fetchedTxs, fetchedTx)
+		// fetchedTxs = append(fetchedTxs, fetchedTx)
 	}
 	// assertTxs(t, tc.txs, fetchedTxs)
 	// 400, due invalid TxID
@@ -371,14 +370,14 @@ func TestGetHistoryTx(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func assertTxs(t *testing.T, expected, actual []testTx) {
-	require.Equal(t, len(expected), len(actual))
-	for i := 0; i < len(actual); i++ { //nolint len(actual) won't change within the loop
-		assert.Equal(t, expected[i].BatchNum, actual[i].BatchNum)
-		assert.Equal(t, expected[i].Position, actual[i].Position)
-		actual[i].ItemID = 0
-		assert.Equal(t, expected[i].Timestamp.Unix(), actual[i].Timestamp.Unix())
-		expected[i].Timestamp = actual[i].Timestamp
-		assert.Equal(t, expected[i], actual[i])
-	}
-}
+// func assertTxs(t *testing.T, expected, actual []testTx) {
+// 	require.Equal(t, len(expected), len(actual))
+// 	for i := 0; i < len(actual); i++ { //nolint len(actual) won't change within the loop
+// 		assert.Equal(t, expected[i].BatchNum, actual[i].BatchNum)
+// 		assert.Equal(t, expected[i].Position, actual[i].Position)
+// 		actual[i].ItemID = 0
+// 		assert.Equal(t, expected[i].Timestamp.Unix(), actual[i].Timestamp.Unix())
+// 		expected[i].Timestamp = actual[i].Timestamp
+// 		assert.Equal(t, expected[i], actual[i])
+// 	}
+// }

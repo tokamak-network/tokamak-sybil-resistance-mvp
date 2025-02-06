@@ -46,9 +46,6 @@ func (a *TonEthAddr) Scan(src interface{}) error {
 	if err := ethAddr.Scan(src); err != nil {
 		return common.Wrap(err)
 	}
-	if ethAddr == nil {
-		return nil
-	}
 	*a = NewTonEthAddr(*ethAddr)
 	return nil
 }

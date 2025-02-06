@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"net/http"
@@ -387,7 +386,7 @@ func doGoodReq(method, path string, reqBody io.Reader, returnStruct interface{})
 	}
 	//nolint
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return common.Wrap(err)
 	}
@@ -445,7 +444,7 @@ func doBadReq(method, path string, reqBody io.Reader, expectedResponseCode int) 
 	}
 	//nolint
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return common.Wrap(err)
 	}
@@ -464,27 +463,6 @@ func doBadReq(method, path string, reqBody io.Reader, expectedResponseCode int) 
 	return nil
 }
 
-func doSimpleReq(method, endpoint string) (string, error) {
-	client := &http.Client{}
-	httpReq, err := http.NewRequest(method, endpoint, nil)
-	if err != nil {
-		return "", common.Wrap(err)
-	}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return "", common.Wrap(err)
-	}
-	//nolint
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", common.Wrap(err)
-	}
-	return string(body), nil
-}
-
-// test helpers
-
 func getTimestamp(blockNum int64, blocks []common.Block) time.Time {
 	for i := 0; i < len(blocks); i++ {
 		if blocks[i].Num == blockNum {
@@ -492,22 +470,4 @@ func getTimestamp(blockNum int64, blocks []common.Block) time.Time {
 		}
 	}
 	panic("timesamp not found")
-}
-
-func getAccountByIdx(idx common.AccountIdx, accs []common.Account) *common.Account {
-	for _, acc := range accs {
-		if acc.Idx == idx {
-			return &acc
-		}
-	}
-	panic("account not found")
-}
-
-func getBlockByNum(ethBlockNum int64, blocks []common.Block) common.Block {
-	for _, b := range blocks {
-		if b.Num == ethBlockNum {
-			return b
-		}
-	}
-	panic("block not found")
 }

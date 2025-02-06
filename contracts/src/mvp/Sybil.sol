@@ -4,13 +4,13 @@ pragma solidity 0.8.23;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "../interfaces/IMVPSybil.sol";
-import "../interfaces/IVerifierRollup.sol";
+import "../interfaces/IVerifier.sol";
 import "../types/mvp/SybilHelpers.sol";
 
 contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHelpers {
 
-    struct VerifierRollup {
-        VerifierRollupInterface verifierInterface;
+    struct Verifier {
+        IVerifier verifierInterface;
         uint256 maxTx; // maximum rollup transactions in a batch: L1-tx transactions
         uint256 nLevel; // number of levels of the circuit
     }
@@ -40,7 +40,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
     mapping(uint32 => mapping(uint48 => bool)) public exitNullifierMap;
 
     // Verifier
-    VerifierRollup public rollupVerifier;
+    Verifier public verifier;
 
     event L1UserTxEvent(
         uint32 indexed queueIndex,
@@ -60,7 +60,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
      * @dev Initializes the contract with the specified parameters.
      * This function can only be called once during the deployment of the contract.
      *
-     * @param verifier The address of the verifier contract to be used for rollup verification.
+     * @param _verifier The address of the verifier contract to be used for rollup verification.
      * @param maxTx The maximum number of transactions allowed in a single batch.
      * @param nLevel The number of levels in the verification circuit.
      * @param _poseidon2Elements The address of the Poseidon hash function elements for 2 elements.        
@@ -70,7 +70,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
      * @notice The deployer of the contract will be granted the `ADMIN_ROLE`.
     */
     function initialize(
-        address verifier,
+        address _verifier,
         uint256 maxTx,
         uint256 nLevel,
         address _poseidon2Elements,
@@ -85,7 +85,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         _grantRole(ADMIN_ROLE, _adminRole);
 
         _initializeVerifiers(
-            verifier,
+            _verifier,
             maxTx,
             nLevel
         );
@@ -269,7 +269,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
 
         // Verify the proof using the specific rollup verifier
         if (
-            !rollupVerifier.verifierInterface.verifyProof(
+            !verifier.verifierInterface.verifyProof(
                 proofA,
                 proofB,
                 proofC,
@@ -489,8 +489,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
             revert InvalidVerifierAddress();
         }
 
-        rollupVerifier = VerifierRollup({
-            verifierInterface: VerifierRollupInterface(_verifier),
+        verifier = Verifier({
+            verifierInterface: IVerifier(_verifier),
             maxTx: _maxTx,
             nLevel: _nLevel
         });

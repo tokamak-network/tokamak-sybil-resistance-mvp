@@ -6,14 +6,14 @@ import {
     Sybil
 } from "../src/mvp/Sybil.sol";
 import {
-    VerifierRollupStub
-} from "../src/VerifierRollupStub.sol";
+    Verifier
+} from "../src/Verifier.sol";
 
 contract MyScript is Script {
     function run() external {
-        // Deploy the VerifierRollupStub contract
+        // Deploy the Verifier contract
         vm.startBroadcast();
-        VerifierRollupStub verifier = new VerifierRollupStub();
+        Verifier verifier = new Verifier();
         vm.stopBroadcast();
 
         console2.log("VerifierRollupStub deployed at:", address(verifier));

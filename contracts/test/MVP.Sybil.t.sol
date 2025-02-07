@@ -6,7 +6,7 @@ import "../src/mvp/Sybil.sol";
 import "../src/interfaces/IMVPSybil.sol";
 import "./utils/Constants.sol";
 import "./types/MVPTransactionTypes.sol";
-import "../src/VerifierRollupStub.sol";
+import "../src/Verifier.sol";
 
 contract MvpTest is Test, TransactionTypeHelper {
     Sybil public sybil;
@@ -21,7 +21,7 @@ contract MvpTest is Test, TransactionTypeHelper {
         emit log_address(address(mockPoseidon3));
         emit log_address(address(mockPoseidon4));
 
-        VerifierRollupStub verifierStub = new VerifierRollupStub(); 
+        Verifier verifierStub = new Verifier(); 
 
         address verifiers = address(verifierStub);
         uint256 maxTx = uint(256);
@@ -677,7 +677,7 @@ contract MvpTest is Test, TransactionTypeHelper {
         PoseidonUnit3 mockPoseidon3 = new PoseidonUnit3();
         PoseidonUnit4 mockPoseidon4 = new PoseidonUnit4();
         // Deploy verifier stub
-        VerifierRollupStub verifierStub = new VerifierRollupStub(); 
+        Verifier verifierStub = new Verifier(); 
         
         address verifiers = address(verifierStub);
         uint256 maxTx = uint(256);

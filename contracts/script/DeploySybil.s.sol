@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 import "forge-std/Script.sol";
 import {Sybil} from "../src/mvp/Sybil.sol";
-import {VerifierRollupStub} from "../src/VerifierRollupStub.sol";
+import {Verifier} from "../src/Verifier.sol";
 
 contract FunctionScript is Script {
     error VerifierRollupStubNotDeployed();

@@ -11,7 +11,7 @@ tmp
 #zkey
 *.zkey
 verification_key.json
-verifier.sol
+# verifier.sol
 
 #proof
 proof.json

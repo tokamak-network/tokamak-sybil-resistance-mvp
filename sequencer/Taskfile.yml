@@ -48,3 +48,4 @@ tasks:
       - task: test-historydb
       - task: test-til
       - task: test-statedb
+      - task: test-api

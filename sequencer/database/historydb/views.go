@@ -1,6 +1,7 @@
 package historydb
 
 import (
+	"encoding/json"
 	"math/big"
 	"time"
 	"tokamak-sybil-resistance/common"
@@ -9,6 +10,99 @@ import (
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/iden3/go-iden3-crypto/babyjub"
 )
+
+// AccountAPIJSON is a representation of the JSON structure returned
+// by the serialization method
+type AccountAPIJSON struct {
+	ItemID             uint64              `json:"itemId"`
+	AccountIndex       apitypes.TonIdx     `json:"accountIndex"`
+	Nonce              common.Nonce        `json:"nonce"`
+	Balance            *apitypes.BigIntStr `json:"balance"`
+	TonEthereumAddress apitypes.TonEthAddr `json:"tonEthereumAddress"`
+}
+
+// TxAPIJSON is a representation of the JSON structure returned
+// by the serialization method
+type TxAPIJSON struct {
+	TxID        common.TxID          `json:"id"`
+	ItemID      uint64               `json:"itemId"`
+	Type        common.TxType        `json:"type"`
+	Position    int                  `json:"position"`
+	FromIdx     *apitypes.TonIdx     `json:"fromAccountIndex"`
+	FromEthAddr *apitypes.TonEthAddr `json:"fromTonEthereumAddress"`
+	ToIdx       apitypes.TonIdx      `json:"toAccountIndex"`
+	ToEthAddr   *apitypes.TonEthAddr `json:"toTonEthereumAddress"`
+	Amount      apitypes.BigIntStr   `json:"amount"`
+	BatchNum    *common.BatchNum     `json:"batchNum"`
+	Timestamp   time.Time            `json:"timestamp"`
+	L1Info      *L1infoJSON          `json:"L1Info"`
+}
+
+// L1infoJSON is a representation of the JSON structure returned
+// by the serialization method
+type L1infoJSON struct {
+	ToForgeL1TxsNum          *int64              `json:"toForgeL1TransactionsNum"`
+	UserOrigin               *bool               `json:"userOrigin"`
+	DepositAmount            *apitypes.BigIntStr `json:"depositAmount"`
+	AmountSuccess            bool                `json:"amountSuccess"`
+	DepositAmountSuccess     bool                `json:"depositAmountSuccess"`
+	HistoricDepositAmountUSD *float64            `json:"historicDepositAmountUSD"`
+	EthereumBlockNum         int64               `json:"ethereumBlockNum"`
+	EthereumTxHash           *ethCommon.Hash     `json:"ethereumTxHash"`
+	L1Fee                    *apitypes.BigIntStr `json:"l1Fee"`
+}
+
+// TxAPI is a representation of a generic Tx with additional information
+// required by the API, and extracted by joining block and token tables
+type TxAPI struct {
+	// Generic
+	IsL1        bool                 `meddler:"is_l1"`
+	TxID        common.TxID          `meddler:"id"`
+	ItemID      uint64               `meddler:"item_id"`
+	Type        common.TxType        `meddler:"type"`
+	Position    int                  `meddler:"position"`
+	FromIdx     *apitypes.TonIdx     `meddler:"from_idx"`
+	FromEthAddr *apitypes.TonEthAddr `meddler:"from_eth_addr"`
+	ToIdx       apitypes.TonIdx      `meddler:"to_idx"`
+	ToEthAddr   *apitypes.TonEthAddr `meddler:"to_eth_addr"`
+	Amount      apitypes.BigIntStr   `meddler:"amount"`
+	BatchNum    *common.BatchNum     `meddler:"batch_num"`     // batchNum in which this tx was forged. If the tx is L2, this must be != 0
+	EthBlockNum int64                `meddler:"eth_block_num"` // Ethereum Block Number in which this L1Tx was added to the queue
+	// L1
+	ToForgeL1TxsNum          *int64              `meddler:"to_forge_l1_txs_num"` // toForgeL1TxsNum in which the tx was forged / will be forged
+	UserOrigin               *bool               `meddler:"user_origin"`         // true if the tx was originated by a user, false if it was aoriginated by a coordinator. Note that this differ from the spec for implementation simplification purpposes
+	DepositAmount            *apitypes.BigIntStr `meddler:"deposit_amount"`
+	HistoricDepositAmountUSD *float64            `meddler:"deposit_amount_usd"`
+	AmountSuccess            bool                `meddler:"amount_success"`
+	DepositAmountSuccess     bool                `meddler:"deposit_amount_success"`
+	EthereumTxHash           ethCommon.Hash      `meddler:"eth_tx_hash,zeroisnull"`
+	L1Fee                    *apitypes.BigIntStr `meddler:"l1_fee"`
+	// API extras
+	Timestamp  time.Time `meddler:"timestamp,utctime"`
+	TotalItems uint64    `meddler:"total_items"`
+	FirstItem  uint64    `meddler:"first_item"`
+	LastItem   uint64    `meddler:"last_item"`
+}
+
+// MarshalJSON is used to neast some of the fields of TxAPI
+// without the need of auxiliar structs
+func (tx TxAPI) MarshalJSON() ([]byte, error) {
+	txa := TxAPIJSON{
+		TxID:        tx.TxID,
+		ItemID:      tx.ItemID,
+		Type:        tx.Type,
+		Position:    tx.Position,
+		FromIdx:     tx.FromIdx,
+		FromEthAddr: tx.FromEthAddr,
+		ToIdx:       tx.ToIdx,
+		ToEthAddr:   tx.ToEthAddr,
+		Amount:      tx.Amount,
+		BatchNum:    tx.BatchNum,
+		Timestamp:   tx.Timestamp,
+		L1Info:      nil,
+	}
+	return json.Marshal(txa)
+}
 
 // txWrite is an representatiion that merges common.L1Tx
 // in order to perform inserts into tx table
@@ -157,4 +251,28 @@ func NewRollupVariablesAPI(rollupVariables *common.RollupVariables) *RollupVaria
 		}
 	}
 	return &rollupVars
+}
+
+// AccountAPI is a representation of a account with additional information
+// required by the API
+type AccountAPI struct {
+	ItemID   uint64              `meddler:"item_id"`
+	Idx      apitypes.TonIdx     `meddler:"idx"`
+	BatchNum common.BatchNum     `meddler:"batch_num"`
+	EthAddr  apitypes.TonEthAddr `meddler:"eth_addr"`
+	Nonce    common.Nonce        `meddler:"nonce"`   // max of 40 bits used
+	Balance  *apitypes.BigIntStr `meddler:"balance"` // max of 192 bits used
+}
+
+// MarshalJSON is used to neast some of the fields of AccountAPI
+// without the need of auxiliar structs
+func (account AccountAPI) MarshalJSON() ([]byte, error) {
+	act := AccountAPIJSON{
+		ItemID:             account.ItemID,
+		AccountIndex:       account.Idx,
+		Nonce:              account.Nonce,
+		Balance:            account.Balance,
+		TonEthereumAddress: account.EthAddr,
+	}
+	return json.Marshal(act)
 }

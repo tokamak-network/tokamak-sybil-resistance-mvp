@@ -233,7 +233,7 @@ func newTestModules(t *testing.T) (*statedb.StateDB, *historydb.HistoryDB) {
 	// Init History DB
 	db, err := dbUtils.InitSQLDB()
 	require.NoError(t, err)
-	historyDB := historydb.NewHistoryDB(db, db /*, nil*/)
+	historyDB := historydb.NewHistoryDB(db, db, nil)
 
 	t.Cleanup(func() {
 		test.MigrationsDownTest(historyDB.DB())

@@ -88,12 +88,12 @@ INSERT INTO token (
 
 
 -- +migrate StatementBegin
-CREATE FUNCTION hez_idx(BIGINT, VARCHAR) 
+CREATE FUNCTION ton_idx(BIGINT) 
     RETURNS VARCHAR 
 AS 
 $BODY$
 BEGIN
-    RETURN 'hez:' || $2 || ':' || $1;
+    RETURN 'ton:' || $1;
 END;
 $BODY$
 LANGUAGE plpgsql;
@@ -679,7 +679,7 @@ DROP TRIGGER IF EXISTS trigger_set_pool_tx ON tx_pool;
 -- drop views IF EXISTS
 DROP VIEW IF EXISTS account_state;
 -- functions
-DROP FUNCTION IF EXISTS hez_idx;
+DROP FUNCTION IF EXISTS ton_idx;
 DROP FUNCTION IF EXISTS set_token_usd_update;
 DROP FUNCTION IF EXISTS fee_percentage;
 DROP FUNCTION IF EXISTS set_tx;

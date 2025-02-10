@@ -174,6 +174,7 @@ func TestGetHistoryTxs(t *testing.T) {
 	path := fmt.Sprintf("%s?limit=%d", endpoint, limit)
 	err := doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
+	// TODO: Recover after solving tx mismatch
 	// forgedTxs := []testTx{}
 	// for i := 0; i < len(tc.txs); i++ {
 	// 	if tc.txs[i].BatchNum != nil {
@@ -199,6 +200,7 @@ func TestGetHistoryTxs(t *testing.T) {
 	)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
+	// TODO: Recover after solving tx mismatch
 	// accountTxs := []testTx{}
 	// for i := 0; i < len(tc.txs); i++ {
 	// 	tx := tc.txs[i]
@@ -222,6 +224,7 @@ func TestGetHistoryTxs(t *testing.T) {
 	)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
+	// TODO: Recover after solving tx mismatch
 	// idxTxs := []testTx{}
 	// for i := 0; i < len(tc.txs); i++ {
 	// 	if tc.txs[i].BatchNum == nil {
@@ -249,6 +252,7 @@ func TestGetHistoryTxs(t *testing.T) {
 	path = fmt.Sprintf("%s?fromAccountIndex=%s&limit=%d", endpoint, idxStr, limit)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
+	// TODO: Recover after solving tx mismatch
 	// for i := 0; i < len(tc.txs); i++ {
 	// 	var fromQueryAccount common.QueryAccount
 	// 	if tc.txs[i].FromIdx != nil {
@@ -266,6 +270,7 @@ func TestGetHistoryTxs(t *testing.T) {
 	path = fmt.Sprintf("%s?toAccountIndex=%s&limit=%d", endpoint, idxStr, limit)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
+	// TODO: Recover after solving tx mismatch
 	// idxTxs = []testTx{}
 	// for i := 0; i < len(tc.txs); i++ {
 	// 	toQueryAccount, err := common.StringToIdx(tc.txs[i].ToIdx, "")
@@ -285,6 +290,7 @@ func TestGetHistoryTxs(t *testing.T) {
 	)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
+	// TODO: Recover after solving tx mismatch
 	// batchNumTxs := []testTx{}
 	// for i := 0; i < len(tc.txs); i++ {
 	// 	if tc.txs[i].BatchNum != nil &&
@@ -311,6 +317,7 @@ func TestGetHistoryTxs(t *testing.T) {
 		)
 		err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 		assert.NoError(t, err)
+		// TODO: Recover after solving tx mismatch
 		// txTypeTxs := []testTx{}
 		// for i := 0; i < len(tc.txs); i++ {
 		// 	if tc.txs[i].Type == txType && tc.txs[i].BatchNum != nil {
@@ -325,6 +332,7 @@ func TestGetHistoryTxs(t *testing.T) {
 	path = fmt.Sprintf("%s?limit=%d", endpoint, limit)
 	err = doGoodReqPaginated(path, "DESC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
+	// TODO: Recover after solving tx mismatch
 	// flipedTxs := []testTx{}
 	// for i := 0; i < len(tc.txs); i++ {
 	// 	if tc.txs[len(tc.txs)-1-i].BatchNum != nil {
@@ -367,6 +375,7 @@ func TestGetHistoryTx(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TODO: Recover after solving tx mismatch
 // func assertTxs(t *testing.T, expected, actual []testTx) {
 // 	require.Equal(t, len(expected), len(actual))
 // 	for i := 0; i < len(actual); i++ { //nolint len(actual) won't change within the loop

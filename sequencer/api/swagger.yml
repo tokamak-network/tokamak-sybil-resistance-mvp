@@ -884,11 +884,6 @@ components:
             - status
             - version
           additionalProperties: false
-          required:
-            - last_migration
-            - status
-            - version
-          additionalProperties: false
         statedb:
           type: object
           description: state db connection status

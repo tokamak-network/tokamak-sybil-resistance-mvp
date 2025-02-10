@@ -30,7 +30,8 @@ func stringToAccountIdx(idxStr string) (*common.AccountIdx, error) {
 	}
 	splitted := strings.Split(idxStr, ":")
 	const expectedLen = 2
-	if len(splitted) != expectedLen || splitted[0] != "ton" {
+	const tonIndex = "ton"
+	if len(splitted) != expectedLen || splitted[0] != tonIndex {
 		return nil, common.Wrap(fmt.Errorf(
 			"invalid format, must follow this: ton:index"))
 	}

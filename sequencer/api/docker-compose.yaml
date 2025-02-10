@@ -1,5 +1,6 @@
 version: "3"
 services:
+    # Service for serving Swagger UI documentation
     sybil-api-doc:
         container_name: sybil-api-doc
         image: swaggerapi/swagger-ui
@@ -10,6 +11,7 @@ services:
             - .:/spec
         environment: 
             - SWAGGER_JSON=/spec/swagger.yml
+    # Service for mocking API responses based on the Swagger specification
     sybil-api-mock:
         container_name: sybil-api-mock
         image: stoplight/prism
@@ -19,6 +21,7 @@ services:
         volumes:
             - .:/spec
         command: mock -h 0.0.0.0 "/spec/swagger.yml"
+    # Service for editing Swagger API specifications
     sybil-api-editor:
         container_name: sybil-api-editor
         image: swaggerapi/swagger-editor

@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import "forge-std/Script.sol";
 import {
     Sybil
-} from "../src/mvp/Sybil.sol";
+} from "../src/Sybil.sol";
 import {
     Verifier
 } from "../src/Verifier.sol";

@@ -65,7 +65,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
      * @param nLevel The number of levels in the verification circuit.
      * @param _poseidon2Elements The address of the Poseidon hash function elements for 2 elements.        
      * @param _poseidon3Elements The address of the Poseidon hash function elements for 3 elements.                   
-     * @param _poseidon4Elements The address of the Poseidon hash function elements for 4 elements.
      *
      * @notice The deployer of the contract will be granted the `ADMIN_ROLE`.
     */
@@ -75,7 +74,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         uint256 nLevel,
         address _poseidon2Elements,
         address _poseidon3Elements,
-        address _poseidon4Elements,
         address _adminRole
     ) public initializer {
         lastIdx = _RESERVED_IDX;
@@ -92,8 +90,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
 
         _initializeHelpers(
             _poseidon2Elements,
-            _poseidon3Elements,
-            _poseidon4Elements
+            _poseidon3Elements
         );
     }
 

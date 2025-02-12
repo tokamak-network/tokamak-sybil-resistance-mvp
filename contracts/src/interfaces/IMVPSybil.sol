@@ -20,7 +20,6 @@ interface IMVPSybil {
         uint256 nLevel,
         address _poseidon2Elements,
         address _poseidon3Elements,
-        address _poseidon4Elements,
         address _adminRole
     ) external;
 

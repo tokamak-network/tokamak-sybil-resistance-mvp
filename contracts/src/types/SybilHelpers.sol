@@ -16,30 +16,20 @@ contract PoseidonUnit2 {
 contract PoseidonUnit3 {
     function poseidon(uint256[3] memory) public pure returns(uint256) {}
 }
-
-/**
- * @dev Interface poseidon hash function 4 elements
- */
-contract PoseidonUnit4 {
-    function poseidon(uint256[4] memory) public pure returns(uint256) {}
-}
-
 /**
  * @dev Sybil helper functions
  */
 contract MVPSybilHelpers {
     PoseidonUnit2 _insPoseidonUnit2;
     PoseidonUnit3 _insPoseidonUnit3;
-    PoseidonUnit4 _insPoseidonUnit4;
 
     /**
      * @dev Load poseidon smart contract
-     * @param _poseidon4Elements Poseidon contract address for 4 elements
+
      */
  function _initializeHelpers(
     address _poseidon2Elements,
-    address _poseidon3Elements,
-    address _poseidon4Elements
+    address _poseidon3Elements
 ) internal {
     if (_poseidon2Elements == address(0)) {
         revert InvalidPoseidonAddress("poseidon2Elements");
@@ -47,13 +37,9 @@ contract MVPSybilHelpers {
     if (_poseidon3Elements == address(0)) {
         revert InvalidPoseidonAddress("poseidon3Elements");
     }
-    if (_poseidon4Elements == address(0)) {
-        revert InvalidPoseidonAddress("poseidon4Elements");
-    }
 
     _insPoseidonUnit2 = PoseidonUnit2(_poseidon2Elements);
     _insPoseidonUnit3 = PoseidonUnit3(_poseidon3Elements);
-    _insPoseidonUnit4 = PoseidonUnit4(_poseidon4Elements);
 }
 
 
@@ -95,18 +81,6 @@ contract MVPSybilHelpers {
     view
     returns(uint256) {
         return _insPoseidonUnit3.poseidon(inputs);
-    }
-
-    /**
-     * @dev Hash poseidon for 4 elements
-     * @param inputs Poseidon input array of 4 elements
-     * @return Poseidon hash
-     */
-    function _hash4Elements(uint256[4] memory inputs)
-    internal
-    view
-    returns(uint256) {
-        return _insPoseidonUnit4.poseidon(inputs);
     }
 
     /**

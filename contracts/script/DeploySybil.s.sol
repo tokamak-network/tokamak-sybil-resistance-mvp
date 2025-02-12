@@ -20,7 +20,6 @@ contract FunctionScript is Script {
         // Specify Poseidon contract addresses
         address poseidon2Elements = vm.envAddress("POSEIDON2ELEMENTS");
         address poseidon3Elements = vm.envAddress("POSEIDON3ELEMENTS");
-        address poseidon4Elements = vm.envAddress("POSEIDON4ELEMENTS");
         address adminRole = msg.sender;
 
         vm.startBroadcast();
@@ -34,7 +33,6 @@ contract FunctionScript is Script {
             nLevel,
             poseidon2Elements,
             poseidon3Elements,
-            poseidon4Elements,
             adminRole
         );
 

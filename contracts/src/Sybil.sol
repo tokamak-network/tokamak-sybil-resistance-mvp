@@ -310,8 +310,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         uint256[] calldata siblings,
         uint48 idx
     ) external {
-        uint256[4] memory arrayState = _buildTreeState(amount, msg.sender);
-        uint256 stateHash = _hash4Elements(arrayState);
+        uint256[2] memory arrayState = _buildTreeState(amount, msg.sender);
+        uint256 stateHash = _hash2Elements(arrayState);
 
         uint256 exitRoot = exitRootMap[numExitRoot];
 

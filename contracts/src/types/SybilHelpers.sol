@@ -57,32 +57,21 @@ contract MVPSybilHelpers {
 }
 
 
-    /**
-     * @dev Build entry for the exit tree leaf
-     * @param nonce nonce parameter, only use 40 bits instead of 48
-     * @param balance Balance of the account
-     * @param ay Public key babyjubjub represented as point: sign + (Ay)
-     * @param ethAddress Ethereum address
-     * @return uint256 array with the state variables
-     */
-    function _buildTreeState(
-        uint48 nonce,
-        uint256 balance,
-        uint256 ay,
-        address ethAddress
-    ) internal pure returns(uint256[4] memory) {
-        uint256[4] memory stateArray;
-
-        stateArray[0] |= nonce << 32;
-        stateArray[0] |= (ay >> 255) << (32 + 40);
-        // build element 2
-        stateArray[1] = balance;
-        // build element 4
-        stateArray[2] = (ay << 1) >> 1; // last bit set to 0
-        // build element 5
-        stateArray[3] = uint256(uint160(ethAddress));
-        return stateArray;
+    // /**
+    //  * @dev Builds the state for the Merkle tree.
+    //  *
+    //  * @param amount The amount to be included in the state.
+    //  * @param user The address of the user associated with the state.
+    //  * 
+    //  * @return A uint256 array representing the state for the Merkle tree.
+    // */
+    function _buildTreeState(uint192 amount, address user) internal pure returns (uint256[2] memory) {
+        uint256[2] memory state;
+        state[0] = amount;
+        state[1] = uint256(uint160(user)); // Convert address to uint256
+        return state;
     }
+
 
     /**
      * @dev Hash poseidon for 2 elements
@@ -124,7 +113,7 @@ contract MVPSybilHelpers {
      * @dev Hash poseidon for sparse merkle tree final nodes
      * @param key Input element array
      * @param value Input element array
-     * @return Poseidon hash1
+     * @return Poseidon hash
      */
     function _hashFinalNode(uint256 key, uint256 value)
     public

@@ -101,6 +101,23 @@ func (tx TxAPI) MarshalJSON() ([]byte, error) {
 		Timestamp:   tx.Timestamp,
 		L1Info:      nil,
 	}
+	amountSuccess := tx.AmountSuccess
+	depositAmountSuccess := tx.DepositAmountSuccess
+	if tx.BatchNum == nil {
+		amountSuccess = false
+		depositAmountSuccess = false
+	}
+	txa.L1Info = &L1infoJSON{
+		ToForgeL1TxsNum:          tx.ToForgeL1TxsNum,
+		UserOrigin:               tx.UserOrigin,
+		DepositAmount:            tx.DepositAmount,
+		AmountSuccess:            amountSuccess,
+		DepositAmountSuccess:     depositAmountSuccess,
+		HistoricDepositAmountUSD: tx.HistoricDepositAmountUSD,
+		EthereumBlockNum:         tx.EthBlockNum,
+		EthereumTxHash:           &tx.EthereumTxHash,
+		L1Fee:                    tx.L1Fee,
+	}
 	return json.Marshal(txa)
 }
 

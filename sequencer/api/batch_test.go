@@ -246,7 +246,7 @@ func TestGetFullBatch(t *testing.T) {
 			),
 		)
 		assertBatch(t, fullBatch.Batch, fetchedFullBatch.Batch)
-		// assertTxs(t, fullBatch.Txs, fetchedFullBatch.Txs)
+		assertTxs(t, fullBatch.Txs, fetchedFullBatch.Txs)
 	}
 	// 400
 	require.NoError(t, doBadReq("GET", endpoint+"foo", nil, 400))

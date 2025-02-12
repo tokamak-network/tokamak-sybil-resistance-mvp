@@ -3,9 +3,9 @@ pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "../interfaces/IMVPSybil.sol";
-import "../interfaces/IVerifier.sol";
-import "../types/mvp/SybilHelpers.sol";
+import "./interfaces/IMVPSybil.sol";
+import "./interfaces/IVerifier.sol";
+import "./types/SybilHelpers.sol";
 
 contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHelpers {
 

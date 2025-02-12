@@ -533,23 +533,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
             txnData
         );
         return uint256(sha256(inputBytes)) % _RFIELD;
-    }    
-
-    /**
-     * @dev Builds the state for the Merkle tree.
-     *
-     * @param amount The amount to be included in the state.
-     * @param user The address of the user associated with the state.
-     * 
-     * @return A uint256 array representing the state for the Merkle tree.
-    */
-    function _buildTreeState(uint192 amount, address user) internal pure returns (uint256[4] memory) {
-        uint256[4] memory state;
-        state[0] = amount;
-        state[1] = uint256(uint160(user)); // Convert address to uint256
-        state[2] = 0;
-        state[3] = 0;
-        return state;
     }
 
     /**

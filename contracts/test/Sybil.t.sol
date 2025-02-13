@@ -8,13 +8,26 @@ import "./utils/Constants.sol";
 import "./types/TransactionTypes.sol";
 import "../src/Verifier.sol";
 
+contract MockPoseidon2 is PoseidonUnit2 {
+    function poseidon(
+        uint256[2] memory input
+    ) external pure override returns (uint256) {}
+}
+
+contract MockPoseidon3 is PoseidonUnit3 {
+    function poseidon(
+        uint256[3] memory input
+    ) external pure override returns (uint256) {}
+}
+
 contract MvpTest is Test, TransactionTypeHelper {
     Sybil public sybil;
     bytes32[] public hashes;
 
     function setUp() public {
-        PoseidonUnit2 mockPoseidon2 = new PoseidonUnit2();
-        PoseidonUnit3 mockPoseidon3 = new PoseidonUnit3();
+        
+        PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
+        PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
         address adminRole = address(this);
         emit log_address(address(mockPoseidon2));
         emit log_address(address(mockPoseidon3));
@@ -670,8 +683,8 @@ contract MvpTest is Test, TransactionTypeHelper {
     }
 
     function testInitializeWithInvalidPoseidonAddresses() public {
-        PoseidonUnit2 mockPoseidon2 = new PoseidonUnit2();
-        PoseidonUnit3 mockPoseidon3 = new PoseidonUnit3();
+        PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
+        PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
         // Deploy verifier stub
         Verifier verifierStub = new Verifier(); 
         
@@ -707,8 +720,8 @@ contract MvpTest is Test, TransactionTypeHelper {
 
         // Test initializing with invalid verifier address
     function testInitializeWithInvalidVerifierAddresses() public {
-        PoseidonUnit2 mockPoseidon2 = new PoseidonUnit2();
-        PoseidonUnit3 mockPoseidon3 = new PoseidonUnit3();
+        PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
+        PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
         
         address verifier = address(0);
         uint256 maxTx = uint(256);

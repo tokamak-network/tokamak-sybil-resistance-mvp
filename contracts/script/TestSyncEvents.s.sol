@@ -31,11 +31,47 @@ contract TestSyncEvents is Script {
             params1.loadAmountF
         );
 
+        // Test deposit
+        TxParams memory params2 = validDeposit();
+        uint256 loadAmount2 = _float2Fix(params2.loadAmountF);
+        sybilContract.deposit{value: loadAmount2}(
+            params2.fromIdx,
+            params2.loadAmountF
+        );
+
+        // Test vouch
+        TxParams memory params3 = validVouch();
+        sybilContract.vouch(params3.fromIdx, params3.toIdx);
+
+        // Test unvouch
+        TxParams memory params4 = validUnvouch();
+        sybilContract.unvouch(params4.fromIdx, params4.toIdx);
+
+        // Test exit
+        TxParams memory params5 = validExit();
+        sybilContract.exit(params5.fromIdx, params5.amountF);
+
         vm.stopBroadcast();
     }
 
     function validCreateAccountDeposit() public pure returns (TxParams memory) {
         return TxParams({fromIdx: 0, loadAmountF: 2, amountF: 0, toIdx: 0});
+    }
+
+    function validDeposit() public pure returns (TxParams memory) {
+        return TxParams({fromIdx: 1, loadAmountF: 3, amountF: 0, toIdx: 0});
+    }
+
+    function validVouch() public pure returns (TxParams memory) {
+        return TxParams({fromIdx: 1, loadAmountF: 0, amountF: 0, toIdx: 2});
+    }
+
+    function validUnvouch() public pure returns (TxParams memory) {
+        return TxParams({fromIdx: 1, loadAmountF: 0, amountF: 0, toIdx: 2});
+    }
+
+    function validExit() public pure returns (TxParams memory) {
+        return TxParams({fromIdx: 1, loadAmountF: 0, amountF: 1, toIdx: 1});
     }
 
     function _float2Fix(uint40 floatVal) internal pure returns (uint256) {

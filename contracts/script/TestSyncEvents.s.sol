@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import {Sybil} from "../src/mvp/Sybil.sol";
+import {Sybil} from "../src/Sybil.sol";
 
 contract TestSyncEvents is Script {
     struct TxParams {
@@ -35,7 +35,7 @@ contract TestSyncEvents is Script {
     }
 
     function validCreateAccountDeposit() public pure returns (TxParams memory) {
-        return TxParams({fromIdx: 0, loadAmountF: 1, amountF: 0, toIdx: 0});
+        return TxParams({fromIdx: 0, loadAmountF: 2, amountF: 0, toIdx: 0});
     }
 
     function _float2Fix(uint40 floatVal) internal pure returns (uint256) {

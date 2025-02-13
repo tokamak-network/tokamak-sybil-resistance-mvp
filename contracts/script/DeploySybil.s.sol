@@ -3,8 +3,8 @@ pragma solidity ^0.8.23;
 
 import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 import "forge-std/Script.sol";
-import {Sybil} from "../src/mvp/Sybil.sol";
-import {VerifierRollupStub} from "../src/VerifierRollupStub.sol";
+import {Sybil} from "../src/Sybil.sol";
+import {Verifier} from "../src/Verifier.sol";
 
 contract FunctionScript is Script {
     error VerifierRollupStubNotDeployed();
@@ -21,6 +21,7 @@ contract FunctionScript is Script {
         address poseidon2Elements = vm.envAddress("POSEIDON2ELEMENTS");
         address poseidon3Elements = vm.envAddress("POSEIDON3ELEMENTS");
         address poseidon4Elements = vm.envAddress("POSEIDON4ELEMENTS");
+        address adminRole = msg.sender;
 
         vm.startBroadcast();
         // Deploy the Sybil contract
@@ -33,7 +34,8 @@ contract FunctionScript is Script {
             nLevel,
             poseidon2Elements,
             poseidon3Elements,
-            poseidon4Elements
+            poseidon4Elements,
+            adminRole
         );
 
         vm.stopBroadcast();

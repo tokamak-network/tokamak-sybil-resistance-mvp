@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8 .23;
+pragma solidity 0.8.23;
 
 error InvalidPoseidonAddress(string elementType);
 
@@ -27,7 +27,7 @@ contract PoseidonUnit4 {
 /**
  * @dev Sybil helper functions
  */
-contract SybilHelpers {
+contract MVPSybilHelpers {
     PoseidonUnit2 _insPoseidonUnit2;
     PoseidonUnit3 _insPoseidonUnit3;
     PoseidonUnit4 _insPoseidonUnit4;

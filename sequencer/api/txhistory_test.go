@@ -11,6 +11,7 @@ import (
 
 	"github.com/mitchellh/copystructure"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testL1Info struct {
@@ -24,15 +25,14 @@ type testL1Info struct {
 }
 
 type testTx struct {
-	IsL1        string           `json:"L1orL2"`
 	TxID        common.TxID      `json:"id"`
 	ItemID      uint64           `json:"itemId"`
 	Type        common.TxType    `json:"type"`
 	Position    int              `json:"position"`
 	FromIdx     *string          `json:"fromAccountIndex"`
-	FromEthAddr *string          `json:"fromHezEthereumAddress"`
+	FromEthAddr *string          `json:"fromTonEthereumAddress"`
 	ToIdx       string           `json:"toAccountIndex"`
-	ToEthAddr   *string          `json:"toHezEthereumAddress"`
+	ToEthAddr   *string          `json:"toTonEthereumAddress"`
 	Amount      string           `json:"amount"`
 	BatchNum    *common.BatchNum `json:"batchNum"`
 	Timestamp   time.Time        `json:"timestamp"`
@@ -95,10 +95,9 @@ func genTestTxs(
 	txs := []testTx{}
 	// common.L1Tx ==> testTx
 	for i, l1 := range l1s {
-		// l1.FromEthAddr and l1.FromBJJ can't be nil
+		// l1.FromEthAddr can't be nil
 		fromEthAddr := string(apitypes.NewTonEthAddr(l1.FromEthAddr))
 		tx := testTx{
-			IsL1:        "L1",
 			TxID:        l1.TxID,
 			Type:        l1.Type,
 			Position:    l1.Position,
@@ -117,16 +116,11 @@ func genTestTxs(
 			},
 		}
 
-		// set BatchNum for user txs
-		if tx.L1Info.ToForgeL1TxsNum != nil {
-			// WARNING: this works just because the way "common" txs are generated using til
-			// any change on the test set could break this
-			bn := common.BatchNum(*tx.L1Info.ToForgeL1TxsNum + 2)
-			tx.BatchNum = &bn
+		// If FromIdx is not zero
+		if l1.FromIdx != 0 {
+			idxStr := common.IdxToTon(l1.EffectiveFromIdx)
+			tx.FromIdx = &idxStr
 		}
-		// If FromIdx is not nil
-		idxStr := common.IdxToTon(l1.EffectiveFromIdx)
-		tx.FromIdx = &idxStr
 		if i == len(l1s)-1 {
 			// Last tx of the L1 set is supposed to be unforged as per the til set.
 			// Unforged txs have some special propperties
@@ -136,7 +130,7 @@ func genTestTxs(
 			idxStrUnforged := common.IdxToTon(l1.FromIdx)
 			tx.FromIdx = &idxStrUnforged
 		}
-		// If tx has a normal ToIdx (>255), set FromEthAddr and FromBJJ
+		// If tx has a normal ToIdx (>255), set FromEthAddr
 		if l1.ToIdx >= common.UserThreshold {
 			// find account
 			for _, acc := range accs {
@@ -174,44 +168,44 @@ func TestGetHistoryTxs(t *testing.T) {
 	path := fmt.Sprintf("%s?limit=%d", endpoint, limit)
 	err := doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
-	// TODO: Recover after solving tx mismatch
-	// forgedTxs := []testTx{}
-	// for i := 0; i < len(tc.txs); i++ {
-	// 	if tc.txs[i].BatchNum != nil {
-	// forgedTxs = append(forgedTxs, tc.txs[i])
-	// 	}
-	// }
-	// assertTxs(t, forgedTxs, fetchedTxs)
+	forgedTxs := []testTx{}
+	for i := 0; i < len(tc.txs); i++ {
+		if tc.txs[i].BatchNum != nil {
+			forgedTxs = append(forgedTxs, tc.txs[i])
+		}
+	}
+	assertTxs(t, forgedTxs, fetchedTxs)
 
 	// Get all, including unforged txs
 	fetchedTxs = []testTx{}
 	path = fmt.Sprintf("%s?limit=%d&includePendingL1s=true", endpoint, limit)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
-	// assertTxs(t, tc.txs, fetchedTxs)
+	assertTxs(t, tc.txs, fetchedTxs)
 
 	// Get by ethAddr
 	account := tc.accounts[2]
 	fetchedTxs = []testTx{}
 	limit = 7
 	path = fmt.Sprintf(
-		"%s?hezEthereumAddress=%s&limit=%d",
+		"%s?tonEthereumAddress=%s&limit=%d",
 		endpoint, account.EthAddr, limit,
 	)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
-	// TODO: Recover after solving tx mismatch
-	// accountTxs := []testTx{}
-	// for i := 0; i < len(tc.txs); i++ {
-	// 	tx := tc.txs[i]
-	// 	if (tx.FromIdx != nil && *tx.FromIdx == string(account.Idx)) ||
-	// 		tx.ToIdx == string(account.Idx) ||
-	// 		(tx.FromEthAddr != nil && *tx.FromEthAddr == string(account.EthAddr)) ||
-	// 		(tx.ToEthAddr != nil && *tx.ToEthAddr == string(account.EthAddr)) && tx.BatchNum != nil {
-	// 		accountTxs = append(accountTxs, tx)
-	// 	}
-	// }
-	// assertTxs(t, accountTxs, fetchedTxs)
+	accountTxs := []testTx{}
+	for i := 0; i < len(tc.txs); i++ {
+		tx := tc.txs[i]
+		if tx.BatchNum != nil {
+			if (tx.FromIdx != nil && *tx.FromIdx == string(account.Idx)) ||
+				tx.ToIdx == string(account.Idx) ||
+				(tx.FromEthAddr != nil && *tx.FromEthAddr == string(account.EthAddr)) ||
+				(tx.ToEthAddr != nil && *tx.ToEthAddr == string(account.EthAddr)) {
+				accountTxs = append(accountTxs, tx)
+			}
+		}
+	}
+	assertTxs(t, accountTxs, fetchedTxs)
 	// idx
 	fetchedTxs = []testTx{}
 	limit = 4
@@ -224,62 +218,59 @@ func TestGetHistoryTxs(t *testing.T) {
 	)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
-	// TODO: Recover after solving tx mismatch
-	// idxTxs := []testTx{}
-	// for i := 0; i < len(tc.txs); i++ {
-	// 	if tc.txs[i].BatchNum == nil {
-	// 		continue
-	// 	}
-	// 	var fromQueryAccount common.QueryAccount
-	// 	if tc.txs[i].FromIdx != nil {
-	// 		fromQueryAccount, err = common.StringToIdx(*tc.txs[i].FromIdx, "")
-	// 		assert.NoError(t, err)
-	// 		if *fromQueryAccount.AccountIndex == *queryAccount.AccountIndex {
-	// 			idxTxs = append(idxTxs, tc.txs[i])
-	// 			continue
-	// 		}
-	// 	}
-	// 	toQueryAccount, err := common.StringToIdx(tc.txs[i].ToIdx, "")
-	// 	assert.NoError(t, err)
-	// 	if *toQueryAccount.AccountIndex == *queryAccount.AccountIndex {
-	// 		idxTxs = append(idxTxs, tc.txs[i])
-	// 	}
-	// }
-	// assertTxs(t, idxTxs, fetchedTxs)
+	idxTxs := []testTx{}
+	for i := 0; i < len(tc.txs); i++ {
+		if tc.txs[i].BatchNum == nil {
+			continue
+		}
+		var fromQueryAccount common.QueryAccount
+		if tc.txs[i].FromIdx != nil {
+			fromQueryAccount, err = common.StringToIdx(*tc.txs[i].FromIdx, "")
+			assert.NoError(t, err)
+			if *fromQueryAccount.AccountIndex == *queryAccount.AccountIndex {
+				idxTxs = append(idxTxs, tc.txs[i])
+				continue
+			}
+		}
+		toQueryAccount, err := common.StringToIdx(tc.txs[i].ToIdx, "")
+		assert.NoError(t, err)
+		if *toQueryAccount.AccountIndex == *queryAccount.AccountIndex {
+			idxTxs = append(idxTxs, tc.txs[i])
+		}
+	}
+	assertTxs(t, idxTxs, fetchedTxs)
 	// from idx
-	// fetchedTxs = []testTx{}
-	// idxTxs = []testTx{}
+	fetchedTxs = []testTx{}
+	idxTxs = []testTx{}
 	path = fmt.Sprintf("%s?fromAccountIndex=%s&limit=%d", endpoint, idxStr, limit)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
-	// TODO: Recover after solving tx mismatch
-	// for i := 0; i < len(tc.txs); i++ {
-	// 	var fromQueryAccount common.QueryAccount
-	// 	if tc.txs[i].FromIdx != nil {
-	// 		fromQueryAccount, err = common.StringToIdx(*tc.txs[i].FromIdx, "")
-	// 		assert.NoError(t, err)
-	// 		if *fromQueryAccount.AccountIndex == *queryAccount.AccountIndex {
-	// 			idxTxs = append(idxTxs, tc.txs[i])
-	// 			continue
-	// 		}
-	// 	}
-	// }
-	// assertTxs(t, idxTxs, fetchedTxs)
+	for i := 0; i < len(tc.txs); i++ {
+		var fromQueryAccount common.QueryAccount
+		if tc.txs[i].FromIdx != nil {
+			fromQueryAccount, err = common.StringToIdx(*tc.txs[i].FromIdx, "")
+			assert.NoError(t, err)
+			if *fromQueryAccount.AccountIndex == *queryAccount.AccountIndex {
+				idxTxs = append(idxTxs, tc.txs[i])
+				continue
+			}
+		}
+	}
+	assertTxs(t, idxTxs, fetchedTxs)
 	// to idx
 	fetchedTxs = []testTx{}
 	path = fmt.Sprintf("%s?toAccountIndex=%s&limit=%d", endpoint, idxStr, limit)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
-	// TODO: Recover after solving tx mismatch
-	// idxTxs = []testTx{}
-	// for i := 0; i < len(tc.txs); i++ {
-	// 	toQueryAccount, err := common.StringToIdx(tc.txs[i].ToIdx, "")
-	// 	assert.NoError(t, err)
-	// 	if *toQueryAccount.AccountIndex == *queryAccount.AccountIndex {
-	// 		idxTxs = append(idxTxs, tc.txs[i])
-	// 	}
-	// }
-	// assertTxs(t, idxTxs, fetchedTxs)
+	idxTxs = []testTx{}
+	for i := 0; i < len(tc.txs); i++ {
+		toQueryAccount, err := common.StringToIdx(tc.txs[i].ToIdx, "")
+		assert.NoError(t, err)
+		if *toQueryAccount.AccountIndex == *queryAccount.AccountIndex {
+			idxTxs = append(idxTxs, tc.txs[i])
+		}
+	}
+	assertTxs(t, idxTxs, fetchedTxs)
 	// batchNum
 	fetchedTxs = []testTx{}
 	limit = 3
@@ -290,15 +281,14 @@ func TestGetHistoryTxs(t *testing.T) {
 	)
 	err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
-	// TODO: Recover after solving tx mismatch
-	// batchNumTxs := []testTx{}
-	// for i := 0; i < len(tc.txs); i++ {
-	// 	if tc.txs[i].BatchNum != nil &&
-	// 		*tc.txs[i].BatchNum == *batchNum {
-	// 		batchNumTxs = append(batchNumTxs, tc.txs[i])
-	// 	}
-	// }
-	// assertTxs(t, batchNumTxs, fetchedTxs)
+	batchNumTxs := []testTx{}
+	for i := 0; i < len(tc.txs); i++ {
+		if tc.txs[i].BatchNum != nil &&
+			*tc.txs[i].BatchNum == *batchNum {
+			batchNumTxs = append(batchNumTxs, tc.txs[i])
+		}
+	}
+	assertTxs(t, batchNumTxs, fetchedTxs)
 	// type
 	txTypes := []common.TxType{
 		// Uncomment once test gen is fixed
@@ -317,14 +307,13 @@ func TestGetHistoryTxs(t *testing.T) {
 		)
 		err = doGoodReqPaginated(path, "ASC", &testTxsResponse{}, appendIter)
 		assert.NoError(t, err)
-		// TODO: Recover after solving tx mismatch
-		// txTypeTxs := []testTx{}
-		// for i := 0; i < len(tc.txs); i++ {
-		// 	if tc.txs[i].Type == txType && tc.txs[i].BatchNum != nil {
-		// 		txTypeTxs = append(txTypeTxs, tc.txs[i])
-		// 	}
-		// }
-		// assertTxs(t, txTypeTxs, fetchedTxs)
+		txTypeTxs := []testTx{}
+		for i := 0; i < len(tc.txs); i++ {
+			if tc.txs[i].Type == txType && tc.txs[i].BatchNum != nil {
+				txTypeTxs = append(txTypeTxs, tc.txs[i])
+			}
+		}
+		assertTxs(t, txTypeTxs, fetchedTxs)
 	}
 	// All, in reverse order
 	fetchedTxs = []testTx{}
@@ -332,14 +321,13 @@ func TestGetHistoryTxs(t *testing.T) {
 	path = fmt.Sprintf("%s?limit=%d", endpoint, limit)
 	err = doGoodReqPaginated(path, "DESC", &testTxsResponse{}, appendIter)
 	assert.NoError(t, err)
-	// TODO: Recover after solving tx mismatch
-	// flipedTxs := []testTx{}
-	// for i := 0; i < len(tc.txs); i++ {
-	// 	if tc.txs[len(tc.txs)-1-i].BatchNum != nil {
-	// 		flipedTxs = append(flipedTxs, tc.txs[len(tc.txs)-1-i])
-	// 	}
-	// }
-	// assertTxs(t, flipedTxs, fetchedTxs)
+	flipedTxs := []testTx{}
+	for i := 0; i < len(tc.txs); i++ {
+		if tc.txs[len(tc.txs)-1-i].BatchNum != nil {
+			flipedTxs = append(flipedTxs, tc.txs[len(tc.txs)-1-i])
+		}
+	}
+	assertTxs(t, flipedTxs, fetchedTxs)
 	// Empty array
 	fetchedTxs = []testTx{}
 	path = fmt.Sprintf("%s?batchNum=999999", endpoint)
@@ -375,15 +363,14 @@ func TestGetHistoryTx(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TODO: Recover after solving tx mismatch
-// func assertTxs(t *testing.T, expected, actual []testTx) {
-// 	require.Equal(t, len(expected), len(actual))
-// 	for i := 0; i < len(actual); i++ { //nolint len(actual) won't change within the loop
-// 		assert.Equal(t, expected[i].BatchNum, actual[i].BatchNum)
-// 		assert.Equal(t, expected[i].Position, actual[i].Position)
-// 		actual[i].ItemID = 0
-// 		assert.Equal(t, expected[i].Timestamp.Unix(), actual[i].Timestamp.Unix())
-// 		expected[i].Timestamp = actual[i].Timestamp
-// 		assert.Equal(t, expected[i], actual[i])
-// 	}
-// }
+func assertTxs(t *testing.T, expected, actual []testTx) {
+	require.Equal(t, len(expected), len(actual))
+	for i := 0; i < len(actual); i++ { //nolint len(actual) won't change within the loop
+		assert.Equal(t, expected[i].BatchNum, actual[i].BatchNum)
+		assert.Equal(t, expected[i].Position, actual[i].Position)
+		actual[i].ItemID = 0
+		assert.Equal(t, expected[i].Timestamp.Unix(), actual[i].Timestamp.Unix())
+		expected[i].Timestamp = actual[i].Timestamp
+		assert.Equal(t, expected[i], actual[i])
+	}
+}

@@ -59,11 +59,12 @@ ForceExit B: 80
 
 CreateVouch C-A
 CreateVouch C-B
-CreateVouch C-D
 
 > batchL1 // forge L1UserTxs{nil}, freeze defined L1UserTxs{2}
 > batchL1 // forge L1UserTxs{2}, freeze defined L1UserTxs{nil}
 > block // blockNum=3
+CreateVouch C-D
+> block // blockNum=4
 `
 
 type testCommon struct {

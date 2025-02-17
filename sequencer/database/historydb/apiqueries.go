@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/database"
-	"tokamak-sybil-resistance/log"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/jmoiron/sqlx"
@@ -292,7 +291,6 @@ func (hdb *HistoryDB) GetTxsAPI(
 	}
 	queryStr += fmt.Sprintf("LIMIT %d;", *request.Limit)
 	query = hdb.dbRead.Rebind(queryStr)
-	log.Debug(query)
 	txsPtrs := []*TxAPI{}
 	if err := meddler.QueryAll(hdb.dbRead, &txsPtrs, query, args...); err != nil {
 		return nil, 0, common.Wrap(err)

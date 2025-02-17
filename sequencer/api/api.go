@@ -71,7 +71,8 @@ func NewAPI(setup Config) (*API, error) {
 	// Add explorer endpoints
 	if setup.ExplorerEndpoints {
 		// Account
-		v1.GET("/accounts/:accountIndex", a.getAccount)
+		v1.GET("/accounts/index/:accountIndex", a.getAccountByIndex)
+		v1.GET("/accounts/address/:ethAddr", a.getAccountByEthAddr)
 		// Transaction
 		v1.GET("/transactions-history", a.getHistoryTxs)
 		v1.GET("/transactions-history/:id", a.getHistoryTx)

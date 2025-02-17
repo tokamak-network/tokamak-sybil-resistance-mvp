@@ -1,13 +1,11 @@
 package historydb
 
 import (
-	"errors"
 	"fmt"
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/database"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
-	"github.com/jmoiron/sqlx"
 	"github.com/russross/meddler"
 )
 
@@ -33,7 +31,7 @@ func (hdb *HistoryDB) getBatchAPI(d meddler.DB, batchNum common.BatchNum) (*Batc
 }
 
 // GetAccountAPI returns an account by its index
-func (hdb *HistoryDB) GetAccountAPI(idx common.AccountIdx) (*AccountAPI, error) {
+func (hdb *HistoryDB) GetAccountAPIByIndex(idx common.AccountIdx) (*AccountAPI, error) {
 	cancel, err := hdb.apiConnCon.Acquire()
 	defer cancel()
 	if err != nil {
@@ -58,56 +56,28 @@ func (hdb *HistoryDB) GetAccountAPI(idx common.AccountIdx) (*AccountAPI, error) 
 	return account, nil
 }
 
-// GetAccountsAPIRequest is an API request struct for getting accounts
-type GetAccountsAPIRequest struct {
-	EthAddr *ethCommon.Address
-}
-
-// GetAccountsAPI returns a list of accounts from the DB and pagination info
-func (hdb *HistoryDB) GetAccountsAPI(
-	request GetAccountsAPIRequest,
-) ([]AccountAPI, error) {
-	if request.EthAddr == nil {
-		return nil, common.Wrap(errors.New("ethAddr is required"))
-	}
+// GetAccountAPIByIndex returns an account by its index
+func (hdb *HistoryDB) GetAccountAPIByEthAddr(ethAddr ethCommon.Address) (*AccountAPI, error) {
 	cancel, err := hdb.apiConnCon.Acquire()
 	defer cancel()
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
 	defer hdb.apiConnCon.Release()
-	var query string
-	var args []interface{}
-	queryStr := `SELECT account.item_id, ton_idx(account.idx) as idx, account.batch_num, 
-	account.eth_addr, 
-	account_update.nonce, account_update.balance, COUNT(*) OVER() AS total_items
-	FROM account INNER JOIN (
-		SELECT DISTINCT idx,
-		first_value(nonce) OVER w AS nonce,
-		first_value(balance) OVER w AS balance
-		FROM account_update
-		WINDOW w as (PARTITION BY idx ORDER BY item_id DESC)
-	) AS account_update ON account_update.idx = account.idx `
-	// ethAddr filter
-	if request.EthAddr != nil {
-		queryStr += "WHERE account.eth_addr = ? "
-		args = append(args, request.EthAddr)
-	}
-	query, argsQ, err := sqlx.In(queryStr, args...)
+	account := &AccountAPI{}
+	err = meddler.QueryRow(hdb.dbRead, account, `SELECT account.item_id, ton_idx(account.idx) as idx,
+		account.batch_num, account.eth_addr, account_update.nonce, account_update.balance 
+		FROM account inner JOIN (
+			SELECT idx, nonce, balance 
+			FROM account_update
+		) AS account_update ON account_update.idx = account.idx
+		WHERE account.eth_addr = $1;`, ethAddr)
+
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
-	query = hdb.dbRead.Rebind(query)
 
-	accounts := []*AccountAPI{}
-	if err := meddler.QueryAll(hdb.dbRead, &accounts, query, argsQ...); err != nil {
-		return nil, common.Wrap(err)
-	}
-	if len(accounts) == 0 {
-		return []AccountAPI{}, nil
-	}
-
-	return database.SlicePtrsToSlice(accounts).([]AccountAPI), nil
+	return account, nil
 }
 
 // GetTxAPI returns a tx from the DB given a TxID

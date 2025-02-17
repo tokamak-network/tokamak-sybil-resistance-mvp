@@ -33,8 +33,8 @@ func (hdb *HistoryDB) getBatchAPI(d meddler.DB, batchNum common.BatchNum) (*Batc
 	return batch, nil
 }
 
-// GetAccountAPI returns an account by its index
-func (hdb *HistoryDB) GetAccountAPI(idx common.AccountIdx) (*AccountAPI, error) {
+// GetAccountAPIByIndex returns an account by its index
+func (hdb *HistoryDB) GetAccountAPIByIndex(idx common.AccountIdx) (*AccountAPI, error) {
 	cancel, err := hdb.apiConnCon.Acquire()
 	defer cancel()
 	if err != nil {

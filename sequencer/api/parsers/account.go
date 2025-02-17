@@ -9,14 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AccountFilter for parsing /accounts/{accountIndex} request to struct
-type AccountFilter struct {
+// AccountFilterByIndex for parsing /accounts/{accountIndex} request to struct
+type AccountFilterByIndex struct {
 	AccountIndex string `uri:"accountIndex" binding:"required"`
 }
 
-// ParseAccountFilter parses account filter to the account index
-func ParseAccountFilter(c *gin.Context) (*common.AccountIdx, error) {
-	var accountFilter AccountFilter
+// ParseAccountFilterByIndex parses account filter to the account index
+func ParseAccountFilterByIndex(c *gin.Context) (*common.AccountIdx, error) {
+	var accountFilter AccountFilterByIndex
 	if err := c.ShouldBindUri(&accountFilter); err != nil {
 		return nil, common.Wrap(err)
 	}

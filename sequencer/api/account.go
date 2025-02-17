@@ -8,9 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (a *API) getAccount(c *gin.Context) {
+func (a *API) getAccountByIndex(c *gin.Context) {
 	// Get Addr
-	account, err := parsers.ParseAccountFilter(c)
+	account, err := parsers.ParseAccountFilterByIndex(c)
 	if err != nil {
 		retBadReq(&apiError{
 			Err:  err,
@@ -19,7 +19,7 @@ func (a *API) getAccount(c *gin.Context) {
 		}, c)
 		return
 	}
-	apiAccount, err := a.historyDB.GetAccountAPI(*account)
+	apiAccount, err := a.historyDB.GetAccountAPIByIndex(*account)
 	if err != nil {
 		retSQLErr(err, c)
 		return

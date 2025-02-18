@@ -38,7 +38,7 @@ info:
     url: 'https://www.gnu.org/licenses/agpl-3.0.html'
 servers:
   - description: Localhost, usefull for testing changes locally and required for unit tests
-    url: http://localhost:4010/v1
+    url: http://localhost:4010/
 tags:
   - name: Explorer
     description: Endpoints used by the nodes running in explorer mode. They are used to get information of the netwrok.

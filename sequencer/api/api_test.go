@@ -39,7 +39,7 @@ type Pendinger interface {
 const (
 	apiPort = "4010"
 	apiIP   = "http://localhost:"
-	apiURL  = apiIP + apiPort
+	apiURL  = apiIP + apiPort + "/"
 )
 
 var SetBlockchain = `

@@ -209,7 +209,6 @@ func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
 	batchInfo.Debug.StartBlockNum = p.stats.Eth.LastBlock.Num + 1
 
 	var l1UserTxs []common.L1Tx
-	var auths [][]byte
 
 	_l1UserTxs, err := p.historyDB.GetUnforgedL1UserTxs(p.state.lastForgeL1TxsNum + 1)
 	if err != nil {
@@ -224,7 +223,7 @@ func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
 	}
 
 	// TODO: figure out what happens here and potentially remove txSelector
-	auths, l1UserTxs, err =
+	_, l1UserTxs, err =
 		p.txSelector.GetL1TxSelection(p.cfg.TxProcessorConfig, _l1UserTxs, l1UserFutureTxs)
 	if err != nil {
 		return nil, nil, common.Wrap(err)
@@ -245,7 +244,6 @@ func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
 
 	// Save metadata from TxSelector output for BatchNum
 	batchInfo.L1UserTxs = l1UserTxs
-	batchInfo.L1CoordinatorTxsAuths = auths
 
 	// Call BatchBuilder with TxSelector output
 	configBatch := &batchbuilder.ConfigBatch{
@@ -446,13 +444,12 @@ func prepareForgeBatchArgs(batchInfo *BatchInfo) *eth.RollupForgeBatchArgs {
 	proof := batchInfo.Proof
 	zki := batchInfo.ZKInputs
 	return &eth.RollupForgeBatchArgs{
-		NewLastIdx:            int64(zki.NewLastIdxRaw),
-		NewAccountRoot:        zki.NewAccountRootRaw.BigInt(),
-		NewVouchRoot:          zki.NewVouchRootRaw.BigInt(),
-		NewScoreRoot:          zki.NewScoreRootRaw.BigInt(),
-		NewExitRoot:           zki.NewExitRootRaw.BigInt(),
-		L1UserTxs:             batchInfo.L1UserTxs,
-		L1CoordinatorTxsAuths: batchInfo.L1CoordinatorTxsAuths,
+		NewLastIdx:     int64(zki.NewLastIdxRaw),
+		NewAccountRoot: zki.NewAccountRootRaw.BigInt(),
+		NewVouchRoot:   zki.NewVouchRootRaw.BigInt(),
+		NewScoreRoot:   zki.NewScoreRootRaw.BigInt(),
+		NewExitRoot:    zki.NewExitRootRaw.BigInt(),
+		L1UserTxs:      batchInfo.L1UserTxs,
 		// Circuit selector
 		VerifierIdx: batchInfo.VerifierIdx,
 		ProofA:      [2]*big.Int{proof.PiA[0], proof.PiA[1]},

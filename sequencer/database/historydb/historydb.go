@@ -13,21 +13,21 @@ import (
 
 // HistoryDB persist the historic of the rollup
 type HistoryDB struct {
-	dbRead  *sqlx.DB
-	dbWrite *sqlx.DB
-	// apiConnCon *database.APIConnectionController
+	dbRead     *sqlx.DB
+	dbWrite    *sqlx.DB
+	apiConnCon *database.APIConnectionController
 }
 
 // NewHistoryDB initialize the DB
-func NewHistoryDB(dbRead, dbWrite *sqlx.DB /*, apiConnCon *database.APIConnectionController*/) *HistoryDB {
+func NewHistoryDB(dbRead, dbWrite *sqlx.DB, apiConnCon *database.APIConnectionController) *HistoryDB {
 	return &HistoryDB{
-		dbRead:  dbRead,
-		dbWrite: dbWrite,
-		// apiConnCon: apiConnCon,
+		dbRead:     dbRead,
+		dbWrite:    dbWrite,
+		apiConnCon: apiConnCon,
 	}
 }
 
-// DB returns a pointer to the L2DB.db. This method should be used only for
+// DB returns a pointer to the db. This method should be used only for
 // internal testing purposes.
 func (hdb *HistoryDB) DB() *sqlx.DB {
 	return hdb.dbWrite
@@ -553,24 +553,6 @@ func (hdb *HistoryDB) GetAllL1UserTxs() ([]common.L1Tx, error) {
 	)
 	return database.SlicePtrsToSlice(txs).([]common.L1Tx), common.Wrap(err)
 }
-
-// GetAllL1CoordinatorTxs returns all L1CoordinatorTxs from the DB
-func (hdb *HistoryDB) GetAllL1CoordinatorTxs() ([]common.L1Tx, error) {
-	var txs []*common.L1Tx
-	// Since the query specifies that only coordinator txs are returned, it's safe to assume
-	// that returned txs will always have effective amounts
-	err := meddler.QueryAll(
-		hdb.dbRead, &txs,
-		`SELECT tx.id, tx.to_forge_l1_txs_num, tx.position, tx.user_origin,
-		tx.from_idx, tx.effective_from_idx, tx.from_eth_addr, tx.from_bjj, tx.to_idx,
-		tx.amount, tx.amount AS effective_amount,
-		tx.deposit_amount, tx.deposit_amount AS effective_deposit_amount,
-		tx.eth_block_num, tx.type, tx.batch_num
-		FROM tx WHERE is_l1 = TRUE AND user_origin = FALSE ORDER BY item_id;`,
-	)
-	return database.SlicePtrsToSlice(txs).([]common.L1Tx), common.Wrap(err)
-}
-
 
 // GetUnforgedL1UserTxs gets L1 User Txs to be forged in the L1Batch with toForgeL1TxsNum.
 func (hdb *HistoryDB) GetUnforgedL1UserTxs(toForgeL1TxsNum int64) ([]common.L1Tx, error) {

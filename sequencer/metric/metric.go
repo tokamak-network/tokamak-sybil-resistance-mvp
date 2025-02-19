@@ -3,10 +3,19 @@ package metric
 import "github.com/prometheus/client_golang/prometheus"
 
 const (
-	namespaceSync = "synchronizer"
+	namespaceError = "error"
+	namespaceSync  = "synchronizer"
 )
 
 var (
+	// Errors errors count metric.
+	Errors = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespaceError,
+			Name:      "errors",
+			Help:      "",
+		}, []string{"error"})
+
 	// Reorgs block reorg count
 	Reorgs = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -46,3 +55,9 @@ var (
 			Help:      "",
 		})
 )
+
+// CollectError collect the error message and increment
+// the error count
+func CollectError(err error) {
+	Errors.With(map[string]string{"error": err.Error()}).Inc()
+}

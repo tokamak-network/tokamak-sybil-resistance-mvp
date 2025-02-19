@@ -86,18 +86,6 @@ func (idx AccountIdx) BigInt() *big.Int {
 	return big.NewInt(int64(idx))
 }
 
-// // IdxFromBytes returns Idx from a byte array
-// func IdxFromBytes(b []byte) (AccountIdx, error) {
-// 	if len(b) != AccountIdxBytesLen {
-// 		return 0, Wrap(fmt.Errorf("can not parse Idx, bytes len %d, expected %d",
-// 			len(b), AccountIdxBytesLen))
-// 	}
-// 	var idxBytes [8]byte
-// 	copy(idxBytes[2:], b[:])
-// 	idx := binary.BigEndian.Uint32(idxBytes[:])
-// 	return AccountIdx(idx), nil
-// }
-
 // Bytes returns the bytes representing the Account, in a way that each BigInt
 // is represented by 32 bytes, in spite of the BigInt could be represented in
 // less bytes (due a small big.Int), so in this way each BigInt is always 32

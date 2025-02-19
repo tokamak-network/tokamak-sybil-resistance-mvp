@@ -65,7 +65,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
      * @param nLevel The number of levels in the verification circuit.
      * @param _poseidon2Elements The address of the Poseidon hash function elements for 2 elements.        
      * @param _poseidon3Elements The address of the Poseidon hash function elements for 3 elements.                   
-     * @param _poseidon4Elements The address of the Poseidon hash function elements for 4 elements.
      *
      * @notice The deployer of the contract will be granted the `ADMIN_ROLE`.
     */
@@ -75,7 +74,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         uint256 nLevel,
         address _poseidon2Elements,
         address _poseidon3Elements,
-        address _poseidon4Elements,
         address _adminRole
     ) public initializer {
         lastIdx = _RESERVED_IDX;
@@ -92,8 +90,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
 
         _initializeHelpers(
             _poseidon2Elements,
-            _poseidon3Elements,
-            _poseidon4Elements
+            _poseidon3Elements
         );
     }
 
@@ -310,8 +307,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         uint256[] calldata siblings,
         uint48 idx
     ) external {
-        uint256[4] memory arrayState = _buildTreeState(amount, msg.sender);
-        uint256 stateHash = _hash4Elements(arrayState);
+        uint256[2] memory arrayState = _buildTreeState(amount, msg.sender);
+        uint256 stateHash = _hash2Elements(arrayState);
 
         uint256 exitRoot = exitRootMap[numExitRoot];
 
@@ -533,23 +530,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
             txnData
         );
         return uint256(sha256(inputBytes)) % _RFIELD;
-    }    
-
-    /**
-     * @dev Builds the state for the Merkle tree.
-     *
-     * @param amount The amount to be included in the state.
-     * @param user The address of the user associated with the state.
-     * 
-     * @return A uint256 array representing the state for the Merkle tree.
-    */
-    function _buildTreeState(uint192 amount, address user) internal pure returns (uint256[4] memory) {
-        uint256[4] memory state;
-        state[0] = amount;
-        state[1] = uint256(uint160(user)); // Convert address to uint256
-        state[2] = 0;
-        state[3] = 0;
-        return state;
     }
 
     /**

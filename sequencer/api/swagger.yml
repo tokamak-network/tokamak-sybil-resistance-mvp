@@ -38,7 +38,7 @@ info:
     url: 'https://www.gnu.org/licenses/agpl-3.0.html'
 servers:
   - description: Localhost, usefull for testing changes locally and required for unit tests
-    url: http://localhost:4010/v1
+    url: http://localhost:4010/v1/
 tags:
   - name: Explorer
     description: Endpoints used by the nodes running in explorer mode. They are used to get information of the netwrok.
@@ -100,13 +100,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error500'
-  '/accounts/{accountIndex}':
+  '/accounts/index/{accountIndex}':
     get:
       tags:
         - Explorer
       summary: Get an account by its index.
       description: Get an account by its index.
-      operationId: getAccount
+      operationId: getAccountByIndex
       parameters:
         - name: accountIndex
           in: path
@@ -114,6 +114,45 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/AccountIndex'
+      responses:
+        '200':
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error404'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error500'  
+  '/accounts/address/{ethAddr}':
+    get:
+      tags:
+        - Explorer
+      summary: Get an account by its ethAddr.
+      description: Get an account by its ethAddr.
+      operationId: getAccountByEthAddr
+      parameters:
+        - name: ethAddr
+          in: path
+          description: Identifier of an account.
+          required: true
+          schema:
+            $ref: '#/components/schemas/TonEthereumAddress'
       responses:
         '200':
           description: Successful operation.

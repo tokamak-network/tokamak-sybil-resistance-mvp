@@ -277,7 +277,6 @@ type AccountAPI struct {
 	Idx      apitypes.TonIdx     `meddler:"idx"`
 	BatchNum common.BatchNum     `meddler:"batch_num"`
 	EthAddr  apitypes.TonEthAddr `meddler:"eth_addr"`
-	Nonce    common.Nonce        `meddler:"nonce"`   // max of 40 bits used
 	Balance  *apitypes.BigIntStr `meddler:"balance"` // max of 192 bits used
 }
 
@@ -287,7 +286,6 @@ func (account AccountAPI) MarshalJSON() ([]byte, error) {
 	act := AccountAPIJSON{
 		ItemID:             account.ItemID,
 		AccountIndex:       account.Idx,
-		Nonce:              account.Nonce,
 		Balance:            account.Balance,
 		TonEthereumAddress: account.EthAddr,
 	}

@@ -22,7 +22,7 @@ Rollup   = "0xA27212B7608e5a73e6a807DEC84B3190AaB12f7C"
 
 [Coordinator]
 ## Ethereum address that the coordinator is using to forge batches
-ForgerAddress = "0x0f466febb653fac8bdf5cca8031270740e6d2bbf"
+ForgerAddress = "0x7ebd0f4de5e4139b1c07fc4acfa4422c3f4347ed"
 ### Minimum balance the forger address needs to start the coordinator in wei. If It is set to 0, the coordinator will not check the balance
 #MinimumForgeAddressBalance = "0"
 ### Number of confirmation blocks to be sure that the tx has been mined correctly

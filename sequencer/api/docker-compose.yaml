@@ -1,0 +1,34 @@
+version: "3"
+services:
+    # Service for serving Swagger UI documentation
+    sybil-api-doc:
+        container_name: sybil-api-doc
+        image: swaggerapi/swagger-ui
+        restart: unless-stopped
+        ports:
+            - 8001:8080
+        volumes:
+            - .:/spec
+        environment: 
+            - SWAGGER_JSON=/spec/swagger.yml
+    # Service for mocking API responses based on the Swagger specification
+    sybil-api-mock:
+        container_name: sybil-api-mock
+        image: stoplight/prism
+        restart: unless-stopped
+        ports:
+            - 4010:4010
+        volumes:
+            - .:/spec
+        command: mock -h 0.0.0.0 "/spec/swagger.yml"
+    # Service for editing Swagger API specifications
+    sybil-api-editor:
+        container_name: sybil-api-editor
+        image: swaggerapi/swagger-editor
+        restart: unless-stopped
+        ports:
+            - 8002:8080
+        volumes:
+            - .:/spec
+        environment: 
+            - SWAGGER_FILE=/spec/swagger.yml

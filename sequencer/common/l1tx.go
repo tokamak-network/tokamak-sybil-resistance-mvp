@@ -10,6 +10,12 @@ import (
 	"github.com/iden3/go-iden3-crypto/babyjub"
 )
 
+// EmptyBJJComp contains the 32 byte array of a empty BabyJubJub PublicKey
+// Compressed. It is a valid point in the BabyJubJub curve, so does not give
+// errors when being decompressed.
+var EmptyBJJComp = babyjub.PublicKeyComp([32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+
 // L1Tx is a struct that represents a L1 tx
 type L1Tx struct {
 	// Stored in DB: mandatory fileds
@@ -283,60 +289,6 @@ func L1TxFromDataAvailability(b []byte, nLevels uint32) (*L1Tx, error) {
 	l1tx.ToIdx = toIdx
 	l1tx.EffectiveAmount, err = Float40FromBytes(amountBytes).BigInt()
 	return &l1tx, Wrap(err)
-}
-
-// TODO: Remove this, In the PR to initialize the coordinator setup, pipeline creation and helper function addition
-// L1CoordinatorTxFromBytes decodes a L1Tx from []byte
-func L1CoordinatorTxFromBytes(b []byte, chainID *big.Int, tokamakAddress ethCommon.Address) (*L1Tx,
-	error) {
-	if len(b) != RollupConstL1CoordinatorTotalBytes {
-		return nil, Wrap(
-			fmt.Errorf("cannot parse L1CoordinatorTx bytes, expected length %d, current: %d",
-				101, len(b)))
-	}
-
-	tx := &L1Tx{
-		UserOrigin: false,
-	}
-	v := b[0]
-	s := b[1:33]
-	r := b[33:65]
-	pkCompB := b[65:97]
-	pkCompL := SwapEndianness(pkCompB)
-	copy(tx.FromBJJ[:], pkCompL)
-	tx.Amount = big.NewInt(0)
-	tx.DepositAmount = big.NewInt(0)
-	if int(v) > 0 {
-		// L1CoordinatorTX ETH
-		// Ethereum adds 27 to v
-		v = b[0] - byte(27) //nolint:gomnd
-		var signature []byte
-		signature = append(signature, r[:]...)
-		signature = append(signature, s[:]...)
-		signature = append(signature, v)
-
-		accCreationAuth := AccountCreationAuth{
-			BJJ: tx.FromBJJ,
-		}
-		h, err := accCreationAuth.HashToSign(uint16(chainID.Uint64()), tokamakAddress)
-		if err != nil {
-			return nil, Wrap(err)
-		}
-
-		pubKeyBytes, err := ethCrypto.Ecrecover(h, signature)
-		if err != nil {
-			return nil, Wrap(err)
-		}
-		pubKey, err := ethCrypto.UnmarshalPubkey(pubKeyBytes)
-		if err != nil {
-			return nil, Wrap(err)
-		}
-		tx.FromEthAddr = ethCrypto.PubkeyToAddress(*pubKey)
-	} else {
-		// L1Coordinator Babyjub
-		tx.FromEthAddr = RollupConstEthAddressInternalOnly
-	}
-	return tx, nil
 }
 
 // // BytesDataAvailability encodes a L1Tx into []byte for the Data Availability

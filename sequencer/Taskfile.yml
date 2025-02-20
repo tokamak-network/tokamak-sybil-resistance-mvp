@@ -31,6 +31,11 @@ tasks:
     cmds:
       - go test ./database/statedb -v
 
+  test-api:
+    dotenv: [".env"]
+    cmds:
+      - go test ./api -v
+
   test-node:
     dotenv: [".env"]
     cmds:
@@ -43,3 +48,4 @@ tasks:
       - task: test-historydb
       - task: test-til
       - task: test-statedb
+      - task: test-api

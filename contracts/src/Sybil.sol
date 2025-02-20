@@ -18,7 +18,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
     uint48 constant _RESERVED_IDX = 255;
     uint48 constant _EXIT_IDX = 1;
     uint48 constant _EXPLODE_IDX = 2;
-    uint256 constant _TXN_TOTALBYTES = 128; // Total bytes per transaction
+    uint256 constant _TXN_TOTALBYTES = 42; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 1000; // Max transactions per batch
     uint256 constant _LIMIT_LOADAMOUNT = (1 << 128); // Max loadAmount per call
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;

@@ -15,8 +15,6 @@ contract TestSyncEvents is Script {
     function run() external {
         // Existing deployed Sybil contract address
         address sybilContractAddress = vm.envAddress("SYBIL_CONTRACT_ADDRESS");
-        uint256 maxTx = vm.envUint("MAXTX");
-        uint256 nLevel = vm.envUint("NLEVEL");
 
         vm.startBroadcast();
         // Using the Deployed Sybil contract

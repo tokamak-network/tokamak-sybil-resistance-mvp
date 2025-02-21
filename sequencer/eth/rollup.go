@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"os"
+	"strconv"
 	"strings"
 	"tokamak-sybil-resistance/common"
 	Sybil "tokamak-sybil-resistance/eth/contracts"
@@ -284,16 +286,22 @@ func NewRollupClient(client *EthereumClient, address ethCommon.Address) (*Rollup
 func (c *RollupClient) RollupConstants() (rollupConstants *common.RollupConstants, err error) {
 	rollupConstants = new(common.RollupConstants)
 	if err := c.client.Call(func(ec *ethclient.Client) error {
-		rollupVerifier, err := c.sybil.RollupVerifier(c.opts)
+		maxTx, err := strconv.ParseInt(os.Getenv("MAXTX"), 10, 64)
 		if err != nil {
-			return common.Wrap(err)
+			return common.Wrap(fmt.Errorf("failed to parse MAXTX: %w", err))
 		}
+
+		nLevels, err := strconv.ParseInt(os.Getenv("NLEVEL"), 10, 64)
+		if err != nil {
+			return common.Wrap(fmt.Errorf("failed to parse NLEVEL: %w", err))
+		}
+
 		var newRollupVerifier common.RollupVerifierStruct
-		newRollupVerifier.MaxTx = rollupVerifier.MaxTx.Int64()
-		newRollupVerifier.NLevels = rollupVerifier.NLevel.Int64()
+		newRollupVerifier.MaxTx = maxTx
+		newRollupVerifier.NLevels = nLevels
 		rollupConstants.Verifiers = append(rollupConstants.Verifiers,
 			newRollupVerifier)
-		return common.Wrap(err)
+		return nil
 	}); err != nil {
 		return nil, common.Wrap(err)
 	}

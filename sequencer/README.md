@@ -80,3 +80,25 @@ Navigate to the contracts folder inside the tokamak-sybil-resistance-mvp directo
 Run the followig command:
 
 ```sh sybil_go.sh```
+
+## To test the events emmited from the smart contract on the sequencer
+
+For that first we'll need to run a script and publish the events on the smart contract.
+
+For example:
+w.r.t to the `TestSyncEvents.s.sol` script. If you want to publish the events for the `createAccountDeposit` function, you can update the sybil contract address to `SYBIL_CONTRACT_ADDRESS="0x14F39A3380100f724c075814d4540a3a34f93C53"` for the env variable and run the following command:
+
+```
+forge script script/TestSyncEvents.s.sol:TestSyncEvents --rpc-url <rpc> --private-key <private-key> --broadcast
+```
+
+Here you can check the transaction hash in the explorer, For ref the hash used for testing is `0x19517b80de62a1ee22212ff5a3b26cd216249e3b4daa88be13a8f07dd7a51694` 
+
+Now check the block of the hash and if testing on local you can update the `ROLLUP_START_BLOCK_NUM` to one or two prior to the block of the hash.
+
+Now you can run the sequencer in sync mode with the following command:
+
+```
+task run-seq
+```
+And can check the updates made in the db by the events synced with ref to the above example you can check the tx table being updated with the tx type `createAccountDeposit`

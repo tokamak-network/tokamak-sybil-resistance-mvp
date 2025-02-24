@@ -81,24 +81,39 @@ Run the followig command:
 
 ```sh sybil_go.sh```
 
-## To test the events emmited from the smart contract on the sequencer
+## Testing Smart Contract Events with the Sequencer
 
-For that first we'll need to run a script and publish the events on the smart contract.
+### Step 1: Deploy and Trigger Events
+First, we need to publish events on the smart contract using a test script:
 
-For example:
-w.r.t to the `TestSyncEvents.s.sol` script. If you want to publish the events for the `createAccountDeposit` function, you can update the sybil contract address to `SYBIL_CONTRACT_ADDRESS="0x14F39A3380100f724c075814d4540a3a34f93C53"` for the env variable and run the following command:
-
+1. Set the Sybil contract address in `contracts/.env`:
+```bash
+SYBIL_CONTRACT_ADDRESS="0x14F39A3380100f724c075814d4540a3a34f93C53"
 ```
+
+2. Run the test script to create a account and deposit event:
+```bash
 forge script script/TestSyncEvents.s.sol:TestSyncEvents --rpc-url <rpc> --private-key <private-key> --broadcast
 ```
 
-Here you can check the transaction hash in the explorer, For ref the hash used for testing is `0x19517b80de62a1ee22212ff5a3b26cd216249e3b4daa88be13a8f07dd7a51694` 
+### Step 2: Configure Sequencer
+After the transaction is confirmed:
 
-Now check the block of the hash and if testing on local you can update the `ROLLUP_START_BLOCK_NUM` to one or two prior to the block of the hash.
+1. Find the transaction hash in the block explorer
+   - Example hash: `0x19517b80de62a1ee22212ff5a3b26cd216249e3b4daa88be13a8f07dd7a51694` (Hash which is used with the deployed contract to test the events)
 
-Now you can run the sequencer in sync mode with the following command:
-
+2. Note the block number for this transaction
+3. Update `sequencer/.env` to start syncing from slightly before this block: (Keeping the block number slightly before the transaction block to monitor the sync functionality easily)
+```bash
+ROLLUP_START_BLOCK_NUM=<transaction_block_number - 1>
 ```
+
+### Step 3: Run and Verify
+1. Start the sequencer in sync mode:
+```bash
 task run-seq
 ```
-And can check the updates made in the db by the events synced with ref to the above example you can check the tx table being updated with the tx type `createAccountDeposit`
+
+2. Verify the event processing:
+   - Check the `tx` table in the database
+   - You should see a new entry with type `CreateAccountDeposit`

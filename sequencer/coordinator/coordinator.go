@@ -256,7 +256,6 @@ func NewCoordinator(cfg Config,
 		}
 	}
 
-
 	ctx, cancel := context.WithCancel(context.Background())
 	c := Coordinator{
 		pipelineNum: 0,
@@ -283,7 +282,7 @@ func NewCoordinator(cfg Config,
 		// wg
 		cancel: cancel,
 	}
-	ctxTimeout, ctxTimeoutCancel := context.WithTimeout(ctx, 1*time.Second)
+	ctxTimeout, ctxTimeoutCancel := context.WithTimeout(ctx, 3*time.Second)
 	defer ctxTimeoutCancel()
 	txManager, err := NewTxManager(
 		ctxTimeout,

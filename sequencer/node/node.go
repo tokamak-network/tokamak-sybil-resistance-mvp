@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 	"tokamak-sybil-resistance/api/stateapiupdater"
@@ -44,7 +45,10 @@ import (
 const SyncTime = 24 * 60 * time.Minute
 
 // block number of the Smart contract to sync from
-const RollupStartBlockNum = 379608
+var RollupStartBlockNum = func() int64 {
+	num, _ := strconv.ParseInt(os.Getenv("ROLLUP_START_BLOCK_NUM"), 10, 64)
+	return num
+}()
 
 // Node is the Hermez Node
 type Node struct {
@@ -466,15 +470,18 @@ func (n *Node) StartSynchronizer() {
 	go func() {
 		var err error
 		var lastBlock *common.Block
-		waitDuration := time.Duration(0)
+		waitTimeSeconds, _ := strconv.Atoi(os.Getenv("WAIT_TIME_SECONDS"))
+		waitDuration := time.Duration(time.Duration(waitTimeSeconds) * time.Second)
+		ticker := time.NewTicker(waitDuration)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-n.ctx.Done():
 				log.Info("Synchronizer done")
 				n.wg.Done()
 				return
-			case <-time.After(waitDuration):
-				if lastBlock, waitDuration, err = n.syncLoopFn(n.ctx,
+			case <-ticker.C:
+				if _, _, err = n.syncLoopFn(n.ctx,
 					lastBlock); err != nil {
 					if n.ctx.Err() != nil {
 						continue

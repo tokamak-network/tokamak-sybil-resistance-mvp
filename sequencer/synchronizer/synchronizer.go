@@ -259,7 +259,6 @@ func (s *Synchronizer) Sync(ctx context.Context,
 					lastSavedBlock.Num, s.startBlockNum))
 		}
 	}
-
 	ethBlock, err := s.EthClient.EthBlockByNumber(ctx, nextBlockNum)
 	if common.Unwrap(err) == ethereum.NotFound {
 		return nil, nil, nil
@@ -343,12 +342,10 @@ func (s *Synchronizer) Sync(ctx context.Context,
 		Block:  *ethBlock,
 		Rollup: *rollupData,
 	}
-
 	err = s.historyDB.AddBlockSCData(blockData)
 	if err != nil {
 		return nil, nil, common.Wrap(err)
 	}
-
 	batchesLen := len(rollupData.Batches)
 	if batchesLen == 0 {
 		s.stats.UpdateSync(ethBlock, nil, nil, nil)

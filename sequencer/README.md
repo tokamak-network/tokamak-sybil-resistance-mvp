@@ -37,6 +37,11 @@ If you are using VSCode, install the [go extension](https://marketplace.visualst
 task run-seq
 ```
 
+## Run Api Server
+```bash
+task run-serveapi
+```
+You can find more detailed context on api server here [https://github.com/tokamak-network/tokamak-sybil-resistance-mvp/sequencer/api/README.md]
 ## Update keystore address
 ```bash
 mkdir -p var/tokamak/ethkeystore  # create this directory inside sequencer
@@ -73,6 +78,12 @@ go run main.go run --mode sync --cfg cfg.toml
 
 ```
 go run main.go run --mode coord --cfg cfg.toml
+```
+
+## CMD to run api server
+
+```
+go run main.go serveapi --cfg cfg.toml
 ```
 # Generate .go file from the Sybil contract
 Navigate to the contracts folder inside the tokamak-sybil-resistance-mvp directory.

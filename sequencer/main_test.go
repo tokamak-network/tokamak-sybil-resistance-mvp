@@ -13,6 +13,9 @@ import (
 var db *sqlx.DB
 
 func TestMain(m *testing.M) {
+	os.Setenv("MAXTX", "100")
+	os.Setenv("NLEVEL", "5")
+
 	var err error
 	db, err = database.InitSQLDB()
 	if err != nil {

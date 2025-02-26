@@ -8,7 +8,7 @@ import (
 
 const (
 	// BytesLength to represent the depth of merkle tree
-	NLevelsAsBytes = 3
+	NLevelsAsBytes = 6
 )
 
 // EthAddrToBigInt returns a *big.Int from a given ethereum common.Address.

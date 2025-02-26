@@ -204,37 +204,63 @@ func (tx L1Tx) TxCompressedData(chainID uint64) (*big.Int, error) {
 	return bi, nil
 }
 
-// L1UserTxFromBytes decodes a L1Tx from []byte
+// L1UserTxFromEvent decodes L1UserTxEvent data
+type L1UserTxEvent struct {
+	QueueIndex uint32
+	Position   uint8
+	L1UserTx   *L1Tx
+}
+
+// L1UserTxFromEventData decodes the event data from L1UserTxEvent
+func L1UserTxFromEventData(queueIndex uint32, position uint8, txData []byte) (*L1UserTxEvent, error) {
+	// Parse the l1UserTx bytes
+	tx, err := L1UserTxFromBytes(txData)
+	if err != nil {
+		return nil, Wrap(err)
+	}
+
+	return &L1UserTxEvent{
+		QueueIndex: queueIndex,
+		Position:   position,
+		L1UserTx:   tx,
+	}, nil
+}
+
+// L1UserTxFromBytes decodes the l1UserTx bytes from the event
 func L1UserTxFromBytes(b []byte) (*L1Tx, error) {
+	// The bytes should contain: ethAddress(20) + fromIdx(6) + loadAmountF(5) + amountF(5) + toIdx(6)
 	if len(b) != RollupConstL1UserTotalBytes {
-		return nil,
-			Wrap(fmt.Errorf("cannot parse L1Tx bytes, expected length %d, current: %d",
-				68, len(b)))
+		return nil, Wrap(fmt.Errorf("invalid L1UserTx length: got %d, want %d", len(b), RollupConstL1UserTotalBytes))
 	}
 
 	tx := &L1Tx{
 		UserOrigin: true,
 	}
-	var err error
+
+	// Parse ethAddress (20 bytes)
 	tx.FromEthAddr = ethCommon.BytesToAddress(b[0:20])
 
-	pkCompB := b[20:52]
-	pkCompL := SwapEndianness(pkCompB)
-	copy(tx.FromBJJ[:], pkCompL)
-	fromIdx, err := AccountIdxFromBytes(b[52:55])
+	// Parse fromIdx (6 bytes)
+	var err error
+	tx.FromIdx, err = AccountIdxFromBytes(b[20:26])
 	if err != nil {
 		return nil, Wrap(err)
 	}
-	tx.FromIdx = fromIdx
-	tx.DepositAmount, err = Float40FromBytes(b[58:63]).BigInt()
+
+	// Parse loadAmountF (5 bytes)
+	tx.DepositAmount, err = Float40FromBytes(b[26:31]).BigInt()
 	if err != nil {
 		return nil, Wrap(err)
 	}
-	tx.Amount, err = Float40FromBytes(b[63:68]).BigInt()
+
+	// Parse amountF (5 bytes)
+	tx.Amount, err = Float40FromBytes(b[31:36]).BigInt()
 	if err != nil {
 		return nil, Wrap(err)
 	}
-	tx.ToIdx, err = AccountIdxFromBytes(b[72:75])
+
+	// Parse toIdx (6 bytes)
+	tx.ToIdx, err = AccountIdxFromBytes(b[36:42])
 	if err != nil {
 		return nil, Wrap(err)
 	}
@@ -251,67 +277,18 @@ func L1TxFromDataAvailability(b []byte, nLevels uint32) (*L1Tx, error) {
 	amountBytes := b[idxLen*2 : idxLen*2+Float40BytesLength]
 
 	l1tx := L1Tx{}
-	fromIdx, err := AccountIdxFromBytes(ethCommon.LeftPadBytes(fromIdxBytes, 3))
+	fromIdx, err := AccountIdxFromBytes(ethCommon.LeftPadBytes(fromIdxBytes, 6))
 	if err != nil {
 		return nil, Wrap(err)
 	}
 	l1tx.FromIdx = fromIdx
-	toIdx, err := AccountIdxFromBytes(ethCommon.LeftPadBytes(toIdxBytes, 3))
+	toIdx, err := AccountIdxFromBytes(ethCommon.LeftPadBytes(toIdxBytes, 6))
 	if err != nil {
 		return nil, Wrap(err)
 	}
 	l1tx.ToIdx = toIdx
 	l1tx.EffectiveAmount, err = Float40FromBytes(amountBytes).BigInt()
 	return &l1tx, Wrap(err)
-}
-
-// BytesGeneric returns the generic representation of a L1Tx. This method is
-// used to compute the []byte representation of a L1UserTx, and also to compute
-// the L1TxData for the ZKInputs (at the HashGlobalInputs), using this method
-// for L1UserTxs (for the ZKInputs case).
-func (tx *L1Tx) BytesGeneric() ([]byte, error) {
-	var b [RollupConstL1UserTotalBytes]byte
-	copy(b[0:20], tx.FromEthAddr.Bytes())
-	if tx.FromBJJ != EmptyBJJComp {
-		pkCompL := tx.FromBJJ
-		pkCompB := SwapEndianness(pkCompL[:])
-		copy(b[20:52], pkCompB[:])
-	}
-	fromIdxBytes, err := tx.FromIdx.Bytes()
-	if err != nil {
-		return nil, Wrap(err)
-	}
-	copy(b[52:55], fromIdxBytes[:])
-
-	depositAmountFloat40, err := NewFloat40(tx.DepositAmount)
-	if err != nil {
-		return nil, Wrap(err)
-	}
-	depositAmountFloat40Bytes, err := depositAmountFloat40.Bytes()
-	if err != nil {
-		return nil, Wrap(err)
-	}
-	copy(b[58:63], depositAmountFloat40Bytes)
-
-	amountFloat40, err := NewFloat40(tx.Amount)
-	if err != nil {
-		return nil, Wrap(err)
-	}
-	amountFloat40Bytes, err := amountFloat40.Bytes()
-	if err != nil {
-		return nil, Wrap(err)
-	}
-	copy(b[63:68], amountFloat40Bytes)
-
-	//TODO: We can update this for better memory management.
-	// copy(b[68:72], tx.TokenID.Bytes())
-
-	toIdxBytes, err := tx.ToIdx.Bytes()
-	if err != nil {
-		return nil, Wrap(err)
-	}
-	copy(b[72:75], toIdxBytes[:])
-	return b[:], nil
 }
 
 // // BytesDataAvailability encodes a L1Tx into []byte for the Data Availability

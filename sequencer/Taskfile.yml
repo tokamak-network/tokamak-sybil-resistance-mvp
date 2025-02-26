@@ -6,6 +6,11 @@ tasks:
     cmds:
       - go run main.go run --cfg cfg.toml
 
+  run-serveapi:
+    dotenv: [".env"]
+    cmds:
+      - go run main.go serveapi --cfg cfg.toml
+
   run-migrate:
     dotenv: [".env"]
     cmds:

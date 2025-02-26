@@ -10,6 +10,7 @@ import (
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/node"
 
+	ethClient "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gin-gonic/gin"
 	"github.com/urfave/cli"
 )
@@ -69,6 +70,34 @@ func getConfig(c *cli.Context) (*Config, error) {
 	return &cfg, nil
 }
 
+// ConfigAPIServer is the configuration of the api server execution
+type ConfigAPIServer struct {
+	server *config.APIServer
+}
+
+func parseCliAPIServer(c *cli.Context) (*ConfigAPIServer, error) {
+	cfg, err := getConfigAPIServer(c)
+	if err != nil {
+		if err := cli.ShowAppHelp(c); err != nil {
+			panic(err)
+		}
+		return nil, common.Wrap(err)
+	}
+	return cfg, nil
+}
+
+func getConfigAPIServer(c *cli.Context) (*ConfigAPIServer, error) {
+	var cfg ConfigAPIServer
+	nodeCfgPath := c.String(flagCfg)
+	var err error
+	cfg.server, err = config.LoadAPIServer(nodeCfgPath)
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+
+	return &cfg, nil
+}
+
 func waitSigInt() {
 	stopCh := make(chan interface{})
 
@@ -106,6 +135,25 @@ func cmdRun(c *cli.Context) error {
 	innerNode.Start()
 	waitSigInt()
 	innerNode.Stop()
+
+	return nil
+}
+
+func cmdServeAPI(c *cli.Context) error {
+	cfg, err := parseCliAPIServer(c)
+	if err != nil {
+		return common.Wrap(fmt.Errorf("error parsing flags and config: %w", err))
+	}
+	// TODO: Initialize log library
+	// log.Init(cfg.server.Log.Level, cfg.server.Log.Out)
+	var ethClient *ethClient.Client
+	srv, err := node.NewAPIServer(cfg.server, c.App.Version, ethClient, &cfg.server.Coordinator.ForgerAddress)
+	if err != nil {
+		return common.Wrap(fmt.Errorf("error starting api server: %w", err))
+	}
+	srv.Start()
+	waitSigInt()
+	srv.Stop()
 
 	return nil
 }
@@ -149,6 +197,13 @@ func RunApp() error {
 			Aliases: []string{},
 			Usage:   "Run the tokamak-node",
 			Action:  cmdRun,
+			Flags:   flags,
+		},
+		{
+			Name:    "serveapi",
+			Aliases: []string{},
+			Usage:   "Serve the API only",
+			Action:  cmdServeAPI,
 			Flags:   flags,
 		},
 		{

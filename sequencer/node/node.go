@@ -15,9 +15,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"sync"
 	"time"
+	"tokamak-sybil-resistance/api"
 	"tokamak-sybil-resistance/api/stateapiupdater"
 	"tokamak-sybil-resistance/batchbuilder"
 	"tokamak-sybil-resistance/common"
@@ -37,6 +40,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/russross/meddler"
 )
@@ -357,6 +362,141 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		ctx:             ctx,
 		cancel:          cancel,
 	}, nil
+}
+
+// APIServer is a server that only runs the API
+type APIServer struct {
+	nodeAPI *NodeAPI
+	ctx     context.Context
+	wg      sync.WaitGroup
+	cancel  context.CancelFunc
+}
+
+// NewAPIServer creates a new APIServer
+func NewAPIServer(cfg *config.APIServer, version string, ethClient *ethclient.Client, forgerAddress *ethcommon.Address) (*APIServer, error) {
+	meddler.Debug = cfg.Debug.MeddlerLogs
+	// Stablish DB connection
+	db, err := dbUtils.InitSQLDB()
+	if err != nil {
+		return nil, common.Wrap(fmt.Errorf("dbUtils.InitSQLDB: %w", err))
+	}
+	apiConnCon := dbUtils.NewAPIConnectionController(
+		cfg.API.MaxSQLConnections,
+		cfg.API.SQLConnectionTimeout.Duration,
+	)
+
+	historyDB := historydb.NewHistoryDB(db, db, apiConnCon)
+
+	if cfg.Debug.GinDebugMode {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	server := gin.Default()
+	server.Use(cors.Default())
+	nodeAPI, err := NewNodeAPI(cfg.API.Address, cfg.API, api.Config{
+		Version:           version,
+		ExplorerEndpoints: cfg.API.Explorer,
+		Server:            server,
+		HistoryDB:         historyDB,
+		StateDB:           nil,
+		EthClient:         ethClient,
+		ForgerAddress:     forgerAddress,
+	})
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	return &APIServer{
+		nodeAPI: nodeAPI,
+		ctx:     ctx,
+		cancel:  cancel,
+	}, nil
+}
+
+// Start the APIServer
+func (s *APIServer) Start() {
+	log.Info("Starting NodeAPI...")
+	s.wg.Add(1)
+	go func() {
+		defer func() {
+			log.Info("NodeAPI routine stopped")
+			s.wg.Done()
+		}()
+		if err := s.nodeAPI.Run(s.ctx); err != nil {
+			if s.ctx.Err() != nil {
+				return
+			}
+			log.Fatalw("NodeAPI.Run", "err", err)
+		}
+	}()
+}
+
+// Stop the APIServer
+func (s *APIServer) Stop() {
+	log.Infow("Stopping NodeAPI...")
+	s.cancel()
+	s.wg.Wait()
+}
+
+// NodeAPI holds the node http API
+type NodeAPI struct { //nolint:golint
+	api          *api.API
+	engine       *gin.Engine
+	addr         string
+	readtimeout  time.Duration
+	writetimeout time.Duration
+}
+
+// NewNodeAPI creates a new NodeAPI (which internally calls api.NewAPI)
+func NewNodeAPI(
+	addr string,
+	cfgAPI config.APIConfigParameters,
+	apiConfig api.Config,
+) (*NodeAPI, error) {
+	_api, err := api.NewAPI(apiConfig)
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+	return &NodeAPI{
+		addr:         addr,
+		api:          _api,
+		engine:       apiConfig.Server,
+		readtimeout:  cfgAPI.Readtimeout.Duration,
+		writetimeout: cfgAPI.Writetimeout.Duration,
+	}, nil
+}
+
+// Run starts the http server of the NodeAPI.  To stop it, pass a context
+// with cancellation.
+func (a *NodeAPI) Run(ctx context.Context) error {
+	server := &http.Server{
+		Handler:        a.engine,
+		ReadTimeout:    a.readtimeout,
+		WriteTimeout:   a.writetimeout,
+		MaxHeaderBytes: 1 << 20, //nolint:gomnd
+	}
+	listener, err := net.Listen("tcp", a.addr)
+	if err != nil {
+		return common.Wrap(err)
+	}
+	log.Infof("NodeAPI is ready at %v", a.addr)
+	go func() {
+		if err := server.Serve(listener); err != nil &&
+			common.Unwrap(err) != http.ErrServerClosed {
+			log.Fatalf("Listen: %s\n", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Info("Stopping NodeAPI...")
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second) //nolint:gomnd
+	defer cancel()
+	if err := server.Shutdown(ctxTimeout); err != nil {
+		return common.Wrap(err)
+	}
+	log.Info("NodeAPI done")
+	return nil
 }
 
 func (n *Node) handleReorg(

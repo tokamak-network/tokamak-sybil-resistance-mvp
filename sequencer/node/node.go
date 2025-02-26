@@ -610,7 +610,10 @@ func (n *Node) StartSynchronizer() {
 	go func() {
 		var err error
 		var lastBlock *common.Block
-		waitTimeSeconds, _ := strconv.Atoi(os.Getenv("WAIT_TIME_SECONDS"))
+		waitTimeSeconds, err := strconv.Atoi(os.Getenv("WAIT_TIME_SECONDS"))
+		if err != nil {
+			waitTimeSeconds = 10
+		}
 		waitDuration := time.Duration(time.Duration(waitTimeSeconds) * time.Second)
 		ticker := time.NewTicker(waitDuration)
 		defer ticker.Stop()

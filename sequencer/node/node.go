@@ -118,6 +118,10 @@ func NewNode(cfg *config.Node, apiServerCfg *config.ConfigAPIServer, version str
 		log.Errorw("keystore path or password not set")
 		return nil, common.Wrap(fmt.Errorf("keystore path or password not set"))
 	}
+	if err := os.MkdirAll(keystorePath, 0700); err != nil {
+		log.Errorw("failed to create keystore directory", "err", err)
+		return nil, common.Wrap(fmt.Errorf("failed to create keystore directory: %w", err))
+	}
 	keyStore = keystore.NewKeyStore(keystorePath, scryptN, scryptP)
 
 	forgerAddressHex := os.Getenv("FORGER_ADDRESS")

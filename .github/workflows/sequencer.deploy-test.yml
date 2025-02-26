@@ -1,0 +1,64 @@
+name: "SYB sequencer build & deploy"
+
+on:
+    workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  APPLICATION_NAME: sequencer
+  # TODO: this is dynamically created on stack creation, needs to be updated
+  DEPLOYMENT_GROUP_NAME: SybMvpTestStack-SequencerEcsConstructBlueGreenDG7E6695A1-7QTSUSKWAWKA
+
+jobs:
+    syb-sequencer-deploy:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: "1.22.5"
+                  check-latest: true
+                  cache-dependency-path: |
+                      ./sequencer/go.sum
+
+            - name: Install dependencies
+              run: |
+                  cd ./sequencer
+                  go mod tidy
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ${{ env.AWS_REGION }}
+
+            - name: Login to Amazon ECR
+              id: login-ecr
+              uses: aws-actions/amazon-ecr-login@v2
+              with:
+                mask-password: 'true'
+            
+            - name: Build, tag, and push Docker image to ECR
+              id: build-image
+              env:
+                ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+                ECR_REPOSITORY: test-ecr-repo
+                IMAGE_TAG: ${{ github.sha }}
+                APP_MODE: test
+                KEYSTORE_PATH: /var/tokamak/ethkeystore
+                # TODO: move this password to github secrets
+                KEYSTORE_PASSWORD: 123
+                ROLLUP_START_BLOCK_NUM: 7754027
+                WAIT_TIME_SECONDS: 10
+                MAXTX: 100
+                NLEVEL: 5
+              run: |
+                  docker build --build-arg APP_MODE=${APP_MODE} --build-arg KEYSTORE_PATH=${KEYSTORE_PATH} --build-arg KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD} --build-arg ROLLUP_START_BLOCK_NUM=${ROLLUP_START_BLOCK_NUM} --build-arg WAIT_TIME_SECONDS=${WAIT_TIME_SECONDS} --build-arg MAXTX=${MAXTX} --build-arg NLEVEL=${NLEVEL} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f sequencer/Dockerfile sequencer
+                  docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+                  echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_STATE
+            
+            # TODO: implement dynamic deployment, might involve creating a new task revision

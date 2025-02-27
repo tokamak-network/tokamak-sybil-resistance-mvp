@@ -10,7 +10,6 @@ import (
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/node"
 
-	"github.com/gin-gonic/gin"
 	"github.com/urfave/cli"
 )
 
@@ -169,11 +168,6 @@ func RunApp() error {
 		return common.Wrap(err)
 	}
 
-	router := gin.Default()
-	err = router.Run("localhost:8080")
-	if err != nil {
-		log.Fatalf("Error starting server: %v", err)
-	}
 	return nil
 }
 

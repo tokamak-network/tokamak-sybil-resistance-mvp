@@ -218,19 +218,6 @@ func NewNode(cfg *config.Node, apiServerCfg *config.ConfigAPIServer, version str
 		return nil, common.Wrap(err)
 	}
 
-	apiServer, err := NewAPIServer(
-		apiServerCfg.Server,
-		version,
-		ethClient,
-		&apiServerCfg.Server.Coordinator.ForgerAddress,
-	)
-	if err != nil {
-		return nil, common.Wrap(err)
-	}
-	go func() {
-		apiServer.Start()
-	}()
-
 	sync, err := synchronizer.NewSynchronizer(
 		client,
 		historyDB,
@@ -361,6 +348,19 @@ func NewNode(cfg *config.Node, apiServerCfg *config.ConfigAPIServer, version str
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
+
+	apiServer, err := NewAPIServer(
+		apiServerCfg.Server,
+		version,
+		ethClient,
+		&apiServerCfg.Server.Coordinator.ForgerAddress,
+	)
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+	go func() {
+		apiServer.Start()
+	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Node{

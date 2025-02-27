@@ -74,9 +74,11 @@ func GetAwsSecrets(secretName, region string) (string, error) {
 	return *result.SecretString, nil
 }
 
-func GetDbCredentials() (port int, host, user, password, dbname string) {
+func GetDbCredentials() (port int, host, user, password, dbname, sslMode string) {
 	appMode := os.Getenv("APP_MODE")
+	sslMode = "disable"
 	if appMode == "test" || appMode == "main" {
+		sslMode = "require"
 		var secrets string
 		var err error
 		if appMode == "test" {
@@ -99,7 +101,7 @@ func GetDbCredentials() (port int, host, user, password, dbname string) {
 		if creds.Dbname == "" {
 			creds.Dbname = "postgres"
 		}
-		return creds.Port, creds.Host, creds.Username, creds.Password, creds.Dbname
+		return creds.Port, creds.Host, creds.Username, creds.Password, creds.Dbname, sslMode
 	}
 
 	// running locally
@@ -123,7 +125,7 @@ func GetDbCredentials() (port int, host, user, password, dbname string) {
 	if dbname == "" {
 		dbname = "tokamak"
 	}
-	return port, host, user, password, dbname
+	return port, host, user, password, dbname, sslMode
 }
 
 // MigrationsUp runs the SQL migrations Up
@@ -158,16 +160,17 @@ func ConnectSQLDB() (*sqlx.DB, error) {
 	initMeddler()
 	meddler.Default = meddler.PostgreSQL
 
-	port, host, user, password, dbname := GetDbCredentials()
+	port, host, user, password, dbname, sslMode := GetDbCredentials()
 
 	// Establish connection
 	psqlconn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=require",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		host,
 		port,
 		user,
 		password,
 		dbname,
+		sslMode,
 	)
 	db, err := sqlx.Connect("postgres", psqlconn)
 	if err != nil {

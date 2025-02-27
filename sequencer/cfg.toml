@@ -1,5 +1,5 @@
 [API]
-Address = "0.0.0.0:8086"
+Address = "0.0.0.0:5000"
 Explorer = true
 UpdateMetricsInterval = "10s"
 UpdateRecommendedFeeInterval = "15s"

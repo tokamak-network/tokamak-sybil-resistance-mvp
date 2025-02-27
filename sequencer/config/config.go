@@ -239,6 +239,11 @@ type Node struct {
 	Log         LogConf     `validate:"-"`
 }
 
+// ConfigAPIServer is the configuration of the api server execution
+type ConfigAPIServer struct {
+	Server *APIServer
+}
+
 // APIConfigParameters specifies the configuration parameters of the API
 type APIConfigParameters struct {
 	// Address where the API will listen if set

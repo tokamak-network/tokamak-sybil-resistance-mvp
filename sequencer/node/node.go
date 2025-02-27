@@ -58,21 +58,16 @@ var RollupStartBlockNum = func() int64 {
 // Node is the Hermez Node
 type Node struct {
 	stateAPIUpdater *stateapiupdater.Updater
-	// Coordinator
-	coord *coordinator.Coordinator
-
-	// Synchronizer
-	sync *synchronizer.Synchronizer
-
-	// General
-	cfg *config.Node
-	// mode         Mode
-	sqlConnRead  *sqlx.DB
-	sqlConnWrite *sqlx.DB
-	historyDB    *historydb.HistoryDB
-	ctx          context.Context
-	wg           sync.WaitGroup
-	cancel       context.CancelFunc
+	coord           *coordinator.Coordinator
+	sync            *synchronizer.Synchronizer
+	cfg             *config.Node
+	sqlConnRead     *sqlx.DB
+	sqlConnWrite    *sqlx.DB
+	historyDB       *historydb.HistoryDB
+	ctx             context.Context
+	wg              sync.WaitGroup
+	cancel          context.CancelFunc
+	apiServer       *APIServer
 }
 
 // Check if a directory exists and is empty
@@ -88,7 +83,7 @@ func isDirectoryEmpty(path string) (bool, error) {
 }
 
 // NewNode creates a Node
-func NewNode(cfg *config.Node, version string) (*Node, error) {
+func NewNode(cfg *config.Node, apiServerCfg *config.ConfigAPIServer, version string) (*Node, error) {
 	meddler.Debug = os.Getenv("MEDDLER_DEBUG") == "true"
 
 	// Establish DB connection
@@ -222,6 +217,19 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
+
+	apiServer, err := NewAPIServer(
+		apiServerCfg.Server,
+		version,
+		ethClient,
+		&apiServerCfg.Server.Coordinator.ForgerAddress,
+	)
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+	go func() {
+		apiServer.Start()
+	}()
 
 	sync, err := synchronizer.NewSynchronizer(
 		client,
@@ -365,6 +373,7 @@ func NewNode(cfg *config.Node, version string) (*Node, error) {
 		historyDB:       historyDB,
 		ctx:             ctx,
 		cancel:          cancel,
+		apiServer:       apiServer,
 	}, nil
 }
 
@@ -663,4 +672,7 @@ func (n *Node) Stop() {
 
 	n.coord.TxSelector().LocalAccountsDB().Close()
 	n.coord.BatchBuilder().LocalStateDB().Close()
+
+	// Stop the API Server
+	n.apiServer.Stop()
 }

@@ -10,27 +10,16 @@ import (
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/node"
 
-	ethClient "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gin-gonic/gin"
 	"github.com/urfave/cli"
 )
 
 const (
 	flagCfg = "cfg"
-	// flagMode    = "mode"
-	// flagSK      = "privatekey"
-	// flagYes     = "yes"
-	// flagBlock   = "block"
-	// modeSync    = "sync"
-	// modeCoord   = "coord"
-	// nMigrations = "nMigrations"
-	// flagAccount = "account"
-	// flagPath    = "path"
 )
 
 // Config is the configuration of the node execution
 type Config struct {
-	// mode node.Mode
 	node *config.Node
 }
 
@@ -47,35 +36,17 @@ func parseCli(c *cli.Context) (*Config, error) {
 
 func getConfig(c *cli.Context) (*Config, error) {
 	var cfg Config
-	// mode := c.String(flagMode)
 	nodeCfgPath := c.String(flagCfg)
 	var err error
-	// switch mode {
-	// case modeSync:
-	// 	// cfg.mode = node.ModeSynchronizer
-	// 	cfg.node, err = config.LoadNode(nodeCfgPath, false)
-	// 	if err != nil {
-	// 		return nil, common.Wrap(err)
-	// 	}
-	// case modeCoord:
-	// 	cfg.mode = node.ModeCoordinator
 	cfg.node, err = config.LoadNode(nodeCfgPath /*, true*/)
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
-	// default:
-	// 	return nil, common.Wrap(fmt.Errorf("invalid mode \"%v\"", mode))
-	// }
 
 	return &cfg, nil
 }
 
-// ConfigAPIServer is the configuration of the api server execution
-type ConfigAPIServer struct {
-	server *config.APIServer
-}
-
-func parseCliAPIServer(c *cli.Context) (*ConfigAPIServer, error) {
+func parseCliAPIServer(c *cli.Context) (*config.ConfigAPIServer, error) {
 	cfg, err := getConfigAPIServer(c)
 	if err != nil {
 		if err := cli.ShowAppHelp(c); err != nil {
@@ -86,11 +57,11 @@ func parseCliAPIServer(c *cli.Context) (*ConfigAPIServer, error) {
 	return cfg, nil
 }
 
-func getConfigAPIServer(c *cli.Context) (*ConfigAPIServer, error) {
-	var cfg ConfigAPIServer
+func getConfigAPIServer(c *cli.Context) (*config.ConfigAPIServer, error) {
+	var cfg config.ConfigAPIServer
 	nodeCfgPath := c.String(flagCfg)
 	var err error
-	cfg.server, err = config.LoadAPIServer(nodeCfgPath)
+	cfg.Server, err = config.LoadAPIServer(nodeCfgPath)
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
@@ -122,38 +93,24 @@ func waitSigInt() {
 }
 
 func cmdRun(c *cli.Context) error {
-	cfg, err := parseCli(c)
+	nodeCfg, err := parseCli(c)
+	if err != nil {
+		return common.Wrap(fmt.Errorf("error parsing flags and config: %w", err))
+	}
+
+	apiServerCfg, err := parseCliAPIServer(c)
 	if err != nil {
 		return common.Wrap(fmt.Errorf("error parsing flags and config: %w", err))
 	}
 	// TODO: Initialize lof library
 	// log.Init(cfg.node.Log.Level, cfg.node.Log.Out)
-	innerNode, err := node.NewNode(cfg.node, c.App.Version)
+	innerNode, err := node.NewNode(nodeCfg.node, apiServerCfg, c.App.Version)
 	if err != nil {
 		return common.Wrap(fmt.Errorf("error starting node: %w", err))
 	}
 	innerNode.Start()
 	waitSigInt()
 	innerNode.Stop()
-
-	return nil
-}
-
-func cmdServeAPI(c *cli.Context) error {
-	cfg, err := parseCliAPIServer(c)
-	if err != nil {
-		return common.Wrap(fmt.Errorf("error parsing flags and config: %w", err))
-	}
-	// TODO: Initialize log library
-	// log.Init(cfg.server.Log.Level, cfg.server.Log.Out)
-	var ethClient *ethClient.Client
-	srv, err := node.NewAPIServer(cfg.server, c.App.Version, ethClient, &cfg.server.Coordinator.ForgerAddress)
-	if err != nil {
-		return common.Wrap(fmt.Errorf("error starting api server: %w", err))
-	}
-	srv.Start()
-	waitSigInt()
-	srv.Stop()
 
 	return nil
 }
@@ -197,13 +154,6 @@ func RunApp() error {
 			Aliases: []string{},
 			Usage:   "Run the tokamak-node",
 			Action:  cmdRun,
-			Flags:   flags,
-		},
-		{
-			Name:    "serveapi",
-			Aliases: []string{},
-			Usage:   "Serve the API only",
-			Action:  cmdServeAPI,
 			Flags:   flags,
 		},
 		{

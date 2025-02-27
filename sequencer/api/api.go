@@ -51,22 +51,17 @@ func NewAPI(setup Config) (*API, error) {
 		},
 		stateDB:    setup.StateDB,
 		tonAddress: consts.TonAddress,
-		// validate:   newValidate(),
-		validate: nil,
+		validate:   nil,
 	}
-
-	// Setup http interface
-	// middleware, err := metric.PrometheusMiddleware()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// setup.Server.Use(middleware)
-
-	// setup.Server.NoRoute(a.noRoute)
 
 	v1 := setup.Server.Group("/v1")
 
-	v1.GET("/health", gin.WrapH(a.healthRoute(setup.Version, setup.EthClient, setup.ForgerAddress)))
+	// TODO: might slowing down the app start, this is how hermez does it. Investigate if necessary
+	// v1.GET("/health", gin.WrapH(a.healthRoute(setup.Version, setup.EthClient, setup.ForgerAddress)))
+
+	v1.GET("/health", func(c *gin.Context) {
+		c.String(200, "OK")
+	})
 
 	// Add explorer endpoints
 	if setup.ExplorerEndpoints {
@@ -84,18 +79,3 @@ func NewAPI(setup Config) (*API, error) {
 
 	return a, nil
 }
-
-// func newValidate() *validator.Validate {
-// 	validate := validator.New()
-// 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
-// 		name := strings.SplitN(fld.Tag.Get("form"), ",", 2)[0]
-// 		if name == "-" {
-// 			return ""
-// 		}
-// 		return name
-// 	})
-
-// 	validate.RegisterStructValidation(parsers.AccountsFiltersStructValidation, parsers.AccountsFilters{})
-
-// 	return validate
-// }

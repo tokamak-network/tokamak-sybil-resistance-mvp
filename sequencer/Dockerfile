@@ -32,6 +32,9 @@ ENV WAIT_TIME_SECONDS=${WAIT_TIME_SECONDS}
 ENV MAXTX=${MAXTX}
 ENV NLEVEL=${NLEVEL}
 
+# for internal health check
+RUN apk add --no-cache curl 
+
 COPY go.mod go.sum ./
 RUN go mod download
 

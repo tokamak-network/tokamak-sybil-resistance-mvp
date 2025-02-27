@@ -10,26 +10,15 @@ import (
 	"tokamak-sybil-resistance/log"
 	"tokamak-sybil-resistance/node"
 
-	"github.com/gin-gonic/gin"
 	"github.com/urfave/cli"
 )
 
 const (
 	flagCfg = "cfg"
-	// flagMode    = "mode"
-	// flagSK      = "privatekey"
-	// flagYes     = "yes"
-	// flagBlock   = "block"
-	// modeSync    = "sync"
-	// modeCoord   = "coord"
-	// nMigrations = "nMigrations"
-	// flagAccount = "account"
-	// flagPath    = "path"
 )
 
 // Config is the configuration of the node execution
 type Config struct {
-	// mode node.Mode
 	node *config.Node
 }
 
@@ -46,25 +35,35 @@ func parseCli(c *cli.Context) (*Config, error) {
 
 func getConfig(c *cli.Context) (*Config, error) {
 	var cfg Config
-	// mode := c.String(flagMode)
 	nodeCfgPath := c.String(flagCfg)
 	var err error
-	// switch mode {
-	// case modeSync:
-	// 	// cfg.mode = node.ModeSynchronizer
-	// 	cfg.node, err = config.LoadNode(nodeCfgPath, false)
-	// 	if err != nil {
-	// 		return nil, common.Wrap(err)
-	// 	}
-	// case modeCoord:
-	// 	cfg.mode = node.ModeCoordinator
 	cfg.node, err = config.LoadNode(nodeCfgPath /*, true*/)
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
-	// default:
-	// 	return nil, common.Wrap(fmt.Errorf("invalid mode \"%v\"", mode))
-	// }
+
+	return &cfg, nil
+}
+
+func parseCliAPIServer(c *cli.Context) (*config.ConfigAPIServer, error) {
+	cfg, err := getConfigAPIServer(c)
+	if err != nil {
+		if err := cli.ShowAppHelp(c); err != nil {
+			panic(err)
+		}
+		return nil, common.Wrap(err)
+	}
+	return cfg, nil
+}
+
+func getConfigAPIServer(c *cli.Context) (*config.ConfigAPIServer, error) {
+	var cfg config.ConfigAPIServer
+	nodeCfgPath := c.String(flagCfg)
+	var err error
+	cfg.Server, err = config.LoadAPIServer(nodeCfgPath)
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
 
 	return &cfg, nil
 }
@@ -93,13 +92,18 @@ func waitSigInt() {
 }
 
 func cmdRun(c *cli.Context) error {
-	cfg, err := parseCli(c)
+	nodeCfg, err := parseCli(c)
+	if err != nil {
+		return common.Wrap(fmt.Errorf("error parsing flags and config: %w", err))
+	}
+
+	apiServerCfg, err := parseCliAPIServer(c)
 	if err != nil {
 		return common.Wrap(fmt.Errorf("error parsing flags and config: %w", err))
 	}
 	// TODO: Initialize lof library
 	// log.Init(cfg.node.Log.Level, cfg.node.Log.Out)
-	innerNode, err := node.NewNode(cfg.node, c.App.Version)
+	innerNode, err := node.NewNode(nodeCfg.node, apiServerCfg, c.App.Version)
 	if err != nil {
 		return common.Wrap(fmt.Errorf("error starting node: %w", err))
 	}
@@ -164,11 +168,6 @@ func RunApp() error {
 		return common.Wrap(err)
 	}
 
-	router := gin.Default()
-	err = router.Run("localhost:8080")
-	if err != nil {
-		log.Fatalf("Error starting server: %v", err)
-	}
 	return nil
 }
 

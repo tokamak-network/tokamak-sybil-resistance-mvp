@@ -45,7 +45,7 @@ func TestRunNode(t *testing.T) {
 		errChan <- RunApp()
 	}()
 
-	timer := time.NewTimer(3 * time.Second)
+	timer := time.NewTimer(10 * time.Second)
 	select {
 	case err := <-errChan:
 		t.Fatalf("runApp() failed: %v", err)

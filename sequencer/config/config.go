@@ -239,6 +239,11 @@ type Node struct {
 	Log         LogConf     `validate:"-"`
 }
 
+// ConfigAPIServer is the configuration of the api server execution
+type ConfigAPIServer struct {
+	Server *APIServer
+}
+
 // APIConfigParameters specifies the configuration parameters of the API
 type APIConfigParameters struct {
 	// Address where the API will listen if set
@@ -269,7 +274,6 @@ type APIServer struct {
 	// NodeAPI specifies the configuration parameters of the API
 	Log         LogConf             `validate:"-"`
 	API         APIConfigParameters `validate:"required"`
-	PostgreSQL  PostgreSQL          `validate:"required"`
 	Coordinator struct {
 		// ForgerAddress is the address under which this coordinator is forging
 		ForgerAddress ethCommon.Address `validate:"required" env:"TONNODE_COORDINATOR_FORGERADDRESS"`
@@ -309,6 +313,32 @@ type LogConf struct {
 // LoadNode loads the Node configuration from path.
 func LoadNode(path string /*, coordinator bool*/) (*Node, error) {
 	var cfg, aux Node
+	err := SourceParamsNode(path, &cfg, &aux)
+	if err != nil {
+		log.Println("Error SourceParamsNode: ", err.Error())
+	}
+	err = LoadConfig(path, DefaultValues, &cfg)
+	if err != nil {
+		//Split errors depending on if there is a file error, a env error or a default error
+		if strings.Contains(err.Error(), "default") {
+			return nil, err
+		}
+		log.Println(err.Error())
+	}
+	validate := validator.New()
+	if err := validate.Struct(cfg); err != nil {
+		return nil, common.Wrap(fmt.Errorf("error validating configuration file: %w", err))
+	}
+	if err := validate.Struct(cfg.Coordinator); err != nil {
+		return nil, common.Wrap(fmt.Errorf("error validating configuration file: %w", err))
+	}
+	log.Printf("Loaded Configuration: %+v", cfg)
+	return &cfg, nil
+}
+
+// LoadAPIServer loads the APIServer configuration from path.
+func LoadAPIServer(path string) (*APIServer, error) {
+	var cfg, aux APIServer
 	err := SourceParamsNode(path, &cfg, &aux)
 	if err != nil {
 		log.Println("Error SourceParamsNode: ", err.Error())

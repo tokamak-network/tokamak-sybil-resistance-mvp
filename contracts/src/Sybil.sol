@@ -35,6 +35,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
     mapping(uint32 => uint256) public scoreRootMap;
     mapping(uint32 => uint256) public exitRootMap;
     mapping(uint32 => bytes) public unprocessedBatchesMap;
+    mapping(uint32 => bytes32) public txsDataHashMap;
 
     // Mapping of exit nullifiers, only allowing each withdrawal to be made once
     mapping(uint32 => mapping(uint48 => bool)) public exitNullifierMap;
@@ -238,6 +239,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
      * @param newVouchRoot The new vouch root to be set for the batch.
      * @param newScoreRoot The new score root to be set for the batch.
      * @param newExitRoot The new exit root to be set for the batch.
+     * @param txsData The txsData stores the tx data that is forged
      * @param proofA The first part of the proof used for verification.
      * @param proofB The second part of the proof used for verification.
      * @param proofC The third part of the proof used for verification.
@@ -252,6 +254,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         uint256 newVouchRoot,
         uint256 newScoreRoot,
         uint256 newExitRoot,
+        bytes calldata txsData,
         uint256[2] calldata proofA,
         uint256[2][2] calldata proofB,
         uint256[2] calldata proofC
@@ -282,6 +285,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         vouchRootMap[lastForgedBatch] = newVouchRoot;
         scoreRootMap[lastForgedBatch] = newScoreRoot;
         exitRootMap[lastForgedBatch] = newExitRoot;
+        txsDataHashMap[lastForgedBatch] = sha256(txsData); // why use this
 
         uint16 l1UserTxsLen = _clearBatchFromQueue();
 

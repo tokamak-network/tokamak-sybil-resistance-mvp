@@ -39,6 +39,7 @@ interface IMVPSybil {
         uint256 newVouchRoot,
         uint256 newScoreRoot,
         uint256 newExitRoot,
+        bytes calldata txsData,
         uint256[2] calldata proofA,
         uint256[2][2] calldata proofB,
         uint256[2] calldata proofC

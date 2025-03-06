@@ -7,7 +7,7 @@ include "./decode-tx.circom";
 include "./batch-tx.circom";
 include "./hash-inputs.circom";
 
-template BatchMain(nTx, nLevels) {
+template BatchMain(nTx, nLevels) {//<24, 48
     // public signal
     signal output hashGlobalInputs;
 
@@ -171,5 +171,11 @@ template BatchMain(nTx, nLevels) {
     hashGlobalInputs <== hasherInputs.hashInputsOut;
 }
 
-component main = BatchMain(3,16); //constraints = 323K
 //component main = BatchMain(10,16); //constraints = 874K (need trustedsetup_20)
+
+
+//BatchMain(nTx, nLevels)
+//component main = BatchMain(3,16); //constraints = groth16: 323K, plonk: 2.2M
+//component main = BatchMain(1,20); //constraints = groth16: 190K, plonk: 1.1M
+//component main = BatchMain(1,10); //constraints = groth16: 160K, plonk: 866K
+//component main = BatchMain(5,10); //constraints = groth16: 408K, plonk: 2.7M

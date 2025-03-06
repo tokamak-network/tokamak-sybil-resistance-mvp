@@ -63,6 +63,11 @@ template BatchTxStates() {
     checkIsExit.in[1] <== toIdx;
     isExit <== checkIsExit.out;
 
+    component toIdxIsZero = IsZero();
+    toIdxIsZero.in <== toIdx;
+    signal isToIdx;
+    isToIdx <== 1 - toIdxIsZero.out;
+
     // Check if amount/loadAmount is non-zero
     component amountIsZero = IsZero();
     amountIsZero.in <== amount;
@@ -74,21 +79,32 @@ template BatchTxStates() {
     signal isLoadAmount;
     isLoadAmount <== 1 - loadAmountIsZero.out;
 
-    // Identify transaction types
-    signal isTransfer;
-    signal output isVouchTx;
-    signal isDeleteVouchTx;
+    // Identify transaction types based on amount value
+    component amountIsOne = IsEqual();
+    amountIsOne.in[0] <== amount;
+    amountIsOne.in[1] <== 1;
 
-    signal notExitNop <== (1 - isExit) * (1 - nop);
+    component amountIsTwo = IsEqual();
+    amountIsTwo.in[0] <== amount;
+    amountIsTwo.in[1] <== 2;
 
-    // Transfer : splited explode tx
-    signal tempIsTransfer <== notExitNop * isAmount;
-    isTransfer <== tempIsTransfer * (1 - isLoadAmount);
+    // VouchTx: finalFromIdx != 0 && toIdx != 0 && amount == 1 && !isExit && !nop
+    signal vouchTemp1 <== isFinalFromIdx * isToIdx;
+    signal vouchTemp2 <== vouchTemp1 * amountIsOne.out;
+    signal vouchTemp3 <== vouchTemp2 * (1 - isExit);
+    signal output isVouchTx <== vouchTemp3 * (1 - nop);
 
-    // VouchTx
-    isVouchTx <== (1 - isTransfer) * notExitNop;
-    // DeleteVouchTx: includes both explicit delete and transfer (which implicitly deletes vouches)
-    isDeleteVouchTx <== (notExitNop * (1 - isVouchTx)) + isTransfer;
+    // DeleteVouchTx: finalFromIdx != 0 && toIdx != 0 && amount == 0 && !isExit && !nop
+    signal deleteTemp1 <== isFinalFromIdx * isToIdx;
+    signal deleteTemp2 <== deleteTemp1 * (1 - isAmount);
+    signal deleteTemp3 <== deleteTemp2 * (1 - isExit);
+    signal isDeleteVouchTx <== deleteTemp3 * (1 - nop);
+
+    // Transfer: finalFromIdx != 0 && toIdx != 0 && amount == 2 && !isExit && !nop
+    signal transferTemp1 <== isFinalFromIdx * isToIdx;
+    signal transferTemp2 <== transferTemp1 * amountIsTwo.out;
+    signal transferTemp3 <== transferTemp2 * (1 - isExit);
+    signal isTransfer <== transferTemp3 * (1 - nop);
 
 
     // Account tree keys (P1, P2)
@@ -130,6 +146,10 @@ template BatchTxStates() {
     isP2Insert <== isExit * newExit;
     P2_fnc0 <== isP2Insert * isFinalFromIdx;
     P2_fnc1 <== (1 - isP2Insert) * isFinalFromIdx;
+
+    log(isFinalFromIdx);
+    log((isVouchTx + isDeleteVouchTx) * (1 - nop));
+    log(isDeleteVouchTx);
 
     // Vouch tree (P3, P4)
     // P3: handles fromIdx|toIdx vouch

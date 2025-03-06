@@ -11,14 +11,17 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "circom_tester": "^0.0.20",
     "circomkit": "^0.2.1",
     "circomlib": "^2.0.5",
-    "circomlibjs": "^0.1.7"
+    "circomlibjs": "^0.1.7",
+    "ffjavascript": "^0.3.1"
   },
   "devDependencies": {
     "@types/loglevel": "^1.6.3",
     "@types/node": "^22.5.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "mocha": "^11.1.0"
   }
 }

@@ -1,0 +1,184 @@
+cheeger[g_] := Module[{n, A, J1, vec, bdry, bdryovery},
+  n = VertexCount[g];
+  A = Normal[AdjacencyMatrix[g]];
+  J1 = Subsets[Range[n], {1, Floor[n/2]}];
+  vec[S_] := Total[Function[i, UnitVector[n, i]] /@ S];
+  bdry[S_] := Transpose[vec[Complement[Range[n], S]]] . A . vec[S];
+  bdryovery[S_] := bdry[S]/Length[S];
+  Min[bdryovery /@ J1]
+  ]
+cheegeri[g_] := Module[{n, A, J1, vec, bdry, bdryovery},
+  n = VertexCount[g];
+  A = Normal[AdjacencyMatrix[g]];
+  J1 = Subsets[Range[n], {1, Floor[n/2]}];
+  vec[S_] := Total[Function[i, UnitVector[n, i]] /@ S];
+  bdry[S_] := Transpose[vec[Complement[Range[n], S]]] . A . vec[S];
+  bdryovery[S_] := bdry[S]/Length[S];
+  Function[j, Min[bdryovery /@ Select[J1, MemberQ[#, j] &]]] /@ 
+   Range[n]
+  ]
+cheegerik[g_, k_] := Module[{n, A, J1, vec, bdry, bdryovery},
+  n = VertexCount[g];
+  A = Normal[AdjacencyMatrix[g]];
+  J1 = Subsets[Range[n], {1, Floor[n/2]}];
+  vec[S_] := Total[Function[i, UnitVector[n, i]] /@ S];
+  bdry[S_] := Transpose[vec[Complement[Range[n], S]]] . A . vec[S];
+  bdryovery[S_] := bdry[S]/Length[S];
+  Min[bdryovery /@ Select[J1, MemberQ[#, k] &]]
+  ]
+eigensys[g_] := Module[{n, A, d, L, M, evals, evecs},
+  n = VertexCount[g];
+  A = Normal[AdjacencyMatrix[g]];
+  d = VertexDegree[g];
+  L = DiagonalMatrix[d] - A;
+  M = N[L];
+  {evals, evecs} = Eigensystem[M];
+  {Reverse[evals], Reverse[Normalize /@ evecs]}
+  ]
+eigensys1[g_] := Module[{n, A, d, L, M, evals, evecs},
+  n = VertexCount[g];
+  A = Normal[AdjacencyMatrix[g]];
+  d = VertexDegree[g];
+  L = DiagonalMatrix[d] - A;
+  M = N[L];
+  Eigensystem[M]
+  ]
+lapL[g_] := 
+ DiagonalMatrix[VertexDegree[g]] - Normal[AdjacencyMatrix[g]]
+nbfun[g_, k_] := Module[{es, w5},
+  es = eigensys[g];
+  w5 = Function[v, Total[v[[AdjacencyList[g, k]]]]] /@ es[[2]];
+  Round[w5^2, 0.01]
+  ]
+nbfunc[g_, k_] := Module[{es, w5},
+  es = eigensys[g];
+  w5 = Function[v, 
+     Total[v[[Complement[VertexList[g], AdjacencyList[g, k]]]]]] /@ 
+    es[[2]];
+  Round[w5^2, 0.01]
+  ]
+est1[g_, k_] := Module[{A, gk, es, w5},
+  A = Normal[AdjacencyMatrix[g]];
+  gk = VertexDelete[g, k];
+  es = eigensys[gk];
+  w5 = Function[v, Total[v[[AdjacencyList[g, k]]]]] /@ es[[2]];
+  Round[w5^2, 0.01]
+  ]
+est1[g_, k_] := Module[{A, gk, es, nbs, w5},
+  A = Normal[AdjacencyMatrix[g]];
+  gk = VertexDelete[g, k];
+  es = eigensys[gk];
+  nbs = Function[i, If[i < k, i, i - 1]] /@ AdjacencyList[g, k];
+  w5 = Function[v, Total[v[[nbs]]]] /@ es[[2]];
+  Round[(w5^2)/VertexDegree[g, k], 0.01]
+  ]
+est2[g_, k_] := Module[{n, xvec, A, gk, es, nbs, cvec, mod2, f},
+  n = VertexCount[g];
+  xvec = xvector[n - 1];
+  gk = VertexDelete[g, k];
+  es = eigensys[gk];
+  nbs = Function[i, If[i < k, i, i - 1]] /@ AdjacencyList[g, k];
+  cvec = Function[v, Total[v[[nbs]]]] /@ es[[2]];
+  mod2 = xvec . xvec;
+  f = (Total[es[[1]] xvec^2] - Total[cvec xvec] + 
+      VertexDegree[g, k])/(1 + mod2);
+  NMinimize[{f, x1^2 <= mod2 ((n - 2)/(2 n - 2))}, xvec]
+  ]
+ffunc[g_, k_, xvec_] := Module[{n, A, gk, es, nbs, cvec, mod2, f},
+  n = VertexCount[g];
+  gk = VertexDelete[g, k];
+  es = eigensys[gk];
+  nbs = Function[i, If[i < k, i, i - 1]] /@ AdjacencyList[g, k];
+  cvec = Function[v, Total[v[[nbs]]]] /@ es[[2]];
+  mod2 = xvec . xvec;
+  (Total[es[[1]] xvec^2] - Total[cvec xvec] + VertexDegree[g, k])/(1 +
+      mod2)
+  ]
+cheegeri2[g_, k_] := 
+ Module[{n, A, J1, vec, bdry, foreachS, gk, es, nbs, cvec, mod2, f},
+  n = VertexCount[g];
+  gk = VertexDelete[g, k];
+  A = Normal[AdjacencyMatrix[gk]];
+  nbs = Function[i, If[i < k, i, i - 1]] /@ AdjacencyList[g, k];
+  J1 = Subsets[Range[n - 1], {1, Floor[(n - 2)/2]}];
+  vec[S_] := Total[Function[i, UnitVector[n - 1, i]] /@ S];
+  bdry[S_] := Transpose[vec[Complement[Range[n - 1], S]]] . A . vec[S];
+  foreachS[
+    S_] := (bdry[S] - Length[Intersection[nbs, S]] + 
+      VertexDegree[g, k])/(1 + Length[S]);
+  Min[foreachS /@ J1]
+  ]
+cheegeri3[g_, k_] := 
+ Module[{n, A, J1, vec, Jvec, bdry, foreachS, gk, es, nbs, cvec, mod2,
+    f},
+  n = VertexCount[g];
+  gk = VertexDelete[g, k];
+  es = eigensys[gk];
+  nbs = Function[i, If[i < k, i, i - 1]] /@ AdjacencyList[g, k];
+  cvec = Function[v, Total[v[[nbs]]]] /@ es[[2]];
+  J1 = Subsets[Range[n - 1], {1, Floor[(n - 2)/2]}];
+  vec[S_] := Total[Function[i, UnitVector[n - 1, i]] /@ S];
+  Jvec = Function[S, Function[v, Total[v[[S]]]] /@ es[[2]]] /@ J1;
+  foreachS[
+    vecS_] := (Total[es[[1]] vecS^2] - Total[cvec vecS] + 
+      VertexDegree[g, k])/(1 + vecS . vecS);
+  Min[foreachS /@ Jvec]
+  ]
+est2[g_, k_] := Module[{n, xvec, A, gk, es, nbs, cvec, mod2, f},
+  n = VertexCount[g];
+  xvec = xvector[n - 1];
+  gk = VertexDelete[g, k];
+  es = eigensys[gk];
+  nbs = Function[i, If[i < k, i, i - 1]] /@ AdjacencyList[g, k];
+  cvec = Function[v, Total[v[[nbs]]]] /@ es[[2]];
+  mod2 = xvec . xvec;
+  f = (Total[es[[1]] xvec^2] - Total[cvec xvec] + 
+      VertexDegree[g, k])/(1 + mod2);
+  NMinimize[{f, x1^2 <= mod2 ((n - 2)/(2 n - 2))}, xvec];
+  f
+  ]
+oppra[g_, k_, alpha_] := Module[{n, M, vec, bdry, W, steps, ppr},
+  n = VertexCount[g];
+  steps = 35;
+  M = Normal[AdjacencyMatrix[g]];
+  W = (IdentityMatrix[n] + 
+      Inverse[DiagonalMatrix[VertexDegree[g]]] . M)/2;
+  ppr = alpha (UnitVector[n, k] + 
+      Sum[((1 - alpha)^t) MatrixPower[W, t][[k]] , {t, 1, steps}]);
+  Ordering[ppr]
+  ]
+sweepa[g_, k_, alpha_] := Module[{n, M, vec, bdry},
+  n = VertexCount[g];
+  M = Normal[AdjacencyMatrix[g]];
+  vec[S_] := Total[Function[i, UnitVector[n, i]] /@ S];
+  bdry[S_] := Transpose[vec[Complement[Range[n], S]]] . M . vec[S];
+  N[Min[Function[S, bdry[S]/Length[S]] /@ 
+     Select[Function[i, oppra[g, k, alpha][[i ;; n]]] /@ 
+       Range[n], (Length[#] < n/2) && (MemberQ[#, k]) &]], 3]
+  ]
+checkgrapha[g_, alpha_] := Module[{},
+  sweepa[g, 1, alpha]/cheegerik[g, 1]
+  ]
+oppr[g_, k_] := Module[{n, M, alpha, vec, bdry, W, steps, ppr},
+  n = VertexCount[g];
+  alpha = 0.5;
+  steps = 35;
+  M = Normal[AdjacencyMatrix[g]];
+  W = (IdentityMatrix[n] + 
+      Inverse[DiagonalMatrix[VertexDegree[g]]] . M)/2;
+  ppr = alpha (UnitVector[n, k] + 
+      Sum[((1 - alpha)^t) MatrixPower[W, t][[k]] , {t, 1, steps}]);
+  Ordering[ppr]
+  ]
+sweep[g_, k_] := Module[{n, M, vec, bdry},
+  n = VertexCount[g];
+  M = Normal[AdjacencyMatrix[g]];
+  vec[S_] := Total[Function[i, UnitVector[n, i]] /@ S];
+  bdry[S_] := Transpose[vec[Complement[Range[n], S]]] . M . vec[S];
+  N[Min[Function[S, bdry[S]/Length[S]] /@ 
+     Select[Function[i, oppr[g, k][[i ;; n]]] /@ 
+       Range[n], (Length[#] < n/2) && (MemberQ[#, k]) &]], 3]
+  ]
+checkgraph[g_] := Module[{},
+  sweep[g, 1]/cheegerik[g, 1]
+  ]

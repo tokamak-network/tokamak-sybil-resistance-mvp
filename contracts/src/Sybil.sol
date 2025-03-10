@@ -248,6 +248,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
      *
      * @dev Emits a {ForgeBatch} event indicating the new batch has been forged.
     */
+    //TODO: Need L1 Batch and L1 User Tx here as in hermuz
     function forgeBatch(
         uint48 newLastIdx,
         uint256 newAccountRoot,

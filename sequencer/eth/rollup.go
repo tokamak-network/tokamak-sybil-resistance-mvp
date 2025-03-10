@@ -548,12 +548,13 @@ func (c *RollupClient) RollupForgeBatch(args *RollupForgeBatchArgs, auth *bind.T
 // Rollup Smart Contract in the given transaction, and the sender address.
 func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 	l1UserTxsLen uint16) (*RollupForgeBatchArgs, *ethCommon.Address, error) {
+	log.Info("TransactionByHash : ", ethTxHash)
 	tx, _, err := c.client.client.TransactionByHash(context.Background(), ethTxHash)
 	if err != nil {
 		return nil, nil, common.Wrap(fmt.Errorf("TransactionByHash: %w", err))
 	}
 	txData := tx.Data()
-
+	fmt.Println("txData ----------------------------", txData)
 	method, err := c.contractAbi.MethodById(txData[:4])
 	if err != nil {
 		return nil, nil, common.Wrap(err)
@@ -567,12 +568,49 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 	if err != nil {
 		return nil, nil, common.Wrap(err)
 	}
+	fmt.Println("receipt ----------------------------", receipt)
+	fmt.Println("sender ----------------------------", sender)
+	fmt.Println("method ----------------------------", method)
 	var aux rollupForgeBatchArgsAux
 	if values, err := method.Inputs.Unpack(txData[4:]); err != nil {
 		return nil, nil, common.Wrap(err)
-	} else if err := method.Inputs.Copy(&aux, values); err != nil {
-		return nil, nil, common.Wrap(err)
+	} else {
+		// Log each value in values slice
+		fmt.Println("Values:")
+		for i, v := range values {
+			fmt.Printf("Value[%d]: %+v\n", i, v)
+		}
+		
+		if err := method.Inputs.Copy(&aux, values); err != nil {
+			fmt.Println(err, "------------------------------ Error Copy -----------------------")
+			return nil, nil, common.Wrap(err)
+		}
 	}
+
+	fmt.Printf("Aux struct:\n"+
+		"NewLastIdx: %v\n"+
+		"NewAccountRoot: %v\n"+
+		"NewVouchRoot: %v\n"+
+		"NewScoreRoot: %v\n"+
+		"NewExitRoot: %v\n"+
+		"L1L2TxsData: %x\n"+
+		"VerifierIdx: %v\n"+
+		"L1Batch: %v\n"+
+		"ProofA: %v\n"+
+		"ProofB: %v\n"+
+		"ProofC: %v\n",
+		aux.NewLastIdx,
+		aux.NewAccountRoot,
+		aux.NewVouchRoot,
+		aux.NewScoreRoot,
+		aux.NewExitRoot,
+		aux.L1L2TxsData,
+		aux.VerifierIdx,
+		aux.L1Batch,
+		aux.ProofA,
+		aux.ProofB,
+		aux.ProofC)
+
 	rollupForgeBatchArgs := RollupForgeBatchArgs{
 		L1Batch:        aux.L1Batch,
 		NewExitRoot:    aux.NewExitRoot,
@@ -585,12 +623,15 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 		ProofC:         aux.ProofC,
 		VerifierIdx:    aux.VerifierIdx,
 	}
+	fmt.Println("rollupForgeBatchArgs ----------------------------", rollupForgeBatchArgs)
 	nLevels := c.consts.Verifiers[rollupForgeBatchArgs.VerifierIdx].NLevels
 	lenL1TxsBytes := int((nLevels/8)*2 + common.Float40BytesLength + 1) //nolint:gomnd
 	numBytesL1TxUser := int(l1UserTxsLen) * lenL1TxsBytes
 	l1UserTxsData := []byte{}
-	if l1UserTxsLen > 0 {
-		l1UserTxsData = aux.L1L2TxsData[:numBytesL1TxUser]
+	if (l1UserTxsLen > 0 && len(aux.L1L2TxsData) != 0) {
+		fmt.Println("aux.L1L2TxsData ----------------------------", aux.L1L2TxsData)
+		fmt.Println("bytesL1TxUser -----------------------------", numBytesL1TxUser)
+		l1UserTxsData = aux.L1L2TxsData[:numBytesL1TxUser]		
 	}
 	for i := 0; i < int(l1UserTxsLen); i++ {
 		l1Tx, err :=

@@ -107,7 +107,10 @@ type TxProcessor struct {
 	// updatedAccounts stores the last version of the account when it has
 	// been created/updated by any of the processed transactions.
 	updatedAccounts map[common.AccountIdx]*common.Account
-	config          Config
+	// updatedVouches stores the last version of the vouch when it has
+	// been created/updated by any of the processed transactions.
+	updatedVouches map[common.VouchIdx]*common.Vouch
+	config         Config
 }
 
 // Config contains the TxProcessor configuration parameters
@@ -133,6 +136,7 @@ type ProcessTxOutput struct {
 	ZKInputs        *common.ZKInputs
 	ExitInfos       []common.ExitInfo
 	CreatedAccounts []common.Account
+	CreatedVouches  []common.Vouch
 	// UpdatedAccounts returns the current state of each account
 	// created/updated by any of the processed transactions.
 	UpdatedAccounts map[common.AccountIdx]*common.Account
@@ -186,6 +190,7 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 
 	var exitTree *merkletree.MerkleTree
 	var createdAccounts []common.Account
+	var createdVouches []common.Vouch
 
 	if txProcessor.zki != nil {
 		return nil, common.Wrap(
@@ -208,6 +213,7 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 
 	if txProcessor.state.Type() == statedb.TypeSynchronizer {
 		txProcessor.updatedAccounts = make(map[common.AccountIdx]*common.Account)
+		txProcessor.updatedVouches = make(map[common.VouchIdx]*common.Vouch)
 	}
 
 	exits := make([]processedExit, nTx)
@@ -266,6 +272,7 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 		exitAccount := &common.Account{}
 		newExit := false
 		var createdAccount *common.Account
+		var createdVouch *common.Vouch
 
 		if txProcessor.zki != nil {
 			// Txs
@@ -336,7 +343,7 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 			txProcessor.computeEffectiveAmounts(&l1usertxs[i])
 			// go to the MT account of sender and receiver, and update nonce
 			// TODO: update score
-			err = txProcessor.applyVouch(l1usertxs[i].Tx(), l1usertxs[i].ToIdx)
+			err = txProcessor.applyVouch(l1usertxs[i].Tx(), l1usertxs[i].ToIdx, l1usertxs[i].Type)
 			if err != nil {
 				log.Error(err)
 			}
@@ -353,6 +360,15 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 			}
 		}
 
+		if txProcessor.state.Type() == statedb.TypeSynchronizer &&
+			(l1usertxs[i].Type == common.TxTypeCreateVouch) {
+			var err error
+			createdVouch, err = txProcessor.state.GetVouch(txProcessor.state.GetCurrentVouchIdx())
+			if err != nil {
+				log.Error(err)
+			}
+		}
+
 		if err != nil {
 			return nil, common.Wrap(err)
 		}
@@ -362,6 +378,10 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 				l1usertxs[i].EffectiveFromIdx = createdAccount.Idx
 			} else {
 				l1usertxs[i].EffectiveFromIdx = l1usertxs[i].FromIdx
+			}
+
+			if createdVouch != nil {
+				createdVouches = append(createdVouches, *createdVouch)
 			}
 		}
 		if txProcessor.zki != nil {
@@ -454,6 +474,7 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 			ZKInputs:        nil,
 			ExitInfos:       exitInfos,
 			CreatedAccounts: createdAccounts,
+			CreatedVouches:  createdVouches,
 			UpdatedAccounts: txProcessor.updatedAccounts,
 		}, nil
 	}
@@ -471,6 +492,7 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 		ZKInputs:        txProcessor.zki,
 		ExitInfos:       nil,
 		CreatedAccounts: nil,
+		CreatedVouches:  nil,
 	}, nil
 }
 
@@ -527,6 +549,18 @@ func (txProcessor *TxProcessor) createAccount(idx common.AccountIdx, account *co
 		txProcessor.updatedAccounts[idx] = account
 	}
 	return txProcessor.state.CreateAccount(idx, account)
+}
+
+// createVouch is a wrapper over the StateDB.CreateVouch method that also
+// stores the created vouches in the updatedVouches map in case the StateDB is
+// of TypeSynchronizer
+func (txProcessor *TxProcessor) createVouch(idx common.VouchIdx, vouch *common.Vouch) (
+	*merkletree.CircomProcessorProof, error) {
+	if txProcessor.state.Type() == statedb.TypeSynchronizer {
+		vouch.Idx = idx
+		txProcessor.updatedVouches[idx] = vouch
+	}
+	return txProcessor.state.CreateVouch(idx, vouch)
 }
 
 // updateAccount is a wrapper over the StateDB.UpdateAccount method that also
@@ -771,7 +805,7 @@ func (txProcessor *TxProcessor) computeEffectiveAmounts(tx *common.L1Tx) {
 // tx.ToIdx==0, then toIdx!=0, and will be used the toIdx parameter as Idx of
 // the receiver. This parameter is used when the tx.ToIdx is not specified and
 // the real ToIdx is found trhrough the ToEthAddr or ToBJJ.
-func (txProcessor *TxProcessor) applyVouch(tx common.Tx, auxToIdx common.AccountIdx) error {
+func (txProcessor *TxProcessor) applyVouch(tx common.Tx, auxToIdx common.AccountIdx, txType common.TxType) error {
 	if auxToIdx == common.AccountIdx(0) {
 		auxToIdx = tx.ToIdx
 	}
@@ -782,24 +816,11 @@ func (txProcessor *TxProcessor) applyVouch(tx common.Tx, auxToIdx common.Account
 		return common.Wrap(err)
 	}
 
-	// if txProcessor.zki != nil {
-	// 	// Set the State1 before updating the Sender leaf
-	// 	txProcessor.zki.TokenID1[txProcessor.txIndex] = accSender.TokenID.BigInt()
-	// 	txProcessor.zki.Nonce1[txProcessor.txIndex] = accSender.Nonce.BigInt()
-	// 	senderBJJSign, senderBJJY := babyjub.UnpackSignY(accSender.BJJ)
-	// 	if senderBJJSign {
-	// 		txProcessor.zki.Sign1[txProcessor.txIndex] = big.NewInt(1)
-	// 	}
-	// 	txProcessor.zki.Ay1[txProcessor.txIndex] = senderBJJY
-	// 	txProcessor.zki.Balance1[txProcessor.txIndex] = accSender.Balance
-	// 	txProcessor.zki.EthAddr1[txProcessor.txIndex] = common.EthAddrToBigInt(accSender.EthAddr)
-	// }
-
 	// increment nonce
 	accSender.Nonce++
 
 	//TODO: update score and link for the accSender based on TxType
-
+	//TODO: Update merkle tree of vouch
 	// update sender account in localStateDB
 	pSender, err := txProcessor.updateAccount(tx.FromIdx, accSender)
 	if err != nil {
@@ -845,6 +866,28 @@ func (txProcessor *TxProcessor) applyVouch(tx common.Tx, auxToIdx common.Account
 	}
 	if txProcessor.zki != nil {
 		txProcessor.zki.Siblings2[txProcessor.txIndex] = siblingsToZKInputFormat(pReceiver.Siblings)
+	}
+	var vouchBool bool
+	//Update vouch functionality
+	if txType == common.TxTypeCreateVouch {
+		vouchBool = true
+	} else if txType == common.TxTypeDeleteVouch {
+		vouchBool = false
+	}
+	vouch := &common.Vouch{
+		Idx:      common.GenerateVouchIdx(tx.FromIdx, tx.ToIdx),
+		BatchNum: *tx.BatchNum,
+		Value:    vouchBool,
+	}
+
+	p, err := txProcessor.createVouch(common.VouchIdx(txProcessor.state.GetCurrentVouchIdx()+1), vouch)
+	if err != nil {
+		return common.Wrap(err)
+	}
+	fmt.Println((p))
+
+	if txProcessor.zki != nil {
+		txProcessor.zki.VouchSiblings[txProcessor.txIndex] = siblingsToZKInputFormat(p.Siblings)
 	}
 
 	return nil

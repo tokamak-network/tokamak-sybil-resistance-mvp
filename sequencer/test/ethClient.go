@@ -823,6 +823,7 @@ func (c *Client) RollupEventInit(genesisBlockNum int64) (*eth.RollupEventInitial
 // in the given transaction
 func (c *Client) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 	l1UserTxsLen uint16) (*eth.RollupForgeBatchArgs, *ethCommon.Address, error) {
+		fmt.Println("------------------------------------ INSIDE ETH CLIENT --------------------")
 	c.rw.RLock()
 	defer c.rw.RUnlock()
 

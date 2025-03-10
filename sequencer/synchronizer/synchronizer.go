@@ -557,6 +557,7 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// Get rollup events in the block, and make sure the block hash matches
 	// the expected one.
 	rollupEvents, err := s.EthClient.RollupEventsByBlock(blockNum, &ethBlock.Hash)
+	fmt.Println(rollupEvents, "----------------------- Roll Up Events -----------------")
 	if err != nil && err.Error() == errStrUnknownBlock {
 		return nil, common.Wrap(ErrUnknownBlock)
 	} else if err != nil {

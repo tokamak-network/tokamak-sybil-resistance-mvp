@@ -786,6 +786,8 @@ func (hdb *HistoryDB) AddBlockSCData(blockData *common.BlockData) (err error) {
 			return common.Wrap(err)
 		}
 
+		//TODO: Add Vouches in historydb
+
 		// // Set the EffectiveAmount and EffectiveDepositAmount of all the
 		// // L1UserTxs that have been forged in this batch
 		// if err = hdb.setExtraInfoForgedL1UserTxs(txn, batch.L1UserTxs); err != nil {

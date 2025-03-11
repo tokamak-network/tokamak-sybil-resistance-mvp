@@ -1,7 +1,6 @@
 name: "SYB sequencer build & deploy"
 
 on:
-    push:
     workflow_dispatch:
 
 env:

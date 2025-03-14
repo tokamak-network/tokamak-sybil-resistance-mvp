@@ -40,4 +40,6 @@ RUN go mod download
 
 COPY . .
 
+EXPOSE 5000
+
 CMD ["go", "run", "main.go", "run", "--cfg", "cfg.toml"]

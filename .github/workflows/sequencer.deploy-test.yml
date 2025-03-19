@@ -64,15 +64,15 @@ jobs:
                   echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
             
             # TODO: implement dynamic deployment, might involve creating a new task revision
-            # - name: Download task definition
-            #   run: |
-            #     aws ecs describe-task-definition --task-definition ${{ vars.SYB_ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
+            - name: Download task definition
+              run: |
+                aws ecs describe-task-definition --task-definition ${{ vars.SYB_ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
 
             - name: Fill in new image ID in task definition
               id: task-def
               uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
               with:
-                task-definition: ${{ vars.SYB_ECS_TASK_DEFINITION }}
+                task-definition: task-definition.json
                 container-name: ${{ vars.SYB_CONTAINER_NAME }}
                 image: ${{ steps.build-image.outputs.image }}
 

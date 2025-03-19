@@ -59,34 +59,27 @@ jobs:
                 AWS_REGION: us-east-2
               run: |
                   export GIT_TAG=$(git rev-parse --short HEAD)  
-                  docker build --build-arg APP_MODE=${APP_MODE} --build-arg KEYSTORE_PATH=${KEYSTORE_PATH} --build-arg KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD} --build-arg ROLLUP_START_BLOCK_NUM=${ROLLUP_START_BLOCK_NUM} --build-arg WAIT_TIME_SECONDS=${WAIT_TIME_SECONDS} --build-arg MAXTX=${MAXTX} --build-arg NLEVEL=${NLEVEL} --build-arg TEST_AWS_DB_SECRET_NAME=${TEST_AWS_DB_SECRET_NAME} --build-arg AWS_REGION=${AWS_REGION} -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:$GIT_TAG -f sequencer/Dockerfile sequencer
-                  docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+                  docker build --build-arg APP_MODE=${APP_MODE} --build-arg KEYSTORE_PATH=${KEYSTORE_PATH} --build-arg KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD} --build-arg ROLLUP_START_BLOCK_NUM=${ROLLUP_START_BLOCK_NUM} --build-arg WAIT_TIME_SECONDS=${WAIT_TIME_SECONDS} --build-arg MAXTX=${MAXTX} --build-arg NLEVEL=${NLEVEL} --build-arg TEST_AWS_DB_SECRET_NAME=${TEST_AWS_DB_SECRET_NAME} --build-arg AWS_REGION=${AWS_REGION} -t $ECR_REGISTRY/$ECR_REPOSITORY:$GIT_TAG -f sequencer/Dockerfile sequencer
                   docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GIT_TAG
-                  echo "image=$ECR_REGISTRY/$ECR_REPOSITORY" >> $GITHUB_STATE
-                  echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_STATE
+                  echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_STATE
             
             # TODO: implement dynamic deployment, might involve creating a new task revision
             - name: Download task definition
-              env:
-                TASK_DEFINITION_NAME: SybMvpTestStackSequencerEcsConstructTaskDef1AAA2005:45
               run: |
-                aws ecs describe-task-definition --task-definition ${TASK_DEFINITION_NAME} --query taskDefinition > task-definition.json
+                aws ecs describe-task-definition --task-definition ${{ vars.SYB_ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
 
             - name: Fill in new image ID in task definition
               id: task-def
-              env:
-                ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-                ECR_REPOSITORY: test-ecr-repo
               uses: aws-actions/amazon-ecs-render-task-definition@v1
               with:
                 task-definition: task-definition.json
-                container-name: AppContainer
-                image: $ECR_REGISTRY/$ECR_REPOSITORY:latest
+                container-name: ${{ vars.SYB_CONTAINER_NAME }}
+                image: ${{ steps.build-image.outputs.image }}
 
             - name: Deploy Amazon ECS task definition
               uses: aws-actions/amazon-ecs-deploy-task-definition@v2
               with:
                 task-definition: ${{ steps.task-def.outputs.task-definition }}
-                service: SybMvpTestStack-SequencerEcsConstructEc2ServiceD58751E4-5hUrJErImxiy
-                cluster: SybMvpTestStack-EcsCluster97242B84-QU4YQbVb3YEC
+                service: ${{ env.ECS_SERVICE }}
+                cluster: ${{ env.ECS_CLUSTER }}
                 wait-for-service-stability: true

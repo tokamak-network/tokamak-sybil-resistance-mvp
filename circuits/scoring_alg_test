@@ -182,3 +182,61 @@ sweep[g_, k_] := Module[{n, M, vec, bdry},
 checkgraph[g_] := Module[{},
   sweep[g, 1]/cheegerik[g, 1]
   ]
+Clear[a, q, p, b]
+planes = {x == xm, y == ym, z == zm, x == (p + a)^2, y == (q + b)^2, 
+   z == (a + b)^2, y + z == (a + q)^2, x + y + z == (p + q)^2, 
+   x + z == (p + b)^2};
+allverts = ({x, y, z} /. 
+    Flatten[Function[cond, Solve[cond, {x, y, z}]] /@ 
+      Function[eqs, eqs /. {List -> And}] /@ Subsets[planes, {3}], 1]);
+p1 = 1.7;
+q1 = 1.7;
+pareto[xm1_, ym1_, zm1_, a1_, b1_] := 
+ Module[{allverts1, polytopeverts, paretoverts},
+  allverts1 = 
+   allverts /. {xm -> xm1, ym -> ym1, zm -> zm1, a -> a1, b -> b1, 
+     p -> p1, q -> q1};
+  polytopeverts = 
+   Select[allverts1, #[[1]] >= xm1 && #[[2]] >= ym1 && #[[3]] >= 
+       zm1 && #[[1]] <= (p1 + a1)^2 && #[[2]] <= (q1 + b1)^2 && #[[
+        3]] <= (a1 + b1)^2 && #[[2]] + #[[3]] <= (q1 + a1)^2 && #[[
+         1]] + #[[2]] + #[[3]] <= (p1 + q1)^2 && #[[1]] + #[[
+         3]] <= (p1 + b1)^2 &];
+  paretoverts = -Internal`ListMin[-polytopeverts];
+  paretoverts
+  ]
+xmin[xm1_, ym1_, zm1_, a1_, b1_] := 
+ Module[{}, 
+  Max[Function[a11, 
+     Min[Transpose[pareto[xm1, ym1, zm1, a11, b1]][[1]]]] /@ 
+    Range[0, a1, 0.01]]]
+ymin[xm1_, ym1_, zm1_, a1_, b1_] := 
+ Module[{}, 
+  Max[Function[b11, 
+     Min[Transpose[pareto[xm1, ym1, zm1, a1, b11]][[2]]]] /@ 
+    Range[0, b1, 0.01]]]
+zmin[xm1_, ym1_, zm1_, a1_, b1_] := Module[{},
+  Max[Function[pair, 
+     Min[Transpose[pareto[xm1, ym1, zm1, pair[[1]], pair[[2]]]][[
+       3]]]] /@ 
+    Flatten[Table[{i, j}, {i, 0, a1, 0.01}, {j, 0, b1, 0.01}], 1]]
+  ]
+
+pareto[xmin[0, 0, 0, .65, 1], ymin[0, 0, 0, .65, 1], 
+ zmin[0, 0, 0, .65, 1], .65, 1]
+
+DiscretePlot[{Max[
+   diffuse[testg3, 100 UnitVector[VertexCount[testg3], 9], st]/ncks], 
+  Min[diffuse[testg3, 100 UnitVector[VertexCount[testg3], 9], st]/
+    ncks]}, {st, 1, 100}, PlotRange -> {{0, All}, {0, All}}]
+full = 17;
+small = 4;
+bridge = 6;
+tg2 = Graph[
+  Complement[EdgeList[CompleteGraph[full]], 
+   RandomSample[EdgeList[CompleteGraph[{full - small, small}]], 
+    Length[EdgeList[CompleteGraph[{full - small, small}]]] - 
+     bridge]]]
+xinit = Join[ConstantArray[1, full - small], ConstantArray[0, small]]
+ych = cheegerkxsigs[tg2, xinit, 2]
+ysw = sweepxsigs[tg2, xinit, 2]

@@ -52,7 +52,7 @@ jobs:
                 KEYSTORE_PATH: /var/tokamak/ethkeystore
                 # TODO: move this password to github secrets
                 KEYSTORE_PASSWORD: 123
-                ROLLUP_START_BLOCK_NUM: 7754027
+                ROLLUP_START_BLOCK_NUM: 7930845
                 WAIT_TIME_SECONDS: 10
                 MAXTX: 100
                 NLEVEL: 5

@@ -5,7 +5,7 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  APPLICATION_NAME: sequencer
+  APPLICATION_NAME: sequencer-app
   # TODO: this is dynamically created on stack creation, needs to be updated
   DEPLOYMENT_GROUP_NAME: SybMvpTestStack-SequencerEcsConstructBlueGreenDG7E6695A1-1HT9J8WLT0ZL
 

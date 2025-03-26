@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"os"
@@ -13,6 +14,9 @@ import (
 	"tokamak-sybil-resistance/common"
 	"tokamak-sybil-resistance/log"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/gobuffalo/packr/v2"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -22,6 +26,14 @@ import (
 )
 
 var migrations *migrate.PackrMigrationSource
+
+type DBCredentials struct {
+	Port     int    `json:"port"`
+	Host     string `json:"host"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Dbname   string `json:"dbname"`
+}
 
 func init() {
 	migrations = &migrate.PackrMigrationSource{
@@ -37,7 +49,62 @@ func init() {
 	}
 }
 
-func GetDbCredentials() (port int, host, user, password, dbname string) {
+func GetAwsSecrets(secretName, region string) (string, error) {
+	if secretName == "" || region == "" {
+		return "", fmt.Errorf("secretName and region must be provided to fetch secrets from AWS")
+	}
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Config: aws.Config{
+			Region: aws.String(region),
+		},
+		Profile:           "default",
+		SharedConfigState: session.SharedConfigEnable,
+	})
+	if err != nil {
+		return "", err
+	}
+	svc := secretsmanager.New(sess)
+	input := &secretsmanager.GetSecretValueInput{
+		SecretId: aws.String(secretName),
+	}
+	result, err := svc.GetSecretValue(input)
+	if err != nil {
+		return "", err
+	}
+	return *result.SecretString, nil
+}
+
+func GetDbCredentials() (port int, host, user, password, dbname, sslMode string) {
+	appMode := os.Getenv("APP_MODE")
+	sslMode = "disable"
+	if appMode == "test" || appMode == "main" {
+		sslMode = "require"
+		var secrets string
+		var err error
+		if appMode == "test" {
+			secrets, err = GetAwsSecrets(os.Getenv("TEST_AWS_DB_SECRET_NAME"), os.Getenv("AWS_REGION"))
+		} else {
+			secrets, err = GetAwsSecrets(os.Getenv("MAIN_AWS_DB_SECRET_NAME"), os.Getenv("AWS_REGION"))
+		}
+		if err != nil {
+			panic(err)
+		}
+		if secrets == "" {
+			panic("No secrets found in AWS Secrets Manager.")
+		}
+		var creds DBCredentials
+		err = json.Unmarshal([]byte(secrets), &creds)
+		if err != nil {
+			panic(err)
+		}
+		// TODO: for some reason RDS doesn't save dbname in the secrets, need to investigate
+		if creds.Dbname == "" {
+			creds.Dbname = "postgres"
+		}
+		return creds.Port, creds.Host, creds.Username, creds.Password, creds.Dbname, sslMode
+	}
+
+	// running locally
 	host = os.Getenv("PGHOST")
 	if host == "" {
 		host = "localhost"
@@ -58,7 +125,7 @@ func GetDbCredentials() (port int, host, user, password, dbname string) {
 	if dbname == "" {
 		dbname = "tokamak"
 	}
-	return port, host, user, password, dbname
+	return port, host, user, password, dbname, sslMode
 }
 
 // MigrationsUp runs the SQL migrations Up
@@ -93,16 +160,17 @@ func ConnectSQLDB() (*sqlx.DB, error) {
 	initMeddler()
 	meddler.Default = meddler.PostgreSQL
 
-	port, host, user, password, dbname := GetDbCredentials()
+	port, host, user, password, dbname, sslMode := GetDbCredentials()
 
 	// Establish connection
 	psqlconn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		host,
 		port,
 		user,
 		password,
 		dbname,
+		sslMode,
 	)
 	db, err := sqlx.Connect("postgres", psqlconn)
 	if err != nil {

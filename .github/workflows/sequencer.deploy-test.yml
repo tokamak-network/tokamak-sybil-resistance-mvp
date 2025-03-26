@@ -1,0 +1,86 @@
+name: "SYB sequencer build & deploy"
+
+on:
+    workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-2
+  # APPLICATION_NAME: sequencer
+  # TODO: this is dynamically created on stack creation, needs to be updated
+  # DEPLOYMENT_GROUP_NAME: SybMvpTestStack-SequencerEcsConstructBlueGreenDG7E6695A1-1HT9J8WLT0ZL
+
+jobs:
+    syb-sequencer-deploy:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: "1.23.0"
+                  check-latest: true
+                  cache-dependency-path: |
+                      ./sequencer/go.sum
+
+            - name: Install dependencies
+              run: |
+                  cd ./sequencer
+                  go mod tidy
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: ${{ env.AWS_REGION }}
+
+            - name: Login to Amazon ECR
+              id: login-ecr
+              uses: aws-actions/amazon-ecr-login@v2
+              with:
+                mask-password: 'true'
+            
+            - name: Build, tag, and push Docker image to ECR
+              id: build-image
+              env:
+                ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+                ECR_REPOSITORY: test-ecr-repo
+                IMAGE_TAG: ${{ github.sha }}
+                APP_MODE: test
+                KEYSTORE_PATH: /var/tokamak/ethkeystore
+                # TODO: move this password to github secrets
+                KEYSTORE_PASSWORD: 123
+                ROLLUP_START_BLOCK_NUM: 7978600
+                WAIT_TIME_SECONDS: 3
+                MAXTX: 100
+                NLEVEL: 5
+                TEST_AWS_DB_SECRET_NAME: rds-credentials-test
+                AWS_REGION: us-east-2
+              run: |
+                  docker build --build-arg APP_MODE=${APP_MODE} --build-arg KEYSTORE_PATH=${KEYSTORE_PATH} --build-arg KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD} --build-arg ROLLUP_START_BLOCK_NUM=${ROLLUP_START_BLOCK_NUM} --build-arg WAIT_TIME_SECONDS=${WAIT_TIME_SECONDS} --build-arg MAXTX=${MAXTX} --build-arg NLEVEL=${NLEVEL} --build-arg TEST_AWS_DB_SECRET_NAME=${TEST_AWS_DB_SECRET_NAME} --build-arg AWS_REGION=${AWS_REGION} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -f sequencer/Dockerfile sequencer
+                  docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+                  docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+                  echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >> $GITHUB_OUTPUT
+            
+            # TODO: implement dynamic deployment, might involve creating a new task revision
+            - name: Download task definition
+              run: |
+                aws ecs describe-task-definition --task-definition ${{ vars.SYB_ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
+
+            - name: Fill in new image ID in task definition
+              id: task-def
+              uses: aws-actions/amazon-ecs-render-task-definition@v1
+              with:
+                task-definition: task-definition.json
+                container-name: ${{ vars.SYB_CONTAINER_NAME }}
+                image: ${{ steps.build-image.outputs.image }}
+
+            - name: Deploy Amazon ECS task definition
+              uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+              with:
+                task-definition: ${{ steps.task-def.outputs.task-definition }}
+                service: ${{ vars.ECS_SERVICE }}
+                cluster: ${{ vars.ECS_CLUSTER }}
+                wait-for-service-stability: true

@@ -118,6 +118,10 @@ func NewNode(cfg *config.Node, apiServerCfg *config.ConfigAPIServer, version str
 		log.Errorw("keystore path or password not set")
 		return nil, common.Wrap(fmt.Errorf("keystore path or password not set"))
 	}
+	if err := os.MkdirAll(keystorePath, 0700); err != nil {
+		log.Errorw("failed to create keystore directory", "err", err)
+		return nil, common.Wrap(fmt.Errorf("failed to create keystore directory: %w", err))
+	}
 	keyStore = keystore.NewKeyStore(keystorePath, scryptN, scryptP)
 
 	forgerAddressHex := os.Getenv("FORGER_ADDRESS")
@@ -254,6 +258,7 @@ func NewNode(cfg *config.Node, apiServerCfg *config.ConfigAPIServer, version str
 	if err := historyDB.SetConstants(&hdbConsts); err != nil {
 		return nil, common.Wrap(err)
 	}
+
 	var etherScanService *etherscan.Service
 	etherscanUrl := os.Getenv("ETHERSCAN_URL")
 	etherscanAPIKey := os.Getenv("ETHERSCAN_API_KEY")
@@ -275,6 +280,19 @@ func NewNode(cfg *config.Node, apiServerCfg *config.ConfigAPIServer, version str
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
+
+	apiServer, err := NewAPIServer(
+		apiServerCfg.Server,
+		version,
+		ethClient,
+		&apiServerCfg.Server.Coordinator.ForgerAddress,
+	)
+	if err != nil {
+		return nil, common.Wrap(err)
+	}
+	go func() {
+		apiServer.Start()
+	}()
 
 	var coord *coordinator.Coordinator
 
@@ -348,19 +366,6 @@ func NewNode(cfg *config.Node, apiServerCfg *config.ConfigAPIServer, version str
 	if err != nil {
 		return nil, common.Wrap(err)
 	}
-
-	apiServer, err := NewAPIServer(
-		apiServerCfg.Server,
-		version,
-		ethClient,
-		&apiServerCfg.Server.Coordinator.ForgerAddress,
-	)
-	if err != nil {
-		return nil, common.Wrap(err)
-	}
-	go func() {
-		apiServer.Start()
-	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Node{

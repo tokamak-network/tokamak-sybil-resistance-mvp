@@ -24,3 +24,4 @@ sequencer/.env
 # etc
 .DS_Store
 var
+pgdata

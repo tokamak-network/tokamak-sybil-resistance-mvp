@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	github.com/BurntSushi/toml v1.4.0
+	github.com/aws/aws-sdk-go v1.55.6
 	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/dghubble/sling v1.3.0
 	github.com/dimiro1/health v0.0.0-20231118160444-e388c68d7d7e
@@ -75,6 +76,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.15.8 // indirect

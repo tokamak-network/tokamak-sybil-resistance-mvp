@@ -80,6 +80,7 @@ func (u *Updater) UpdateNetworkInfo(
 		return common.Wrap(err)
 	}
 
+	u.rw.Lock()
 	// Update pending L1s
 	pendingL1s, err := u.hdb.GetUnforgedL1UserTxsCount()
 	if err != nil {

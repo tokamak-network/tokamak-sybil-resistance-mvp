@@ -30,7 +30,7 @@ StatsUpdateFrequencyDivider = 100
 
 [SmartContracts]
 ## Smart contract address of the rollup contract
-Rollup   = "0x14F39A3380100f724c075814d4540a3a34f93C53"
+Rollup   = "0x443dA87f25a49c27a11f61918eC74E414b92C4B3"
 
 [Coordinator]
 ## Ethereum address that the coordinator is using to forge batches

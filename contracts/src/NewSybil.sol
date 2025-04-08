@@ -15,6 +15,11 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
         uint256 nLevel; // number of levels of the circuit
     }
 
+    struct ScoreSnapshot {
+		uint32 score;
+		uint32 batchNum;
+    }
+
     uint48 constant _EXPLODE_AMOUNT = (1 << 50);
     uint256 constant _TXN_TOTALBYTES = 73; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 256; // Max transactions per batch

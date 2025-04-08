@@ -121,18 +121,13 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     /**
      * @dev Allows a user to vouch for another account.
      *
-     * @param fromIdx The index of the account that is vouching.
-     * @param toIdx The index of the account being vouched for.
-     * 
-     * Requirement:
-     * - Both `fromIdx` and `toIdx` must be valid indices.
+     * @param toEthAddr The index of the account that is being vouched.
     */
-    function vouch(uint48 fromIdx, uint48 toIdx) external {
-
-        _validateFromIdx(fromIdx);
-        _validateToIdx(toIdx);
-
-        _addTx(msg.sender, fromIdx, 0, 1, toIdx);
+    function vouch(address toEthAddr) external {
+        require(balances[msg.sender] != 0, SenderHasZeroBalance());
+        require(balances[toEthAddr] != 0, ReceiverHasZeroBalance());
+        vouches[msg.sender][toEthAddr] = 1;
+        _addTx(3, msg.sender, toEthAddr, 0);
     }
     /**
      * @dev Allows a user to remove their vouch for another account.

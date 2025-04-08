@@ -23,7 +23,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
     uint48 constant _EXPLODE_AMOUNT = (1 << 50);
     uint256 constant _TXN_TOTALBYTES = 73; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 256; // Max transactions per batch
-    uint256 constant _LIMIT_LOADAMOUNT = (1 << 128); // Max loadAmount per call
+    uint256 constant _LIMIT_AMOUNT = (1 << 128); // Max loadAmount per call
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
@@ -95,6 +95,17 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
             _poseidon2Elements,
             _poseidon3Elements
         );
+    }
+
+    function deposit() external payable override {
+        require(msg.value < _LIMIT_AMOUNT, LimitAmountExceeded());
+        require(msg.value >= _MIN_BALANCE, InsufficientETH());
+        if(balances[msg.sender] == 0) {
+            _addTx(0, msg.sender, 0, msg.value);  
+        } else {
+            _addTx(1, msg.sender, 0, msg.value);
+        }
+        balances[msg.sender] += msg.value;
     }
 
     /**

@@ -15,6 +15,8 @@ interface INewSybil {
     error LimitAmountExceeded();
     error InsufficientETH();
     error InsufficientBalance();
+    error SenderHasZeroBalance();
+    error ReceiverHasZeroBalance();
 
     // Initialization function
     function initialize(

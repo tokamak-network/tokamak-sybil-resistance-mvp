@@ -24,7 +24,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
 
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
-    uint256 public explodeAmount;
 
     mapping(uint32 => uint256) public accountRootMap;
     mapping(uint32 => uint256) public vouchRootMap;

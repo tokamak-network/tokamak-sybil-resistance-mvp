@@ -98,62 +98,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
     }
 
     /**
-     * @dev Allows a user to create an account deposit.
-     * 
-     * This function accepts a specified amount of Ether, which is converted from a fixed-point 
-     * representation to a standard uint256 value.
-     * 
-     * @param loadAmountF The amount of Ether to deposit, represented as a fixed-point number
-     * 
-     * Requirements:
-     * 
-     * - The `loadAmountF` must be less than the maximum load amount defined by `_LIMIT_LOADAMOUNT`.
-     * - The amount of Ether sent with the transaction must match the converted `loadAmount`.
-    */
-    function createAccountDeposit(uint40 loadAmountF) external payable override {
-        uint256 loadAmount = _float2Fix(loadAmountF);
-        if(loadAmount >= _LIMIT_LOADAMOUNT) {
-            revert LoadAmountExceedsLimit();
-        }
-
-        if(loadAmount != msg.value) {
-            revert LoadAmountDoesNotMatch();
-        }
-        
-        _addTx(msg.sender, 0, loadAmountF, 0, 0);
-    }
-
-    /**
-     * @dev Allows a user to deposit Ether into their account.
-     *
-     * This function accepts a specified amount of Ether, which is converted from a fixed-point 
-     * representation to a standard uint256 value.
-     *
-     * @param fromIdx The index of the account to which the deposit is being made.
-     * @param loadAmountF The amount of Ether to deposit, represented as a fixed-point number 
-     * 
-     * Requirements:
-     * 
-     * - The `loadAmountF` must be less than the maximum load amount defined by `_LIMIT_LOADAMOUNT`.
-     * - The amount of Ether sent with the transaction must match the converted `loadAmount`.
-    */
-    function deposit(uint48 fromIdx, uint40 loadAmountF) external payable override {
-        uint256 loadAmount = _float2Fix(loadAmountF);
-
-        if(loadAmount >= _LIMIT_LOADAMOUNT) {
-            revert LoadAmountExceedsLimit();
-        }
-
-        if(loadAmount != msg.value) {
-            revert LoadAmountDoesNotMatch();
-        }
-
-        _validateFromIdx(fromIdx);
-
-        _addTx(msg.sender, fromIdx, loadAmountF, 0, 0);
-    }
-
-    /**
      * @dev Allows a user to vouch for another account.
      *
      * @param fromIdx The index of the account that is vouching.

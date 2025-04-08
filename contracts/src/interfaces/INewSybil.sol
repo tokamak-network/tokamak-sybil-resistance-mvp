@@ -64,9 +64,6 @@ interface INewSybil {
     // Withdraw Function
     function withdraw() external;
 
-    // Exit Function
-    function exit(uint48 fromIdx, uint40 amountF) external;
-
     // Explode function
     function explodeMultiple(uint48 fromIdx, uint48[] memory toIdxs) external;
 

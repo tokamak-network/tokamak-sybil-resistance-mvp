@@ -56,7 +56,7 @@ interface INewSybil {
     function getQueueLength() external view returns (uint32);
 
     // Deposit Function
-    function deposit(uint48 fromIdx, uint40 loadAmountF) external payable;
+    function deposit() external payable;
 
     // Exit Function
     function exit(uint48 fromIdx, uint40 amountF) external;

@@ -14,6 +14,7 @@ interface INewSybil {
     error InvalidToIdx();
     error LimitAmountExceeded();
     error InsufficientETH();
+    error InsufficientBalance();
 
     // Initialization function
     function initialize(

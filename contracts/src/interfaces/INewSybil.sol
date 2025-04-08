@@ -70,7 +70,7 @@ interface INewSybil {
     function explodeMultiple(uint48 fromIdx, uint48[] memory toIdxs) external;
 
     // Vouch function
-    function vouch(uint48 fromIdx, uint48 toIdx) external;
+    function vouch(address toEthAddr) external;
 
     // Unvouch function
     function unvouch(uint48 fromIdx, uint48 toIdx) external;

@@ -55,9 +55,6 @@ interface INewSybil {
     ) external view returns (bytes memory);
     function getQueueLength() external view returns (uint32);
 
-    // Create the Account
-    function createAccountDeposit(uint40 loadAmountF) external payable;
-
     // Deposit Function
     function deposit(uint48 fromIdx, uint40 loadAmountF) external payable;
 

@@ -15,6 +15,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
         uint256 nLevel; // number of levels of the circuit
     }
 
+    uint48 constant _EXPLODE_AMOUNT = (1 << 50);
     uint256 constant _TXN_TOTALBYTES = 42; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 1000; // Max transactions per batch
     uint256 constant _LIMIT_LOADAMOUNT = (1 << 128); // Max loadAmount per call

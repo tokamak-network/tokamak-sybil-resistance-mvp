@@ -132,18 +132,11 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     /**
      * @dev Allows a user to remove their vouch for another account.
      *
-     * @param fromIdx The index of the account that is unvouching.
-     * @param toIdx The index of the account being unvouched for.
-     * 
-     * Requirement:
-     * - Both `fromIdx` and `toIdx` must be valid indices.
+     * @param toEthAddr The index of the account that is being unvouched.
     */
-    function unvouch(uint48 fromIdx, uint48 toIdx) external {
-
-        _validateFromIdx(fromIdx);
-        _validateToIdx(toIdx);
-
-        _addTx(msg.sender, fromIdx, 0, 0, toIdx);
+    function unvouch(address toEthAddr) external {
+        vouches[msg.sender][toEthAddr] = 0;
+        _addTx(4, msg.sender, toEthAddr, 0);
     }
 
     /**

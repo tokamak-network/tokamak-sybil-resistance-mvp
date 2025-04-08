@@ -31,6 +31,8 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
     mapping(uint32 => uint256) public exitRootMap;
     mapping(uint32 => bytes) public unprocessedBatchesMap;
     mapping(uint32 => bytes32) public txsDataHashMap;
+    mapping(address => uint256) public balances;
+    mapping(address => mapping(address => bool)) public vouches;
 
     // Mapping of exit nullifiers, only allowing each withdrawal to be made once
     mapping(uint32 => mapping(uint48 => bool)) public exitNullifierMap;

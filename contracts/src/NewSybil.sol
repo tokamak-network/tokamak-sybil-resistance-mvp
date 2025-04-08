@@ -80,7 +80,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
         address _poseidon3Elements,
         address _adminRole
     ) public initializer {
-        lastIdx = _RESERVED_IDX;
         currentFillingBatch = 1;
 
         __AccessControl_init();

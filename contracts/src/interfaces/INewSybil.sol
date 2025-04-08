@@ -61,6 +61,9 @@ interface INewSybil {
     // Deposit Function
     function deposit() external payable;
 
+    // Withdraw Function
+    function withdraw() external;
+
     // Exit Function
     function exit(uint48 fromIdx, uint40 amountF) external;
 

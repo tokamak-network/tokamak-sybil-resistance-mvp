@@ -22,7 +22,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    uint48 public lastIdx;
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
     uint256 public minBalance;

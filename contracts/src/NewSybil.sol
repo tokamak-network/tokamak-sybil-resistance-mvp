@@ -3,11 +3,11 @@ pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "./interfaces/IMVPSybil.sol";
+import "./interfaces/INewSybil.sol";
 import "./interfaces/IVerifier.sol";
 import "./types/SybilHelpers.sol";
 
-contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHelpers {
+contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybilHelpers {
 
     struct Verifier {
         IVerifier verifierInterface;
@@ -107,6 +107,15 @@ contract NewSybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybi
             _addTx(1, msg.sender, 0, msg.value);
         }
         balances[msg.sender] += msg.value;
+    }
+
+    function withdraw(uint256 amount) external {
+        require(amount < _LIMIT_AMOUNT, LimitAmountExceeded());
+        require(amount + _MIN_BALANCE <= balances[msg.sender], InsufficientBalance());
+        
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success, EthTransferFailed());
+        _addTx(2, msg.sender, 0, amount);
     }
 
     /**

@@ -142,27 +142,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     }
 
     /**
-     * @dev Allows a user to exit their account by withdrawing a specified amount of Ether.
-     *
-     * @param fromIdx The index of the account that is exiting.
-     * @param amountF The amount of Ether to withdraw, represented as a fixed-point number 
-     *
-     * Requirement:
-     * - The `amountF` must be less than the maximum load amount defined by `_LIMIT_LOADAMOUNT`.
-    */
-    function exit(uint48 fromIdx, uint40 amountF) external override {
-        uint256 amount = _float2Fix(amountF);
-
-        if(amount >= _LIMIT_LOADAMOUNT) {
-            revert AmountExceedsLimit();
-        }
-
-        _validateFromIdx(fromIdx);
-
-        _addTx(msg.sender, fromIdx, 0, amountF, _EXIT_IDX);
-    }
-
-    /**
      * @dev Allows a user to explode multiple accounts from a specified index.
      *
      * This function enables a user to explode (or transfer) their account to multiple 

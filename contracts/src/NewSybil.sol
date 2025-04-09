@@ -135,6 +135,8 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * @param toEthAddr The index of the account that is being unvouched.
     */
     function unvouch(address toEthAddr) external {
+        require(balances[msg.sender] != 0, SenderHasZeroBalance());
+        require(balances[toEthAddr] != 0, ReceiverHasZeroBalance());
         vouches[msg.sender][toEthAddr] = 0;
         _addTx(4, msg.sender, toEthAddr, 0);
     }

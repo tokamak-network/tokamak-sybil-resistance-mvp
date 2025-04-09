@@ -451,19 +451,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     }
 
     /**
-     * @dev Validates the `toIdx` parameter to ensure it is within acceptable bounds.
-     *
-     * @param toIdx The index to validate.
-     *
-     * @dev Reverts with `InvalidToIdx` if validation fails.
-    */
-    function _validateToIdx(uint48 toIdx) internal view {
-        if ((toIdx <= _RESERVED_IDX) || (toIdx > lastIdx)) {
-            revert InvalidToIdx();
-        }
-    }
-
-    /**
      * @dev Converts a fixed-point representation to a standard uint256 value.
      *
      * @param floatVal The fixed-point number to convert

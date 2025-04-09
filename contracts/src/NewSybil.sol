@@ -214,44 +214,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
         emit ForgeBatch(lastForgedBatch, l1UserTxsLen);
     }
 
-    /**
-     * @dev Allows a user to withdraw funds based on a Merkle proof.
-     *
-     * @param amount The amount of funds to withdraw
-     * @param numExitRoot The index of the exit root to be used for verification.
-     * @param siblings An array of sibling hashes used in the Merkle proof.
-     * @param idx The index of the account from which the funds are being withdrawn.
-     *
-     * @notice The function will revert if the withdrawal has already been processed or if 
-     *         the proof is invalid.
-     *
-     * @dev Emits a {WithdrawEvent} indicating the withdrawal has been processed.
-    */
-    function withdrawMerkleProof(
-        uint192 amount,
-        uint32 numExitRoot,
-        uint256[] calldata siblings,
-        uint48 idx
-    ) external {
-        uint256[2] memory arrayState = _buildTreeState(amount, msg.sender);
-        uint256 stateHash = _hash2Elements(arrayState);
-
-        uint256 exitRoot = exitRootMap[numExitRoot];
-
-        if (exitNullifierMap[numExitRoot][idx]) {
-            revert WithdrawAlreadyDone();
-        }
-
-        if (!_smtVerifier(exitRoot, siblings, idx, stateHash)) {
-            revert SmtProofInvalid();
-        }
-
-        exitNullifierMap[numExitRoot][idx] = true;
-
-        _withdrawFunds(amount);
-        emit WithdrawEvent(idx, numExitRoot);
-    }
-
     function proveScoreMerkleProof(
 		uint32 numScoreRoot, 
 		uint24 idx,

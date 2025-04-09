@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "./interfaces/INewSybil.sol";
 import "./interfaces/IVerifier.sol";
 import "./types/SybilHelpers.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybilHelpers {
 
@@ -142,28 +143,24 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     }
 
     /**
-     * @dev Allows a user to explode multiple accounts from a specified index.
+     * @dev Allows a user to explode multiple accounts.
      *
-     * This function enables a user to explode (or transfer) their account to multiple 
-     * specified indices. The transaction is added to the queue for processing.
+     * This function enables a user to explode multiple account by providing an array of address
      *
-     * @param fromIdx The index of the account that is explodeMultiple.
-     * @param toIdxs An array of indices representing the accounts being exploded for.
+     * @param toEthAddrs The array of address of the account that is being exploded.
      * 
      * Requirement:
-     * - All indices in `toIdxs` must be valid.
+     * - All address in `toEthAddrs` must be vouched.
     */
-    function explodeMultiple(uint48 fromIdx, uint48[] memory toIdxs) external override {
-
-        _validateFromIdx(fromIdx);
-
-        uint256 length = toIdxs.length;
-        for (uint256 i = 0; i < length; ++i) {
-            _validateToIdx(toIdxs[i]);
-        }
-
-        for (uint256 i = 0; i < length; ++i) {
-            _addTx(msg.sender, fromIdx, 0, 2, toIdxs[i]);
+    function explodeMultiple(address[] toEthAddrs) external {
+        for (uint i=0; i < toEthAddrs.length; i++) {
+                address toEthAddr = toEthAddrs[i]; 
+                require(vouches[toEthAddr][msg.sender] == 1, NotVouched(msg.sender, toEthAddr));
+                uint256 penalty = Math.min(_EXPLODE_AMOUNT, balances[toEthAddr] - _MIN_BALANCE);
+                balances[toEthAddr] -= penalty;
+                balances[msg.sender] += penalty;
+                vouches[toEthAddr][msg.sender] = 0;
+                _addTx(5, msg.sender, toEthAddr, 0);   
         }
     }
 

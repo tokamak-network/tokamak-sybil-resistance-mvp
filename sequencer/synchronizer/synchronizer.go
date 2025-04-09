@@ -723,12 +723,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 				})
 		}
 
-		// slotNum := int64(0)
-		// if ethBlock.Num >= s.consts.Auction.GenesisBlockNum {
-		// 	slotNum = (ethBlock.Num - s.consts.Auction.GenesisBlockNum) /
-		// 		int64(s.consts.Auction.BlocksPerSlot)
-		// }
-
 		// Get Batch information
 		batch := common.Batch{
 			BatchNum:    batchNum,
@@ -756,106 +750,8 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 		rollupData.Batches = append(rollupData.Batches, *batchData)
 	}
 
-	// // Get Registered Tokens
-	// for _, evtAddToken := range rollupEvents.AddToken {
-	// 	var token common.Token
-
-	// 	token.TokenID = common.TokenID(evtAddToken.TokenID)
-	// 	token.EthAddr = evtAddToken.TokenAddress
-	// 	token.EthBlockNum = blockNum
-
-	// 	if consts, err := s.EthClient.EthERC20Consts(evtAddToken.TokenAddress); err != nil {
-	// 		log.Warnw("Error retrieving ERC20 token constants", "addr", evtAddToken.TokenAddress)
-	// 		token.Name = "ERC20_ETH_ERROR"
-	// 		token.Symbol = "ERROR"
-	// 		token.Decimals = 1
-	// 	} else {
-	// 		token.Name = cutStringMax(consts.Name, 20)
-	// 		token.Symbol = cutStringMax(consts.Symbol, 10)
-	// 		token.Decimals = consts.Decimals
-	// 	}
-
-	// 	rollupData.AddedTokens = append(rollupData.AddedTokens, token)
-	// }
-
-	rollupData.UpdateBucketWithdraw = make([]common.BucketUpdate, 0, len(rollupEvents.UpdateBucketWithdraw))
-	for _, evt := range rollupEvents.UpdateBucketWithdraw {
-		rollupData.UpdateBucketWithdraw = append(rollupData.UpdateBucketWithdraw,
-			common.BucketUpdate{
-				EthBlockNum: blockNum,
-				NumBucket:   evt.NumBucket,
-				BlockStamp:  evt.BlockStamp,
-				Withdrawals: evt.Withdrawals,
-			})
-	}
-
-	rollupData.Withdrawals = make([]common.WithdrawInfo, 0, len(rollupEvents.Withdraw))
-	for _, evt := range rollupEvents.Withdraw {
-		rollupData.Withdrawals = append(rollupData.Withdrawals, common.WithdrawInfo{
-			Idx:             common.AccountIdx(evt.Idx),
-			NumExitRoot:     common.BatchNum(evt.NumExitRoot),
-			InstantWithdraw: evt.InstantWithdraw,
-			TxHash:          evt.TxHash,
-		})
-	}
-
-	// for _, evt := range rollupEvents.UpdateTokenExchange {
-	// 	if len(evt.AddressArray) != len(evt.ValueArray) {
-	// 		return nil, common.Wrap(fmt.Errorf("in RollupEventUpdateTokenExchange "+
-	// 			"len(AddressArray) != len(ValueArray) (%v != %v)",
-	// 			len(evt.AddressArray), len(evt.ValueArray)))
-	// 	}
-	// 	for i := range evt.AddressArray {
-	// 		rollupData.TokenExchanges = append(rollupData.TokenExchanges,
-	// 			common.TokenExchange{
-	// 				EthBlockNum: blockNum,
-	// 				Address:     evt.AddressArray[i],
-	// 				ValueUSD:    int64(evt.ValueArray[i]),
-	// 			})
-	// 	}
-	// }
-
-	varsUpdate := false
-
-	for _, evt := range rollupEvents.UpdateForgeL1L2BatchTimeout {
-		s.vars.Rollup.ForgeL1L2BatchTimeout = evt.NewForgeL1L2BatchTimeout
-		varsUpdate = true
-	}
-
-	// for _, evt := range rollupEvents.UpdateFeeAddToken {
-	// 	s.vars.Rollup.FeeAddToken = evt.NewFeeAddToken
-	// 	varsUpdate = true
-	// }
-
-	// for _, evt := range rollupEvents.UpdateWithdrawalDelay {
-	// 	s.vars.Rollup.WithdrawalDelay = evt.NewWithdrawalDelay
-	// 	varsUpdate = true
-	// }
-
-	// NOTE: We skip the event rollupEvents.SafeMode because the
-	// implementation RollupEventsByBlock already inserts a non-existing
-	// RollupEventUpdateBucketsParameters into UpdateBucketsParameters with
-	// all the bucket values at 0 and SafeMode = true
-	for _, evt := range rollupEvents.UpdateBucketsParameters {
-		s.vars.Rollup.Buckets = make([]common.BucketParams, 0, len(evt.ArrayBuckets))
-		for _, bucket := range evt.ArrayBuckets {
-			s.vars.Rollup.Buckets = append(s.vars.Rollup.Buckets, common.BucketParams{
-				CeilUSD:         bucket.CeilUSD,
-				BlockStamp:      bucket.BlockStamp,
-				Withdrawals:     bucket.Withdrawals,
-				RateBlocks:      bucket.RateBlocks,
-				RateWithdrawals: bucket.RateWithdrawals,
-				MaxWithdrawals:  bucket.MaxWithdrawals,
-			})
-		}
-		s.vars.Rollup.SafeMode = evt.SafeMode
-		varsUpdate = true
-	}
-
-	if varsUpdate {
-		s.vars.Rollup.EthBlockNum = blockNum
-		rollupData.Vars = s.vars.Rollup.Copy()
-	}
+	s.vars.Rollup.EthBlockNum = blockNum
+	rollupData.Vars = s.vars.Rollup.Copy()
 
 	return &rollupData, nil
 }

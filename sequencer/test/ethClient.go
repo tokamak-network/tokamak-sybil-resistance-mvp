@@ -574,7 +574,6 @@ func (c *Client) RollupL1UserTxERC20ETH(
 		ToIdx:           common.AccountIdx(toIdx),
 		ToForgeL1TxsNum: &toForgeL1TxsNum,
 		Position:        len(queue.L1TxQueue),
-		UserOrigin:      true,
 		Type:            txType,
 	})
 	if err != nil {
@@ -661,12 +660,6 @@ func (c *Client) RollupWithdrawMerkleProof(babyPubKey babyjub.PublicKeyComp,
 		Siblings:        siblings,
 		InstantWithdraw: instantWithdraw,
 	}))
-	r.Events.Withdraw = append(r.Events.Withdraw, eth.RollupEventWithdraw{
-		Idx:             uint64(idx),
-		NumExitRoot:     uint64(numExitRoot),
-		InstantWithdraw: instantWithdraw,
-		TxHash:          tx.Hash(),
-	})
 
 	return tx, nil
 }
@@ -765,8 +758,6 @@ func (c *Client) RollupUpdateForgeL1BatchTimeout(newForgeL1Timeout int64) (tx *t
 	nextBlock := c.nextBlock()
 	r := nextBlock.Rollup
 	r.Vars.ForgeL1L2BatchTimeout = newForgeL1Timeout
-	r.Events.UpdateForgeL1L2BatchTimeout = append(r.Events.UpdateForgeL1L2BatchTimeout,
-		eth.RollupEventUpdateForgeL1L2BatchTimeout{NewForgeL1L2BatchTimeout: newForgeL1Timeout})
 
 	return r.addTransaction(c.newTransaction("updateForgeL1L2BatchTimeout", newForgeL1Timeout)), nil
 }

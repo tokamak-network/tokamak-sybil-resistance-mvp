@@ -288,7 +288,7 @@ func (p *parser) parseLine(setType setType) (*Instruction, error) {
 		case "CreateAccountDeposit":
 			c.Typ = common.TxTypeCreateAccountDeposit
 		case "ForceExit":
-			c.Typ = common.TxTypeForceExit
+			c.Typ = common.TxTypeWithdraw
 		default:
 			return c, common.Wrap(fmt.Errorf("unexpected Blockchain tx type: %s", lit))
 		}

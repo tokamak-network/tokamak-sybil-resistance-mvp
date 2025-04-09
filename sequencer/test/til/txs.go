@@ -235,12 +235,12 @@ func (tc *Context) generateBlocks() ([]common.BlockData, error) {
 			if err := tc.addToL1UserQueue(testTx); err != nil {
 				return nil, common.Wrap(err)
 			}
-		case common.TxTypeForceExit: // tx source: L1UserTx
+		case common.TxTypeWithdraw: // tx source: L1UserTx
 			tx := common.L1Tx{
 				ToIdx:         common.AccountIdx(1), // as is an Exit
 				Amount:        inst.Amount,
 				DepositAmount: big.NewInt(0),
-				Type:          common.TxTypeForceExit,
+				Type:          common.TxTypeWithdraw,
 			}
 			testTx := L1Tx{
 				lineNum:     inst.LineNum,
@@ -302,7 +302,6 @@ func (tc *Context) addToL1UserQueue(tx L1Tx) error {
 		tc.Queues = append(tc.Queues, newQueue)
 	}
 	// Fill L1UserTx specific parameters
-	tx.L1Tx.UserOrigin = true
 	toForgeL1TxsNum := int64(tc.openToForge)
 	tx.L1Tx.ToForgeL1TxsNum = &toForgeL1TxsNum
 	tx.L1Tx.EthBlockNum = tc.blockNum
@@ -324,7 +323,7 @@ func (tc *Context) addToL1UserQueue(tx L1Tx) error {
 		}
 		tx.L1Tx.ToIdx = account.Idx
 	}
-	if tx.L1Tx.Type == common.TxTypeForceExit {
+	if tx.L1Tx.Type == common.TxTypeWithdraw {
 		tx.L1Tx.ToIdx = common.AccountIdx(1)
 	}
 	nTx, err := common.NewL1Tx(&tx.L1Tx)
@@ -544,9 +543,6 @@ func (tc *Context) FillBlocksExtra(blocks []common.BlockData, cfg *ConfigExtra) 
 							Nonce:    0,
 							Balance:  big.NewInt(0),
 						})
-					if !tx.UserOrigin {
-						tx.EffectiveFromIdx = common.AccountIdx(tc.extra.idx)
-					}
 					tc.extra.idxByTxID[tx.TxID] = common.AccountIdx(tc.extra.idx)
 					tc.extra.idx++
 				}
@@ -562,7 +558,7 @@ func (tc *Context) FillBlocksExtra(blocks []common.BlockData, cfg *ConfigExtra) 
 			if batch.L1Batch {
 				for _, _tx := range tc.Queues[*batch.Batch.ForgeL1TxsNum] {
 					tx := _tx.L1Tx
-					if tx.Type == common.TxTypeForceExit {
+					if tx.Type == common.TxTypeWithdraw {
 						batch.ExitTree =
 							append(batch.ExitTree,
 								common.ExitInfo{

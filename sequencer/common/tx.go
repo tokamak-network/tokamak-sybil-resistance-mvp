@@ -77,12 +77,16 @@ const (
 	// TxTypeCreateAccountDeposit represents creation of a new leaf in the state tree
 	// (newAcconut) + L1->L2 transfer
 	TxTypeCreateAccountDeposit TxType = "CreateAccountDeposit"
-	// TxTypeForceExit TBD
-	TxTypeForceExit TxType = "ForceExit"
+	// TxTypeWithdraw
+	TxTypeWithdraw TxType = "Withdraw"
 	// TxTypeCreateVouch
 	TxTypeCreateVouch TxType = "CreateVouch"
 	// TxTypeDeleteVouch
 	TxTypeDeleteVouch TxType = "DeleteVouch"
+	// TxTypeExplode
+	TxTypeExplode TxType = "Explode"
+	// TxTypeUnknown
+	TxTypeUnknown TxType = ""
 )
 
 // Tx is a struct used by the TxSelector & BatchBuilder as a generic type generated from L1Tx
@@ -119,14 +123,34 @@ type Tx struct {
 
 const (
 	// TxIDPrefixL1UserTx is the prefix that determines that the TxID is for
-	// a L1UserTx
+	// a CreateAccountDeposit
 	//nolinter:gomnd
-	TxIDPrefixL1UserTx = byte(0)
+	TxIDPrefixCreateAccountDeposit = byte(0)
 
 	// TxIDPrefixL1CoordTx is the prefix that determines that the TxID is
-	// for a L1CoordinatorTx
+	// for a Deposit
 	//nolinter:gomnd
-	TxIDPrefixL1CoordTx = byte(1)
+	TxIDPrefixDeposit = byte(1)
+
+	// TxIDPrefixL1CoordTx is the prefix that determines that the TxID is
+	// for a Withdraw
+	//nolinter:gomnd
+	TxIDPrefixWithdraw = byte(2)
+
+	// TxIDPrefixL1CoordTx is the prefix that determines that the TxID is
+	// for a Vouch
+	//nolinter:gomnd
+	TxIDPrefixVouch = byte(3)
+
+	// TxIDPrefixL1CoordTx is the prefix that determines that the TxID is
+	// for a Unvouch
+	//nolinter:gomnd
+	TxIDPrefixUnvouch = byte(4)
+
+	// TxIDPrefixL1CoordTx is the prefix that determines that the TxID is
+	// for a Explode
+	//nolinter:gomnd
+	TxIDPrefixExplode = byte(5)
 
 	// TxIDLen is the length of the TxID byte array
 	TxIDLen = 33

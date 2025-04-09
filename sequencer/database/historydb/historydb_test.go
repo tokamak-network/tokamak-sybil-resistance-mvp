@@ -378,7 +378,7 @@ func TestTxs(t *testing.T) {
 	assert.Equal(t, common.TxTypeCreateVouch, dbL1Txs[2].Type)
 	assert.Equal(t, common.TxTypeCreateVouch, dbL1Txs[3].Type)
 	assert.Equal(t, common.TxTypeDeposit, dbL1Txs[4].Type)
-	assert.Equal(t, common.TxTypeForceExit, dbL1Txs[5].Type)
+	assert.Equal(t, common.TxTypeWithdraw, dbL1Txs[5].Type)
 	assert.Equal(t, common.TxTypeCreateAccountDeposit, dbL1Txs[6].Type)
 	assert.Equal(t, common.TxTypeCreateAccountDeposit, dbL1Txs[7].Type)
 	assert.Equal(t, common.TxTypeCreateVouch, dbL1Txs[8].Type)
@@ -431,14 +431,6 @@ func TestTxs(t *testing.T) {
 	assert.Equal(t, int64(7), dbL1Txs[8].EthBlockNum)
 	assert.Equal(t, int64(7), dbL1Txs[9].EthBlockNum)
 	assert.Equal(t, int64(7), dbL1Txs[10].EthBlockNum)
-
-	// User Origin
-	assert.Equal(t, true, dbL1Txs[0].UserOrigin)
-	assert.Equal(t, true, dbL1Txs[1].UserOrigin)
-	assert.Equal(t, true, dbL1Txs[2].UserOrigin)
-	assert.Equal(t, true, dbL1Txs[3].UserOrigin)
-	assert.Equal(t, true, dbL1Txs[4].UserOrigin)
-	assert.Equal(t, true, dbL1Txs[5].UserOrigin)
 
 	// Deposit Amount
 	assert.Equal(t, big.NewInt(10), dbL1Txs[0].DepositAmount)
@@ -941,7 +933,7 @@ func TestTxItemID(t *testing.T) {
 
 	for user := 0; user < testUsersLen; user++ {
 		set = append(set, til.Instruction{
-			Typ: common.TxTypeForceExit,
+			Typ: common.TxTypeWithdraw,
 			// TokenID:       common.TokenID(0),
 			Amount:        big.NewInt(10 * int64(user+1)),
 			DepositAmount: big.NewInt(0),

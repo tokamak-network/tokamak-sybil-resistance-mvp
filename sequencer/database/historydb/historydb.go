@@ -460,12 +460,8 @@ func (hdb *HistoryDB) addL1Txs(d meddler.DB, l1txs []common.L1Tx) error {
 		laf := new(big.Float).SetInt(l1txs[i].DepositAmount)
 		depositAmountFloat, _ := laf.Float64()
 		var effectiveFromIdx *common.AccountIdx
-		if l1txs[i].UserOrigin {
-			if l1txs[i].Type != common.TxTypeCreateAccountDeposit {
-				effectiveFromIdx = &l1txs[i].FromIdx
-			}
-		} else {
-			effectiveFromIdx = &l1txs[i].EffectiveFromIdx
+		if l1txs[i].Type != common.TxTypeCreateAccountDeposit {
+			effectiveFromIdx = &l1txs[i].FromIdx
 		}
 
 		txs = append(txs, txWrite{
@@ -483,7 +479,6 @@ func (hdb *HistoryDB) addL1Txs(d meddler.DB, l1txs []common.L1Tx) error {
 			EthBlockNum:      l1txs[i].EthBlockNum,
 			// L1
 			ToForgeL1TxsNum:    l1txs[i].ToForgeL1TxsNum,
-			UserOrigin:         &l1txs[i].UserOrigin,
 			FromEthAddr:        &l1txs[i].FromEthAddr,
 			FromBJJ:            &l1txs[i].FromBJJ,
 			DepositAmount:      l1txs[i].DepositAmount,

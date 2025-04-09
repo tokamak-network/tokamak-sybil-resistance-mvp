@@ -56,7 +56,7 @@ func StringToTxType(txType string) (*TxType, error) {
 	}
 	txTypeCasted := TxType(txType)
 	switch txTypeCasted {
-	case TxTypeDeposit, TxTypeCreateAccountDeposit, TxTypeForceExit,
+	case TxTypeDeposit, TxTypeCreateAccountDeposit, TxTypeWithdraw,
 		TxTypeCreateVouch, TxTypeDeleteVouch:
 		return &txTypeCasted, nil
 	default:

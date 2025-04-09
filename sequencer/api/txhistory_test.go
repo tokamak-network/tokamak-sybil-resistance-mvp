@@ -108,7 +108,6 @@ func genTestTxs(
 			Timestamp:   getTimestamp(l1.EthBlockNum, blocks),
 			L1Info: &testL1Info{
 				ToForgeL1TxsNum:      l1.ToForgeL1TxsNum,
-				UserOrigin:           l1.UserOrigin,
 				DepositAmount:        l1.DepositAmount.String(),
 				AmountSuccess:        true,
 				DepositAmountSuccess: true,
@@ -294,7 +293,7 @@ func TestGetHistoryTxs(t *testing.T) {
 		// Uncomment once test gen is fixed
 		common.TxTypeDeposit,
 		common.TxTypeCreateAccountDeposit,
-		common.TxTypeForceExit,
+		common.TxTypeWithdraw,
 		common.TxTypeCreateVouch,
 		common.TxTypeDeleteVouch,
 	}

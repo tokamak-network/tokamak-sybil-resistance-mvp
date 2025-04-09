@@ -298,7 +298,7 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 				txProcessor.zki.ISOnChain[txProcessor.txIndex] = &(valueIsOnChain)
 			}
 
-			if l1usertxs[i].Type == common.TxTypeForceExit ||
+			if l1usertxs[i].Type == common.TxTypeWithdraw ||
 				l1usertxs[i].Type == common.TxTypeCreateVouch ||
 				l1usertxs[i].Type == common.TxTypeDeleteVouch {
 				amountF40, err := common.NewFloat40(l1usertxs[i].Amount)
@@ -324,7 +324,7 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 			if err != nil {
 				log.Error(err)
 			}
-		case common.TxTypeForceExit:
+		case common.TxTypeWithdraw:
 			txProcessor.computeEffectiveAmounts(&l1usertxs[i])
 			// execute exit flow
 			exitAccount, newExit, err = txProcessor.applyExit(exitTree, l1usertxs[i].Tx(), l1usertxs[i].Amount)

@@ -24,16 +24,16 @@ type L1Tx struct {
 	// bytes:  |  1   |        8        |    2     |      1      |
 	// values: | type | ToForgeL1TxsNum | Position | 0 (padding) |
 	// where type:
-	// 	- L1UserTx: 0
-	// 	- L1CoordinatorTx: 1
+	// 	- CreateAccountDeposit: 0
+	// 	- Deposit: 1
+	// 	- Withdraw: 2
+	// 	- Vouch: 3
+	// 	- Unvouch: 4
+	// 	- Explode: 5
 	TxID TxID `meddler:"id"`
 	// ToForgeL1TxsNum indicates in which L1UserTx queue the tx was forged / will be forged
 	ToForgeL1TxsNum *int64 `meddler:"to_forge_l1_txs_num"`
 	Position        int    `meddler:"position"`
-	// UserOrigin is set to true if the tx was originated by a user, false if it was
-	// aoriginated by a coordinator. Note that this differ from the spec for implementation
-	// simplification purpposes
-	UserOrigin bool `meddler:"user_origin"`
 	// FromIdx is used by L1Tx/Deposit to indicate the Idx receiver of the L1Tx.DepositAmount
 	// (deposit)
 	FromIdx          AccountIdx            `meddler:"from_idx,zeroisnull"`
@@ -41,7 +41,8 @@ type L1Tx struct {
 	FromEthAddr      ethCommon.Address     `meddler:"from_eth_addr,zeroisnull"`
 	FromBJJ          babyjub.PublicKeyComp `meddler:"from_bjj,zeroisnull"`
 	// ToIdx is ignored in L1Tx/Deposit, but used in the L1Tx/DepositAndTransfer
-	ToIdx AccountIdx `meddler:"to_idx"`
+	toEthAddr ethCommon.Address `meddler:"from_eth_addr,zeroisnull"`
+	ToIdx     AccountIdx        `meddler:"to_idx"`
 	// TokenID TokenID    `meddler:"token_id"`
 	Amount *big.Int `meddler:"amount,bigint"`
 	// EffectiveAmount only applies to L1UserTx.
@@ -60,16 +61,6 @@ type L1Tx struct {
 // NewL1Tx returns the given L1Tx with the TxId & Type parameters calculated
 // from the L1Tx values
 func NewL1Tx(tx *L1Tx) (*L1Tx, error) {
-	txTypeOld := tx.Type
-	if err := tx.SetType(); err != nil {
-		return nil, Wrap(err)
-	}
-	// If original Type doesn't match the correct one, return error
-	if txTypeOld != "" && txTypeOld != tx.Type {
-		return nil, Wrap(fmt.Errorf("L1Tx.Type: %s, should be: %s",
-			tx.Type, txTypeOld))
-	}
-
 	txIDOld := tx.TxID
 	if err := tx.SetID(); err != nil {
 		return nil, Wrap(err)
@@ -83,56 +74,19 @@ func NewL1Tx(tx *L1Tx) (*L1Tx, error) {
 	return tx, nil
 }
 
-// SetType sets the type of the transaction
-func (tx *L1Tx) SetType() error {
-	if tx.FromIdx == 0 {
-		if tx.ToIdx == AccountIdx(0) {
-			tx.Type = TxTypeCreateAccountDeposit
-		} else {
-			return Wrap(fmt.Errorf(
-				"cannot determine type of L1Tx, invalid ToIdx value: %d", tx.ToIdx))
-		}
-	} else if tx.FromIdx >= IdxUserThreshold {
-		if tx.ToIdx == AccountIdx(0) {
-			tx.Type = TxTypeDeposit
-		} else if tx.ToIdx == AccountIdx(1) {
-			tx.Type = TxTypeForceExit
-		} else if tx.Type == TxTypeCreateVouch || tx.Type == TxTypeDeleteVouch {
-			return nil
-		} else {
-			return Wrap(fmt.Errorf(
-				"cannot determine type of L1Tx, invalid ToIdx value: %d", tx.ToIdx))
-		}
-	} else {
-		return Wrap(fmt.Errorf(
-			"cannot determine type of L1Tx, invalid FromIdx value: %d", tx.FromIdx))
-	}
-	return nil
-}
-
 // SetID sets the ID of the transaction.  For L1UserTx uses (ToForgeL1TxsNum,
 // Position), for L1CoordinatorTx uses (BatchNum, Position).
 func (tx *L1Tx) SetID() error {
 	var b []byte
-	if tx.UserOrigin {
-		if tx.ToForgeL1TxsNum == nil {
-			return Wrap(fmt.Errorf("L1Tx.UserOrigin == true && L1Tx.ToForgeL1TxsNum == nil"))
-		}
-		tx.TxID[0] = TxIDPrefixL1UserTx
-
-		var toForgeL1TxsNumBytes [8]byte
-		binary.BigEndian.PutUint64(toForgeL1TxsNumBytes[:], uint64(*tx.ToForgeL1TxsNum))
-		b = append(b, toForgeL1TxsNumBytes[:]...)
-	} else {
-		if tx.BatchNum == nil {
-			return Wrap(fmt.Errorf("L1Tx.UserOrigin == false && L1Tx.BatchNum == nil"))
-		}
-		tx.TxID[0] = TxIDPrefixL1CoordTx
-
-		var batchNumBytes [8]byte
-		binary.BigEndian.PutUint64(batchNumBytes[:], uint64(*tx.BatchNum))
-		b = append(b, batchNumBytes[:]...)
+	if tx.ToForgeL1TxsNum == nil {
+		return Wrap(fmt.Errorf("L1Tx.UserOrigin == true && L1Tx.ToForgeL1TxsNum == nil"))
 	}
+	tx.TxID[0] = ByteFromType(tx.Type)
+
+	var toForgeL1TxsNumBytes [8]byte
+	binary.BigEndian.PutUint64(toForgeL1TxsNumBytes[:], uint64(*tx.ToForgeL1TxsNum))
+	b = append(b, toForgeL1TxsNumBytes[:]...)
+
 	var positionBytes [2]byte
 	binary.BigEndian.PutUint16(positionBytes[:], uint16(tx.Position))
 	b = append(b, positionBytes[:]...)
@@ -150,7 +104,6 @@ func (tx L1Tx) Tx() Tx {
 	f := new(big.Float).SetInt(tx.EffectiveAmount)
 	amountFloat, _ := f.Float64()
 	userOrigin := new(bool)
-	*userOrigin = tx.UserOrigin
 	genericTx := Tx{
 		IsL1:            true,
 		TxID:            tx.TxID,
@@ -233,37 +186,25 @@ func L1UserTxFromBytes(b []byte) (*L1Tx, error) {
 		return nil, Wrap(fmt.Errorf("invalid L1UserTx length: got %d, want %d", len(b), RollupConstL1UserTotalBytes))
 	}
 
-	tx := &L1Tx{
-		UserOrigin: true,
-	}
+	tx := &L1Tx{}
 
-	// Parse ethAddress (20 bytes)
-	tx.FromEthAddr = ethCommon.BytesToAddress(b[0:20])
+	// Parse txType (1 byte)
+	tx.Type = TypeFromByte(b[0])
 
-	// Parse fromIdx (6 bytes)
-	var err error
-	tx.FromIdx, err = AccountIdxFromBytes(b[20:26])
-	if err != nil {
-		return nil, Wrap(err)
-	}
+	// Parse fromEthAddress (20 bytes)
+	tx.FromEthAddr = ethCommon.BytesToAddress(b[1:21])
 
-	// Parse loadAmountF (5 bytes)
-	tx.DepositAmount, err = Float40FromBytes(b[26:31]).BigInt()
-	if err != nil {
-		return nil, Wrap(err)
-	}
+	// Parse toEthAddress (20 bytes)
+	tx.toEthAddr = ethCommon.BytesToAddress(b[21:41])
 
 	// Parse amountF (5 bytes)
-	tx.Amount, err = Float40FromBytes(b[31:36]).BigInt()
-	if err != nil {
-		return nil, Wrap(err)
-	}
+	tx.Amount = new(big.Int).SetBytes(b[41:73])
 
-	// Parse toIdx (6 bytes)
-	tx.ToIdx, err = AccountIdxFromBytes(b[36:42])
-	if err != nil {
-		return nil, Wrap(err)
-	}
+	// // Parse toIdx (6 bytes)
+	// tx.ToIdx, err = AccountIdxFromBytes(b[36:42])
+	// if err != nil {
+	// 	return nil, Wrap(err)
+	// }
 
 	return tx, nil
 }
@@ -322,4 +263,45 @@ func (tx *L1Tx) BytesDataAvailability(nLevels uint32) ([]byte, error) {
 	}
 	// fee = 0 (as is L1Tx)
 	return b[:], nil
+}
+
+// TypeFromByte converts a byte representation of txType to the corresponding TxType
+func TypeFromByte(txType byte) TxType {
+	switch txType {
+	case 0:
+		return TxTypeCreateAccountDeposit
+	case 1:
+		return TxTypeDeposit
+	case 2:
+		return TxTypeWithdraw
+	case 3:
+		return TxTypeCreateVouch
+	case 4:
+		return TxTypeDeleteVouch
+	case 5:
+		return TxTypeExplode
+	default:
+		return TxTypeUnknown
+	}
+}
+
+func ByteFromType(txType TxType) byte {
+	switch txType {
+	case TxTypeCreateAccountDeposit:
+		return 0
+	case TxTypeDeposit:
+		return 1
+	case TxTypeWithdraw:
+		return 2
+	case TxTypeCreateVouch:
+		return 3
+	case TxTypeDeleteVouch:
+		return 4
+	case TxTypeExplode:
+		return 5
+	case TxTypeUnknown:
+		return 6
+	default:
+		return 255
+	}
 }

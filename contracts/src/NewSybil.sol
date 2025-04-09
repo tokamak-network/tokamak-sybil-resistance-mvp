@@ -252,6 +252,26 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
         emit WithdrawEvent(idx, numExitRoot);
     }
 
+    function proveScoreMerkleProof(
+		uint32 numScoreRoot, 
+		uint24 idx,
+		uint32 score, 
+		uint256[] memory siblings
+    ) external {
+        uint256[2] memory arrayState = _buildTreeState(
+            score,
+            msg.sender
+        );
+        uint256 stateHash = _hash2Elements(arrayState);
+        uint256 scoreRoot = scoreRootMap[numScoreRoot];
+        
+        require(_smtVerifier(scoreRoot, siblings, idx, stateHash), SmtProofInvalid());
+        
+        scoreSnapshots[msg.sender].batchNum = numScoreRoot;
+        scoreSnapshots[msg.sender].score = score;
+    }
+
+
     /**
      * @dev Updates the amount used for the explode operation.
      *

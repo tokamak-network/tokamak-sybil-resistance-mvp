@@ -451,19 +451,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     }
 
     /**
-     * @dev Validates the `fromIdx` parameter to ensure it is within acceptable bounds.
-     *
-     * @param fromIdx The index to validate.
-     *
-     * @dev Reverts with `InvalidFromIdx` if validation fails.
-    */
-    function _validateFromIdx(uint48 fromIdx) internal view {
-        if ((fromIdx <= _RESERVED_IDX) || (fromIdx > lastIdx)) {
-            revert InvalidFromIdx();
-        }
-    }
-
-    /**
      * @dev Validates the `toIdx` parameter to ensure it is within acceptable bounds.
      *
      * @param toIdx The index to validate.

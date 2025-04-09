@@ -17,6 +17,7 @@ interface INewSybil {
     error InsufficientBalance();
     error SenderHasZeroBalance();
     error ReceiverHasZeroBalance();
+    error NotVouched(address from, address to);
 
     // Initialization function
     function initialize(
@@ -67,7 +68,7 @@ interface INewSybil {
     function withdraw() external;
 
     // Explode function
-    function explodeMultiple(uint48 fromIdx, uint48[] memory toIdxs) external;
+    function explodeMultiple(address[] calldata toEthAddrs) external;
 
     // Vouch function
     function vouch(address toEthAddr) external;

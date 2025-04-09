@@ -152,7 +152,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * Requirement:
      * - All address in `toEthAddrs` must be vouched.
     */
-    function explodeMultiple(address[] toEthAddrs) external {
+    function explodeMultiple(address[] calldata toEthAddrs) external {
         for (uint i=0; i < toEthAddrs.length; i++) {
                 address toEthAddr = toEthAddrs[i]; 
                 require(vouches[toEthAddr][msg.sender] == 1, NotVouched(msg.sender, toEthAddr));
@@ -167,12 +167,9 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     /**
      * @dev Processes a batch of transactions and verifies the associated proof.
      *
-     * @param newLastIdx The new last index to be set for the batch.
      * @param newAccountRoot The new account root to be set for the batch.
      * @param newVouchRoot The new vouch root to be set for the batch.
      * @param newScoreRoot The new score root to be set for the batch.
-     * @param newExitRoot The new exit root to be set for the batch.
-     * @param txsData The txsData stores the tx data that is forged
      * @param proofA The first part of the proof used for verification.
      * @param proofB The second part of the proof used for verification.
      * @param proofC The third part of the proof used for verification.
@@ -182,22 +179,17 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * @dev Emits a {ForgeBatch} event indicating the new batch has been forged.
     */
     function forgeBatch(
-        uint48 newLastIdx,
         uint256 newAccountRoot,
         uint256 newVouchRoot,
         uint256 newScoreRoot,
-        uint256 newExitRoot,
-        bytes calldata txsData,
         uint256[2] calldata proofA,
         uint256[2][2] calldata proofB,
         uint256[2] calldata proofC
     ) external override {
         uint256 input = _constructCircuitInput(
-          newLastIdx,
           newAccountRoot,
           newVouchRoot,
-          newScoreRoot,
-          newExitRoot
+          newScoreRoot
       );
 
         // Verify the proof using the specific rollup verifier
@@ -213,12 +205,9 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
         }
 
         lastForgedBatch++;
-        lastIdx = newLastIdx;
         accountRootMap[lastForgedBatch] = newAccountRoot;
         vouchRootMap[lastForgedBatch] = newVouchRoot;
         scoreRootMap[lastForgedBatch] = newScoreRoot;
-        exitRootMap[lastForgedBatch] = newExitRoot;
-        txsDataHashMap[lastForgedBatch] = sha256(txsData); // why use this
 
         uint16 l1UserTxsLen = _clearBatchFromQueue();
 
@@ -433,37 +422,29 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     /**
      * @dev Constructs the input for the verification circuit.
      *
-     * @param newLastIdx The new last index to be included in the input.
      * @param newAccountRoot The new account root to be included in the input.
      * @param newVouchRoot The new vouch root to be included in the input.
      * @param newScoreRoot The new score root to be included in the input.
-     * @param newExitRoot The new exit root to be included in the input.
      * 
      * @return The hashed input for the verification circuit, reduced modulo `_RFIELD`.
     */
     function _constructCircuitInput(
-        uint48 newLastIdx,
         uint256 newAccountRoot,
         uint256 newVouchRoot,
-        uint256 newScoreRoot,
-        uint256 newExitRoot
+        uint256 newScoreRoot
     ) internal view returns (uint256) {
         uint256 oldAccountRoot = accountRootMap[lastForgedBatch];
         uint256 oldVouchRoot = vouchRootMap[lastForgedBatch];
         uint256 oldScoreRoot = scoreRootMap[lastForgedBatch];
-        uint48 oldLastIdx = lastIdx;
         bytes memory txnData = unprocessedBatchesMap[lastForgedBatch+1];
 
         bytes memory inputBytes = abi.encodePacked(
-            oldLastIdx,
             oldAccountRoot,
             oldVouchRoot,
             oldScoreRoot,
-            newLastIdx,
             newAccountRoot,
             newVouchRoot,
             newScoreRoot,
-            newExitRoot,
             txnData
         );
         return uint256(sha256(inputBytes)) % _RFIELD;

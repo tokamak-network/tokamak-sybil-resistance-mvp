@@ -242,8 +242,8 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * @notice This function can only be called by an account with the `ADMIN_ROLE`.
     */
     function updateExplodeAmount(uint256 _explodeAmount) external override onlyRole(ADMIN_ROLE) {
-        explodeAmount = _explodeAmount;
-        emit ExplodeAmountUpdated(explodeAmount);
+        _EXPLODE_AMOUNT = _explodeAmount;
+        emit ExplodeAmountUpdated(_EXPLODE_AMOUNT);
     }
 
     /**
@@ -254,8 +254,8 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * @notice This function can only be called by an account with the `ADMIN_ROLE`.
     */
     function updateMinBalance(uint256 _minBalance) external override onlyRole(ADMIN_ROLE){
-        minBalance = _minBalance;
-        emit MinBalanceUpdated(explodeAmount);
+        _MIN_BALANCE = _minBalance;
+        emit MinBalanceUpdated(_MIN_BALANCE);
     }
 
     /**

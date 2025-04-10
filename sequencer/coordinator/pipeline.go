@@ -210,24 +210,25 @@ func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
 
 	var l1UserTxs []common.L1Tx
 
-	_l1UserTxs, err := p.historyDB.GetUnforgedL1UserTxs(p.state.lastForgeL1TxsNum + 1)
+	//TODO: change this to batchNum
+	l1UserTxs, err = p.historyDB.GetUnforgedL1UserTxs(p.state.lastForgeL1TxsNum + 1)
 	if err != nil {
 		return nil, nil, common.Wrap(err)
 	}
 	// l1UserFutureTxs are the l1UserTxs that are not being forged
 	// in the next batch, but that are also in the queue for the
 	// future batches
-	l1UserFutureTxs, err := p.historyDB.GetUnforgedL1UserFutureTxs(p.state.lastForgeL1TxsNum + 1)
-	if err != nil {
-		return nil, nil, common.Wrap(err)
-	}
+	// l1UserFutureTxs, err := p.historyDB.GetUnforgedL1UserFutureTxs(p.state.lastForgeL1TxsNum + 1)
+	// if err != nil {
+	// 	return nil, nil, common.Wrap(err)
+	// }
 
 	// TODO: figure out what happens here and potentially remove txSelector
-	_, l1UserTxs, err =
-		p.txSelector.GetL1TxSelection(p.cfg.TxProcessorConfig, _l1UserTxs, l1UserFutureTxs)
-	if err != nil {
-		return nil, nil, common.Wrap(err)
-	}
+	// _, l1UserTxs, err =
+	// 	p.txSelector.GetL1TxSelection(p.cfg.TxProcessorConfig, _l1UserTxs, l1UserFutureTxs)
+	// if err != nil {
+	// 	return nil, nil, common.Wrap(err)
+	// }
 
 	// TODO: depending on what's happening in txSelector, this might not be necessary as well
 	if skip, reason, err := p.forgePolicySkipPostSelection(now, l1UserTxs, batchInfo); err != nil {

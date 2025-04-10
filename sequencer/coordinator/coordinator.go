@@ -380,8 +380,8 @@ func (c *Coordinator) handleMsgSyncBlock(ctx context.Context, msg *MsgSyncBlock)
 
 	// TODO: comment out with proper forging
 	// else, start forging pipeline
-	// return c.syncStats(ctx, &c.stats)
-	return nil
+	return c.syncStats(ctx, &c.stats)
+	// return nil
 }
 
 // NewPipeline creates a new Pipeline

@@ -778,16 +778,18 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 	// 	rollupData.AddedTokens = append(rollupData.AddedTokens, token)
 	// }
 
-	rollupData.UpdateBucketWithdraw = make([]common.BucketUpdate, 0, len(rollupEvents.UpdateBucketWithdraw))
-	for _, evt := range rollupEvents.UpdateBucketWithdraw {
-		rollupData.UpdateBucketWithdraw = append(rollupData.UpdateBucketWithdraw,
-			common.BucketUpdate{
-				EthBlockNum: blockNum,
-				NumBucket:   evt.NumBucket,
-				BlockStamp:  evt.BlockStamp,
-				Withdrawals: evt.Withdrawals,
-			})
-	}
+	// We'll not have UpdateBucketWithdraw in our implementation
+
+	// rollupData.UpdateBucketWithdraw = make([]common.BucketUpdate, 0, len(rollupEvents.UpdateBucketWithdraw))
+	// for _, evt := range rollupEvents.UpdateBucketWithdraw {
+	// 	rollupData.UpdateBucketWithdraw = append(rollupData.UpdateBucketWithdraw,
+	// 		common.BucketUpdate{
+	// 			EthBlockNum: blockNum,
+	// 			NumBucket:   evt.NumBucket,
+	// 			BlockStamp:  evt.BlockStamp,
+	// 			Withdrawals: evt.Withdrawals,
+	// 		})
+	// }
 
 	rollupData.Withdrawals = make([]common.WithdrawInfo, 0, len(rollupEvents.Withdraw))
 	for _, evt := range rollupEvents.Withdraw {

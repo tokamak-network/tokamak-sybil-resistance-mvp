@@ -564,14 +564,15 @@ func (t *TxManager) Run(ctx context.Context) {
 				log.Warnw("TxManager: batchInfo received pipelineNum < minPipelineNum",
 					"num", batchInfo.PipelineNum, "minNum", t.minPipelineNum)
 			}
-			if err := t.shouldSendRollupForgeBatch(batchInfo); err != nil {
-				log.Warnw("TxManager: shouldSend", "err", err,
-					"batch", batchInfo.BatchNum)
-				t.coord.SendMsg(ctx, MsgStopPipeline{
-					Reason: fmt.Sprintf("forgeBatch shouldSend: %v", err),
-				})
-				continue
-			}
+			//In hermuz this was to check l1txs in the batch for our implementation we would not need this.
+			// if err := t.shouldSendRollupForgeBatch(batchInfo); err != nil {
+			// 	log.Warnw("TxManager: shouldSend", "err", err,
+			// 		"batch", batchInfo.BatchNum)
+			// 	t.coord.SendMsg(ctx, MsgStopPipeline{
+			// 		Reason: fmt.Sprintf("forgeBatch shouldSend: %v", err),
+			// 	})
+			// 	continue
+			// }
 			if err := t.sendRollupForgeBatch(ctx, batchInfo, false); ctx.Err() != nil {
 				continue
 			} else if err != nil {

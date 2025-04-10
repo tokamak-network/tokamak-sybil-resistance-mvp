@@ -29,23 +29,11 @@ interface INewSybil {
         address _adminRole
     ) external;
 
-    // L1 Transaction functions
-    function _addTx(
-        address ethAddress,
-        uint48 fromIdx,
-        uint40 loadAmountF,
-        uint40 amountF,
-        uint48 toIdx
-    ) external;
-
     // Batch forging function
     function forgeBatch(
-        uint48 newLastIdx,
         uint256 newStRoot,
         uint256 newVouchRoot,
         uint256 newScoreRoot,
-        uint256 newExitRoot,
-        bytes calldata txsData,
         uint256[2] calldata proofA,
         uint256[2][2] calldata proofB,
         uint256[2] calldata proofC
@@ -76,11 +64,12 @@ interface INewSybil {
     // Unvouch function
     function unvouch(address toEthAddr) external;
 
-    function withdrawMerkleProof(
-        uint192 amount,
-        uint32 numExitRoot,
-        uint256[] calldata siblings,
-        uint48 idx
+    // Updates the score
+    function proveScoreMerkleProof(
+        uint32 numScoreRoot, 
+		uint24 idx,
+		uint32 score, 
+		uint256[] memory siblings
     ) external;
 
     // setter functions

@@ -132,7 +132,7 @@ func (tc *Context) checkL1TxParams(t *testing.T, tx common.L1Tx, typ common.TxTy
 		assert.Equal(t, tc.Accounts[from].Idx, tx.FromIdx)
 	}
 	assert.Equal(t, tc.Accounts[from].Addr.Hex(), tx.FromEthAddr.Hex())
-	assert.Equal(t, tc.Accounts[from].BJJ.Public().Compress(), tx.FromBJJ)
+	// assert.Equal(t, tc.Accounts[from].BJJ.Public().Compress(), tx.FromBJJ)
 	if tx.ToIdx != common.AccountIdx(0) {
 		assert.Equal(t, tc.Accounts[to].Idx, tx.ToIdx)
 	}
@@ -310,15 +310,15 @@ func TestGenerateBlocksFromInstructions(t *testing.T) {
 		for j := 0; j < len(strBatch.L1UserTxs); j++ {
 			blockFromInstructions[0].Rollup.Batches[i].L1UserTxs[j].FromEthAddr =
 				blockFromString[0].Rollup.Batches[i].L1UserTxs[j].FromEthAddr
-			blockFromInstructions[0].Rollup.Batches[i].L1UserTxs[j].FromBJJ =
-				blockFromString[0].Rollup.Batches[i].L1UserTxs[j].FromBJJ
+			// blockFromInstructions[0].Rollup.Batches[i].L1UserTxs[j].FromBJJ =
+			// 	blockFromString[0].Rollup.Batches[i].L1UserTxs[j].FromBJJ
 		}
 	}
 	for i := 0; i < len(blockFromString[0].Rollup.L1UserTxs); i++ {
 		blockFromInstructions[0].Rollup.L1UserTxs[i].FromEthAddr =
 			blockFromString[0].Rollup.L1UserTxs[i].FromEthAddr
-		blockFromInstructions[0].Rollup.L1UserTxs[i].FromBJJ =
-			blockFromString[0].Rollup.L1UserTxs[i].FromBJJ
+		// blockFromInstructions[0].Rollup.L1UserTxs[i].FromBJJ =
+		// 	blockFromString[0].Rollup.L1UserTxs[i].FromBJJ
 	}
 	assert.Equal(t, blockFromString, blockFromInstructions)
 }

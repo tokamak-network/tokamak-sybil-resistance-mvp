@@ -359,9 +359,9 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 		if txProcessor.state.Type() == statedb.TypeSynchronizer {
 			if createdAccount != nil {
 				createdAccounts = append(createdAccounts, *createdAccount)
-				l1usertxs[i].EffectiveFromIdx = createdAccount.Idx
+				// l1usertxs[i].EffectiveFromIdx = createdAccount.Idx
 			} else {
-				l1usertxs[i].EffectiveFromIdx = l1usertxs[i].FromIdx
+				// l1usertxs[i].EffectiveFromIdx = l1usertxs[i].FromIdx
 			}
 		}
 		if txProcessor.zki != nil {
@@ -480,7 +480,7 @@ func (txProcessor *TxProcessor) applyCreateAccount(tx *common.L1Tx) error {
 	account := &common.Account{
 		Nonce:   0,
 		Balance: tx.DepositAmount,
-		BJJ:     tx.FromBJJ,
+		// BJJ:     tx.FromBJJ,
 		EthAddr: tx.FromEthAddr,
 	}
 
@@ -491,11 +491,11 @@ func (txProcessor *TxProcessor) applyCreateAccount(tx *common.L1Tx) error {
 	if txProcessor.zki != nil {
 		// txProcessor.zki.TokenID1[txProcessor.txIndex] = tx.TokenID.BigInt()
 		txProcessor.zki.Nonce1[txProcessor.txIndex] = big.NewInt(0)
-		fromBJJSign, fromBJJY := babyjub.UnpackSignY(tx.FromBJJ)
+		// fromBJJSign, fromBJJY := babyjub.UnpackSignY(tx.FromBJJ)
 
-		valueBJJSign := fromBJJSign
-		txProcessor.zki.Sign1[txProcessor.txIndex] = &(valueBJJSign)
-		txProcessor.zki.Ay1[txProcessor.txIndex] = fromBJJY
+		// valueBJJSign := fromBJJSign
+		// txProcessor.zki.Sign1[txProcessor.txIndex] = &(valueBJJSign)
+		// txProcessor.zki.Ay1[txProcessor.txIndex] = fromBJJY
 		txProcessor.zki.Balance1[txProcessor.txIndex] = tx.EffectiveDepositAmount
 		txProcessor.zki.EthAddr1[txProcessor.txIndex] = common.EthAddrToBigInt(tx.FromEthAddr)
 		txProcessor.zki.Siblings1[txProcessor.txIndex] = siblingsToZKInputFormat(p.Siblings)

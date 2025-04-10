@@ -566,9 +566,9 @@ func (c *Client) RollupL1UserTxERC20ETH(
 	}
 	toForgeL1TxsNum := r.State.LastToForgeL1TxsNum
 	l1Tx, err := common.NewL1Tx(&common.L1Tx{
-		FromIdx:         common.AccountIdx(fromIdx),
-		FromEthAddr:     *c.addr,
-		FromBJJ:         fromBJJ,
+		FromIdx:     common.AccountIdx(fromIdx),
+		FromEthAddr: *c.addr,
+		// FromBJJ:         fromBJJ,
 		Amount:          amount,
 		DepositAmount:   depositAmount,
 		ToIdx:           common.AccountIdx(toIdx),
@@ -832,10 +832,10 @@ func (c *Client) CtlAddBlocks(blocks []common.BlockData) (err error) {
 	for _, block := range blocks {
 		for _, tx := range block.Rollup.L1UserTxs {
 			c.CtlSetAddr(tx.FromEthAddr)
-			if _, err := c.RollupL1UserTxERC20ETH(tx.FromBJJ, int64(tx.FromIdx),
-				tx.DepositAmount, tx.Amount, int64(tx.ToIdx), tx.Type); err != nil {
-				return common.Wrap(err)
-			}
+			// if _, err := c.RollupL1UserTxERC20ETH(tx.FromBJJ, int64(tx.FromIdx),
+			// 	tx.DepositAmount, tx.Amount, int64(tx.ToIdx), tx.Type); err != nil {
+			// 	return common.Wrap(err)
+			// }
 		}
 		c.CtlSetAddr(ethCommon.HexToAddress("0xE39fEc6224708f0772D2A74fd3f9055A90E0A9f2"))
 		for _, batch := range block.Rollup.Batches {

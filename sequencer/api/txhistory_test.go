@@ -116,10 +116,10 @@ func genTestTxs(
 		}
 
 		// If FromIdx is not zero
-		if l1.FromIdx != 0 {
-			idxStr := common.IdxToTon(l1.EffectiveFromIdx)
-			tx.FromIdx = &idxStr
-		}
+		// if l1.FromIdx != 0 {
+		// 	idxStr := common.IdxToTon(l1.EffectiveFromIdx)
+		// 	tx.FromIdx = &idxStr
+		// }
 		if i == len(l1s)-1 {
 			// Last tx of the L1 set is supposed to be unforged as per the til set.
 			// Unforged txs have some special propperties

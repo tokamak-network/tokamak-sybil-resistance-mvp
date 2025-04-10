@@ -36,15 +36,14 @@ type L1Tx struct {
 	Position        int    `meddler:"position"`
 	// FromIdx is used by L1Tx/Deposit to indicate the Idx receiver of the L1Tx.DepositAmount
 	// (deposit)
-	FromIdx          AccountIdx            `meddler:"from_idx,zeroisnull"`
-	EffectiveFromIdx AccountIdx            `meddler:"effective_from_idx,zeroisnull"`
-	FromEthAddr      ethCommon.Address     `meddler:"from_eth_addr,zeroisnull"`
-	FromBJJ          babyjub.PublicKeyComp `meddler:"from_bjj,zeroisnull"`
+	FromIdx AccountIdx `meddler:"from_idx,zeroisnull"`
+	// EffectiveFromIdx AccountIdx            `meddler:"effective_from_idx,zeroisnull"`
+	FromEthAddr ethCommon.Address `meddler:"from_eth_addr,zeroisnull"`
+	// FromBJJ          babyjub.PublicKeyComp `meddler:"from_bjj,zeroisnull"`
 	// ToIdx is ignored in L1Tx/Deposit, but used in the L1Tx/DepositAndTransfer
-	toEthAddr ethCommon.Address `meddler:"from_eth_addr,zeroisnull"`
+	ToEthAddr ethCommon.Address `meddler:"to_eth_addr,zeroisnull"`
 	ToIdx     AccountIdx        `meddler:"to_idx"`
-	// TokenID TokenID    `meddler:"token_id"`
-	Amount *big.Int `meddler:"amount,bigint"`
+	Amount    *big.Int          `meddler:"amount,bigint"`
 	// EffectiveAmount only applies to L1UserTx.
 	EffectiveAmount *big.Int `meddler:"effective_amount,bigintnull"`
 	DepositAmount   *big.Int `meddler:"deposit_amount,bigint"`
@@ -53,9 +52,9 @@ type L1Tx struct {
 	// Ethereum Block Number in which this L1Tx was added to the queue
 	EthBlockNum int64          `meddler:"eth_block_num"`
 	EthTxHash   ethCommon.Hash `meddler:"eth_tx_hash,zeroisnull"`
-	L1Fee       *big.Int       `meddler:"l1_fee,bigintnull"`
-	Type        TxType         `meddler:"type"`
-	BatchNum    *BatchNum      `meddler:"batch_num"`
+	// L1Fee       *big.Int       `meddler:"l1_fee,bigintnull"`
+	Type     TxType    `meddler:"type"`
+	BatchNum *BatchNum `meddler:"batch_num"`
 }
 
 // NewL1Tx returns the given L1Tx with the TxId & Type parameters calculated
@@ -105,20 +104,20 @@ func (tx L1Tx) Tx() Tx {
 	amountFloat, _ := f.Float64()
 	userOrigin := new(bool)
 	genericTx := Tx{
-		IsL1:            true,
-		TxID:            tx.TxID,
-		Type:            tx.Type,
-		Position:        tx.Position,
-		FromIdx:         tx.FromIdx,
+		IsL1:     true,
+		TxID:     tx.TxID,
+		Type:     tx.Type,
+		Position: tx.Position,
+		// FromIdx:         tx.FromIdx,
 		ToIdx:           tx.ToIdx,
 		Amount:          tx.EffectiveAmount,
 		AmountFloat:     amountFloat,
 		ToForgeL1TxsNum: tx.ToForgeL1TxsNum,
 		UserOrigin:      userOrigin,
 		FromEthAddr:     tx.FromEthAddr,
-		FromBJJ:         tx.FromBJJ,
-		DepositAmount:   tx.EffectiveDepositAmount,
-		EthBlockNum:     tx.EthBlockNum,
+		// FromBJJ:         tx.FromBJJ,
+		DepositAmount: tx.EffectiveDepositAmount,
+		EthBlockNum:   tx.EthBlockNum,
 	}
 	if tx.DepositAmount != nil {
 		lf := new(big.Float).SetInt(tx.DepositAmount)
@@ -195,7 +194,7 @@ func L1UserTxFromBytes(b []byte) (*L1Tx, error) {
 	tx.FromEthAddr = ethCommon.BytesToAddress(b[1:21])
 
 	// Parse toEthAddress (20 bytes)
-	tx.toEthAddr = ethCommon.BytesToAddress(b[21:41])
+	tx.ToEthAddr = ethCommon.BytesToAddress(b[21:41])
 
 	// Parse amountF (5 bytes)
 	tx.Amount = new(big.Int).SetBytes(b[41:73])

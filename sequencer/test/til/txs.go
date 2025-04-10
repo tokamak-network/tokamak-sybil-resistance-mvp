@@ -173,8 +173,8 @@ func (tc *Context) generateBlocks() ([]common.BlockData, error) {
 		case common.TxTypeCreateAccountDeposit:
 			// tx source: L1UserTx
 			tx := common.L1Tx{
-				FromEthAddr:   tc.Accounts[inst.From].Addr,
-				FromBJJ:       tc.Accounts[inst.From].BJJ.Public().Compress(),
+				FromEthAddr: tc.Accounts[inst.From].Addr,
+				// FromBJJ:       tc.Accounts[inst.From].BJJ.Public().Compress(),
 				Amount:        big.NewInt(0),
 				DepositAmount: inst.DepositAmount,
 				Type:          inst.Typ,
@@ -312,7 +312,7 @@ func (tc *Context) addToL1UserQueue(tx L1Tx) error {
 		tx.L1Tx.FromIdx = tc.Accounts[tx.fromIdxName].Idx
 	}
 	tx.L1Tx.FromEthAddr = tc.Accounts[tx.fromIdxName].Addr
-	tx.L1Tx.FromBJJ = tc.Accounts[tx.fromIdxName].BJJ.Public().Compress()
+	// tx.L1Tx.FromBJJ = tc.Accounts[tx.fromIdxName].BJJ.Public().Compress()
 	if tx.toIdxName == "" {
 		tx.L1Tx.ToIdx = common.AccountIdx(0)
 	} else {
@@ -475,11 +475,11 @@ func (tc *Context) FillBlocksForgedL1UserTxs(blocks []common.BlockData) error {
 						return common.Wrap(err)
 					}
 					*tx = *_tx
-					if tx.FromIdx == 0 {
-						tx.EffectiveFromIdx = tc.extra.idxByTxID[tx.TxID]
-					} else {
-						tx.EffectiveFromIdx = tx.FromIdx
-					}
+					// if tx.FromIdx == 0 {
+					// 	tx.EffectiveFromIdx = tc.extra.idxByTxID[tx.TxID]
+					// } else {
+					// 	tx.EffectiveFromIdx = tx.FromIdx
+					// }
 				}
 			}
 		}

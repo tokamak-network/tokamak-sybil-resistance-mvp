@@ -478,13 +478,13 @@ func (hdb *HistoryDB) addL1Txs(d meddler.DB, l1txs []common.L1Tx) error {
 			BatchNum:         l1txs[i].BatchNum,
 			EthBlockNum:      l1txs[i].EthBlockNum,
 			// L1
-			ToForgeL1TxsNum:    l1txs[i].ToForgeL1TxsNum,
-			FromEthAddr:        &l1txs[i].FromEthAddr,
-			FromBJJ:            &l1txs[i].FromBJJ,
+			ToForgeL1TxsNum: l1txs[i].ToForgeL1TxsNum,
+			FromEthAddr:     &l1txs[i].FromEthAddr,
+			// FromBJJ:            &l1txs[i].FromBJJ,
 			DepositAmount:      l1txs[i].DepositAmount,
 			DepositAmountFloat: &depositAmountFloat,
 			EthTxHash:          &l1txs[i].EthTxHash,
-			L1Fee:              l1txs[i].L1Fee,
+			// L1Fee:              l1txs[i].L1Fee,
 		})
 	}
 	return common.Wrap(hdb.addTxs(d, txs))
@@ -658,10 +658,10 @@ func (hdb *HistoryDB) setExtraInfoForgedL1UserTxs(d sqlx.Ext, txs []common.L1Tx)
 	// updated to become false.  At the same time, all the txs that contain
 	// accounts (FromIdx == 0) are updated to set the EffectiveFromIdx.
 	type txUpdate struct {
-		ID                   common.TxID       `db:"id"`
-		AmountSuccess        bool              `db:"amount_success"`
-		DepositAmountSuccess bool              `db:"deposit_amount_success"`
-		EffectiveFromIdx     common.AccountIdx `db:"effective_from_idx"`
+		ID                   common.TxID `db:"id"`
+		AmountSuccess        bool        `db:"amount_success"`
+		DepositAmountSuccess bool        `db:"deposit_amount_success"`
+		// EffectiveFromIdx     common.AccountIdx `db:"effective_from_idx"`
 	}
 	txUpdates := []txUpdate{}
 	equal := func(a *big.Int, b *big.Int) bool {
@@ -675,7 +675,7 @@ func (hdb *HistoryDB) setExtraInfoForgedL1UserTxs(d sqlx.Ext, txs []common.L1Tx)
 				ID:                   txs[i].TxID,
 				AmountSuccess:        amountSuccess,
 				DepositAmountSuccess: depositAmountSuccess,
-				EffectiveFromIdx:     txs[i].EffectiveFromIdx,
+				// EffectiveFromIdx:     txs[i].EffectiveFromIdx,
 			})
 		}
 	}

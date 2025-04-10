@@ -21,7 +21,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
 		uint32 batchNum;
     }
 
-    uint48 constant _EXPLODE_AMOUNT = (1 << 50);
+    uint256 constant _EXPLODE_AMOUNT = (1 << 50);
     uint256 constant _TXN_TOTALBYTES = 73; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 256; // Max transactions per batch
     uint256 constant _LIMIT_AMOUNT = (1 << 128); // Max loadAmount per call
@@ -299,27 +299,24 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     /**
      * @dev Adds a transaction to the current filling batch.
      *
-     * @param ethAddress The Ethereum address associated with the transaction.
-     * @param fromIdx The index of the account from which the transaction originates.
-     * @param loadAmountF The amount of Ether to load, represented as a fixed-point number 
-     * @param amountF The amount of Ether to transfer, represented as a fixed-point number 
-     * @param toIdx The index of the account to which the transaction is directed.
+     * @param identifer It is used to identify the type of transaction.
+     * @param from The Ethereum address who initiated the transaction.
+     * @param to The receipient address associated with the transaction.
+     * @param amount The amount of Ether.
      *
      * @dev Emits a {L1User TxEvent} event.
     */
     function _addTx(
-        address ethAddress,
-        uint48 fromIdx,
-        uint40 loadAmountF,
-        uint40 amountF,
-        uint48 toIdx
-    ) public override {
+        uint256 identifer,
+        address from,
+        address to,
+        uint256 amount
+    ) internal  {
         bytes memory l1Tx = abi.encodePacked(
-            ethAddress,
-            fromIdx,
-            loadAmountF,
-            amountF,
-            toIdx
+            identifer,
+            from,
+            to,
+            amount
         );
 
         uint256 currentPosition = unprocessedBatchesMap[currentFillingBatch].length /

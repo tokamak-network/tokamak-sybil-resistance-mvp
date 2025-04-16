@@ -100,23 +100,34 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     }
 
     function deposit() external payable override {
-        require(msg.value < _LIMIT_AMOUNT, LimitAmountExceeded());
-        require(msg.value >= _MIN_BALANCE, InsufficientETH());
+        if (msg.value >= _LIMIT_AMOUNT) {
+            revert LimitAmountExceeded();
+        }
+        if (msg.value < _MIN_BALANCE) {
+            revert InsufficientETH();
+        }
         if(balances[msg.sender] == 0) {
-            _addTx(0, msg.sender, 0, msg.value);  
+            _addTx(0, msg.sender, address(0), msg.value);  
         } else {
-            _addTx(1, msg.sender, 0, msg.value);
+            _addTx(1, msg.sender, address(0), msg.value);
         }
         balances[msg.sender] += msg.value;
     }
 
     function withdraw(uint256 amount) external {
-        require(amount < _LIMIT_AMOUNT, LimitAmountExceeded());
-        require(amount + _MIN_BALANCE <= balances[msg.sender], InsufficientBalance());
+        if (amount >= _LIMIT_AMOUNT) {
+            revert LimitAmountExceeded();
+        }
+        // require(amount < _LIMIT_AMOUNT, LimitAmountExceeded());
+        if (amount + _MIN_BALANCE > balances[msg.sender]) {
+            revert InsufficientBalance();
+        }
         balances[msg.sender] -= amount;
         (bool success, ) = msg.sender.call{value: amount}("");
-        require(success, EthTransferFailed());
-        _addTx(2, msg.sender, 0, amount);
+        if (!success) {
+            revert EthTransferFailed();
+        }
+        _addTx(2, msg.sender, address(0), amount);
     }
 
     /**
@@ -125,9 +136,15 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * @param toEthAddr The index of the account that is being vouched.
     */
     function vouch(address toEthAddr) external {
-        require(balances[msg.sender] != 0, SenderHasZeroBalance());
-        require(balances[toEthAddr] != 0, ReceiverHasZeroBalance());
-        vouches[msg.sender][toEthAddr] = 1;
+        if (balances[msg.sender] == 0) {
+            revert SenderHasZeroBalance();
+        }
+        // require(balances[msg.sender] != 0, SenderHasZeroBalance());
+        if (balances[toEthAddr] == 0) {
+            revert ReceiverHasZeroBalance();
+        }
+        // require(balances[toEthAddr] != 0, ReceiverHasZeroBalance());
+        vouches[msg.sender][toEthAddr] = true;
         _addTx(3, msg.sender, toEthAddr, 0);
     }
     /**
@@ -136,9 +153,15 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * @param toEthAddr The index of the account that is being unvouched.
     */
     function unvouch(address toEthAddr) external {
-        require(balances[msg.sender] != 0, SenderHasZeroBalance());
-        require(balances[toEthAddr] != 0, ReceiverHasZeroBalance());
-        vouches[msg.sender][toEthAddr] = 0;
+        if (balances[msg.sender] == 0) {
+            revert SenderHasZeroBalance();
+        }
+        // require(balances[msg.sender] != 0, SenderHasZeroBalance());
+        if (balances[toEthAddr] == 0) {
+            revert ReceiverHasZeroBalance();
+        }
+        // require(balances[toEthAddr] != 0, ReceiverHasZeroBalance());
+        vouches[msg.sender][toEthAddr] = false;
         _addTx(4, msg.sender, toEthAddr, 0);
     }
 
@@ -155,11 +178,13 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     function explodeMultiple(address[] calldata toEthAddrs) external {
         for (uint i=0; i < toEthAddrs.length; i++) {
                 address toEthAddr = toEthAddrs[i]; 
-                require(vouches[toEthAddr][msg.sender] == 1, NotVouched(msg.sender, toEthAddr));
+                if (!vouches[toEthAddr][msg.sender]) {
+                    revert NotVouched(msg.sender, toEthAddr);
+                }
                 uint256 penalty = Math.min(_EXPLODE_AMOUNT, balances[toEthAddr] - _MIN_BALANCE);
                 balances[toEthAddr] -= penalty;
                 balances[msg.sender] += penalty;
-                vouches[toEthAddr][msg.sender] = 0;
+                vouches[toEthAddr][msg.sender] = false;
                 _addTx(5, msg.sender, toEthAddr, 0);   
         }
     }
@@ -218,7 +243,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
 		uint32 numScoreRoot, 
 		uint24 idx,
 		uint32 score, 
-		uint256[] memory siblings
+		uint256[] calldata siblings
     ) external {
         uint256[2] memory arrayState = _buildTreeState(
             score,
@@ -227,7 +252,10 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
         uint256 stateHash = _hash2Elements(arrayState);
         uint256 scoreRoot = scoreRootMap[numScoreRoot];
         
-        require(_smtVerifier(scoreRoot, siblings, idx, stateHash), SmtProofInvalid());
+        if(!_smtVerifier(scoreRoot, siblings, idx, stateHash)) {
+            revert SmtProofInvalid();
+        }
+        // require(_smtVerifier(scoreRoot, siblings, idx, stateHash), SmtProofInvalid());
         
         scoreSnapshots[msg.sender].batchNum = numScoreRoot;
         scoreSnapshots[msg.sender].score = score;

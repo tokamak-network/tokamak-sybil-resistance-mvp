@@ -102,7 +102,6 @@ func (tx *L1Tx) SetID() error {
 func (tx L1Tx) Tx() Tx {
 	f := new(big.Float).SetInt(tx.EffectiveAmount)
 	amountFloat, _ := f.Float64()
-	userOrigin := new(bool)
 	genericTx := Tx{
 		IsL1:     true,
 		TxID:     tx.TxID,
@@ -113,16 +112,9 @@ func (tx L1Tx) Tx() Tx {
 		Amount:          tx.EffectiveAmount,
 		AmountFloat:     amountFloat,
 		ToForgeL1TxsNum: tx.ToForgeL1TxsNum,
-		UserOrigin:      userOrigin,
 		FromEthAddr:     tx.FromEthAddr,
-		// FromBJJ:         tx.FromBJJ,
-		DepositAmount: tx.EffectiveDepositAmount,
-		EthBlockNum:   tx.EthBlockNum,
-	}
-	if tx.DepositAmount != nil {
-		lf := new(big.Float).SetInt(tx.DepositAmount)
-		depositAmountFloat, _ := lf.Float64()
-		genericTx.DepositAmountFloat = &depositAmountFloat
+		DepositAmount:   tx.EffectiveDepositAmount,
+		EthBlockNum:     tx.EthBlockNum,
 	}
 	return genericTx
 }
@@ -209,12 +201,13 @@ func L1UserTxFromBytes(b []byte) (*L1Tx, error) {
 }
 
 // L1TxFromDataAvailability decodes a L1Tx from []byte (Data Availability)
+// TODO: restruct based on L1Tx data field on contract
 func L1TxFromDataAvailability(b []byte, nLevels uint32) (*L1Tx, error) {
 	idxLen := nLevels / 8 //nolint:gomnd
 
 	fromIdxBytes := b[0:idxLen]
 	toIdxBytes := b[idxLen : idxLen*2]
-	amountBytes := b[idxLen*2 : idxLen*2+Float40BytesLength]
+	// amountBytes := b[idxLen*2 : idxLen*2+Float40BytesLength]
 
 	l1tx := L1Tx{}
 	fromIdx, err := AccountIdxFromBytes(ethCommon.LeftPadBytes(fromIdxBytes, 6))
@@ -227,7 +220,7 @@ func L1TxFromDataAvailability(b []byte, nLevels uint32) (*L1Tx, error) {
 		return nil, Wrap(err)
 	}
 	l1tx.ToIdx = toIdx
-	l1tx.EffectiveAmount, err = Float40FromBytes(amountBytes).BigInt()
+	// l1tx.Amount = big.NewInt(binary.BigEndian.Uint64(amountBytes))
 	return &l1tx, Wrap(err)
 }
 

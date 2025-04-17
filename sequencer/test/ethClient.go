@@ -544,15 +544,6 @@ func (c *Client) RollupL1UserTxERC20ETH(
 	cpy := c.nextBlock().copy()
 	defer func() { c.revertIfErr(err, cpy) }()
 
-	_, err = common.NewFloat40(amount)
-	if err != nil {
-		return nil, common.Wrap(err)
-	}
-	_, err = common.NewFloat40(depositAmount)
-	if err != nil {
-		return nil, common.Wrap(err)
-	}
-
 	nextBlock := c.nextBlock()
 	r := nextBlock.Rollup
 	queue := r.State.MapL1TxQueue[r.State.LastToForgeL1TxsNum]
@@ -711,19 +702,15 @@ func (c *Client) addBatch(args *eth.RollupForgeBatchArgs) (*types.Transaction, e
 	r.State.AccountRoot = args.NewAccountRoot
 	r.State.VouchRoot = args.NewVouchRoot
 	r.State.ScoreRoot = args.NewScoreRoot
-	if args.NewLastIdx < r.State.CurrentIdx {
-		return nil, common.Wrap(fmt.Errorf("args.NewLastIdx < r.State.CurrentIdx"))
-	}
-	r.State.CurrentIdx = args.NewLastIdx
 	r.State.ExitNullifierMap[int64(len(r.State.ExitRoots))] = make(map[int64]bool)
 	r.State.ExitRoots = append(r.State.ExitRoots, args.NewExitRoot)
-	if args.L1Batch {
-		r.State.CurrentToForgeL1TxsNum++
-		if r.State.CurrentToForgeL1TxsNum == r.State.LastToForgeL1TxsNum {
-			r.State.LastToForgeL1TxsNum++
-			r.State.MapL1TxQueue[r.State.LastToForgeL1TxsNum] = eth.NewQueueStruct()
-		}
+
+	r.State.CurrentToForgeL1TxsNum++
+	if r.State.CurrentToForgeL1TxsNum == r.State.LastToForgeL1TxsNum {
+		r.State.LastToForgeL1TxsNum++
+		r.State.MapL1TxQueue[r.State.LastToForgeL1TxsNum] = eth.NewQueueStruct()
 	}
+
 	ethTx := r.addTransaction(c.newTransaction("forgebatch", args))
 	c.forgeBatchArgsPending[ethTx.Hash()] = &batch{*args, *c.addr}
 	r.Events.ForgeBatch = append(r.Events.ForgeBatch, eth.RollupEventForgeBatch{
@@ -840,18 +827,14 @@ func (c *Client) CtlAddBlocks(blocks []common.BlockData) (err error) {
 		c.CtlSetAddr(ethCommon.HexToAddress("0xE39fEc6224708f0772D2A74fd3f9055A90E0A9f2"))
 		for _, batch := range block.Rollup.Batches {
 			if _, err := c.RollupForgeBatch(&eth.RollupForgeBatchArgs{
-				NewLastIdx: batch.Batch.LastIdx,
-
 				NewAccountRoot: batch.Batch.AccountRoot,
 				NewVouchRoot:   batch.Batch.VouchRoot,
 				NewScoreRoot:   batch.Batch.ScoreRoot,
 				NewExitRoot:    batch.Batch.ExitRoot,
 				// Circuit selector
-				VerifierIdx: 0, // Intentionally empty
-				L1Batch:     batch.L1Batch,
-				ProofA:      [2]*big.Int{},    // Intentionally empty
-				ProofB:      [2][2]*big.Int{}, // Intentionally empty
-				ProofC:      [2]*big.Int{},    // Intentionally empty
+				ProofA: [2]*big.Int{},    // Intentionally empty
+				ProofB: [2][2]*big.Int{}, // Intentionally empty
+				ProofC: [2]*big.Int{},    // Intentionally empty
 			}, nil); err != nil {
 				return common.Wrap(err)
 			}

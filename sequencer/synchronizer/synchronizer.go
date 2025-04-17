@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"math/big"
-	"os"
 	"sync"
 	"time"
 	"tokamak-sybil-resistance/common"
@@ -17,7 +16,6 @@ import (
 	"tokamak-sybil-resistance/txprocessor"
 
 	"github.com/ethereum/go-ethereum"
-	ethCommon "github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -485,14 +483,6 @@ func (s *Synchronizer) resetState(block *common.Block) error {
 			return common.Wrap(fmt.Errorf("historyDB.SetInitialSCVars: %w", err))
 		}
 		s.vars.Rollup = *vars.Rollup.Copy()
-		// Add initial boot coordinator to HistoryDB
-		if err := s.historyDB.AddCoordinators([]common.Coordinator{{
-			Forger:      ethCommon.HexToAddress(os.Getenv("BootCoordinator")),
-			URL:         os.Getenv("BootCoordinatorURL"),
-			EthBlockNum: s.initVars.Rollup.EthBlockNum, //TODO: Check this with Eth Block
-		}}); err != nil {
-			return common.Wrap(err)
-		}
 	} else if err != nil {
 		return common.Wrap(err)
 	} else {
@@ -598,28 +588,25 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 		gasPrice := evtForgeBatch.GasPrice
 		batchNum := common.BatchNum(evtForgeBatch.BatchNum)
 		var l1UserTxs []common.L1Tx
-		// Check if this is a L1Batch to get L1 Tx from it
-		if forgeBatchArgs.L1Batch {
-			// Get L1UserTxs with toForgeL1TxsNum, which correspond
-			// to the L1UserTxs that are forged in this batch, so
-			// that stateDB can process them.
+		// Get L1UserTxs with toForgeL1TxsNum, which correspond
+		// to the L1UserTxs that are forged in this batch, so
+		// that stateDB can process them.
 
-			// First try to find them in HistoryDB.
-			l1UserTxs, err = s.historyDB.GetUnforgedL1UserTxs(nextForgeL1TxsNum)
-			if err != nil {
-				return nil, common.Wrap(err)
-			}
-			// Apart from the DB, try to find them in this block.
-			// This could happen because in a block there could be
-			// multiple batches with L1Batch = true (although it's
-			// a very rare case).  If not found in the DB and the
-			// block doesn't contain the l1UserTxs, it means that
-			// the L1UserTxs queue with toForgeL1TxsNum was closed
-			// empty, so we leave `l1UserTxs` as an empty slice.
-			for _, l1UserTx := range rollupData.L1UserTxs {
-				if *l1UserTx.ToForgeL1TxsNum == nextForgeL1TxsNum {
-					l1UserTxs = append(l1UserTxs, l1UserTx)
-				}
+		// First try to find them in HistoryDB.
+		l1UserTxs, err = s.historyDB.GetUnforgedL1UserTxs(nextForgeL1TxsNum)
+		if err != nil {
+			return nil, common.Wrap(err)
+		}
+		// Apart from the DB, try to find them in this block.
+		// This could happen because in a block there could be
+		// multiple batches with L1Batch = true (although it's
+		// a very rare case).  If not found in the DB and the
+		// block doesn't contain the l1UserTxs, it means that
+		// the L1UserTxs queue with toForgeL1TxsNum was closed
+		// empty, so we leave `l1UserTxs` as an empty slice.
+		for _, l1UserTx := range rollupData.L1UserTxs {
+			if *l1UserTx.ToForgeL1TxsNum == nextForgeL1TxsNum {
+				l1UserTxs = append(l1UserTxs, l1UserTx)
 			}
 		}
 
@@ -660,12 +647,8 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 		// Insert the slice of account creation auth
 		// only if the node run as a coordinator
 
-		if int(forgeBatchArgs.VerifierIdx) >= len(s.consts.Rollup.Verifiers) {
-			return nil, common.Wrap(fmt.Errorf("forgeBatchArgs.VerifierIdx (%v) >= "+
-				" len(s.consts.Rollup.Verifiers) (%v)",
-				forgeBatchArgs.VerifierIdx, len(s.consts.Rollup.Verifiers)))
-		}
 		tpc := txprocessor.Config{
+			// TODO: restruct the logic to fetch NLevels -> constant
 			NLevels: uint32(s.consts.Rollup.Verifiers[forgeBatchArgs.VerifierIdx].NLevels),
 			MaxTx:   uint32(s.consts.Rollup.Verifiers[forgeBatchArgs.VerifierIdx].MaxTx),
 			ChainID: s.cfg.ChainID,
@@ -734,18 +717,15 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 			VouchRoot:   forgeBatchArgs.NewVouchRoot,
 			ScoreRoot:   forgeBatchArgs.NewScoreRoot,
 			NumAccounts: len(batchData.CreatedAccounts),
-			LastIdx:     forgeBatchArgs.NewLastIdx,
 			ExitRoot:    forgeBatchArgs.NewExitRoot,
 			// SlotNum:            slotNum,
 			GasUsed:  gasUsed,
 			GasPrice: gasPrice,
 		}
 		nextForgeL1TxsNumCpy := nextForgeL1TxsNum
-		if forgeBatchArgs.L1Batch {
-			batch.ForgeL1TxsNum = &nextForgeL1TxsNumCpy
-			batchData.L1Batch = true
-			nextForgeL1TxsNum++
-		}
+		batch.ForgeL1TxsNum = &nextForgeL1TxsNumCpy
+		batchData.L1Batch = true
+		nextForgeL1TxsNum++
 		batchData.Batch = batch
 		rollupData.Batches = append(rollupData.Batches, *batchData)
 	}

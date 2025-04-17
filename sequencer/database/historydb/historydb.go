@@ -123,21 +123,6 @@ func (hdb *HistoryDB) setRollupVars(d meddler.DB, rollup *common.RollupVariables
 	return common.Wrap(meddler.Insert(d, "rollup_vars", rollup))
 }
 
-// AddCoordinators insert Coordinators into the DB
-func (hdb *HistoryDB) AddCoordinators(coordinators []common.Coordinator) error {
-	return common.Wrap(hdb.addCoordinators(hdb.dbWrite, coordinators))
-}
-func (hdb *HistoryDB) addCoordinators(d meddler.DB, coordinators []common.Coordinator) error {
-	if len(coordinators) == 0 {
-		return nil
-	}
-	return common.Wrap(database.BulkInsert(
-		d,
-		"INSERT INTO coordinator (bidder_addr, forger_addr, eth_block_num, url) VALUES %s;",
-		coordinators,
-	))
-}
-
 // GetLastBatch returns the last forged batch
 func (hdb *HistoryDB) GetLastBatch() (*common.Batch, error) {
 	var batch common.Batch

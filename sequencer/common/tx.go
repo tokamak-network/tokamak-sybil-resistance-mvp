@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
-	"github.com/iden3/go-iden3-crypto/babyjub"
 )
 
 type TxID [TxIDLen]byte
@@ -108,17 +107,10 @@ type Tx struct {
 	EthBlockNum int64 `meddler:"eth_block_num"`
 	// L1
 	// ToForgeL1TxsNum in which the tx was forged / will be forged
-	ToForgeL1TxsNum *int64 `meddler:"to_forge_l1_txs_num"`
-	// UserOrigin is set to true if the tx was originated by a user, false if it was aoriginated
-	// by a coordinator. Note that this differ from the spec for implementation simplification
-	// purpposes
-	UserOrigin         *bool                 `meddler:"user_origin"`
-	FromEthAddr        ethCommon.Address     `meddler:"from_eth_addr"`
-	FromBJJ            babyjub.PublicKeyComp `meddler:"from_bjj"`
-	DepositAmount      *big.Int              `meddler:"deposit_amount,bigintnull"`
-	DepositAmountFloat *float64              `meddler:"deposit_amount_f"`
-	DepositAmountUSD   *float64              `meddler:"deposit_amount_usd"`
-	Nonce              *Nonce                `meddler:"nonce"`
+	ToForgeL1TxsNum *int64            `meddler:"to_forge_l1_txs_num"`
+	FromEthAddr     ethCommon.Address `meddler:"from_eth_addr"`
+	DepositAmount   *big.Int          `meddler:"deposit_amount,bigintnull"`
+	Nonce           *Nonce            `meddler:"nonce"`
 }
 
 const (

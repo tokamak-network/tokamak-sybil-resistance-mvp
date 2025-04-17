@@ -287,9 +287,7 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 			txProcessor.zki.OnChain[txProcessor.txIndex] = &(valueOnChain)
 
 			// L1Txs
-			depositAmountF40, err := common.NewFloat40(l1usertxs[i].DepositAmount)
 			log.Error(err)
-			txProcessor.zki.DepositAmountF[txProcessor.txIndex] = big.NewInt(int64(depositAmountF40))
 			txProcessor.zki.FromEthAddr[txProcessor.txIndex] = common.EthAddrToBigInt(l1usertxs[i].FromEthAddr)
 
 			// Intermediate States, for all the transactions except for the last one
@@ -301,9 +299,8 @@ func (txProcessor *TxProcessor) ProcessTxs(l1usertxs []common.L1Tx) (ptOut *Proc
 			if l1usertxs[i].Type == common.TxTypeWithdraw ||
 				l1usertxs[i].Type == common.TxTypeCreateVouch ||
 				l1usertxs[i].Type == common.TxTypeDeleteVouch {
-				amountF40, err := common.NewFloat40(l1usertxs[i].Amount)
 				log.Error(err)
-				txProcessor.zki.AmountF[txProcessor.txIndex] = big.NewInt(int64(amountF40))
+				txProcessor.zki.AmountF[txProcessor.txIndex] = l1usertxs[i].Amount
 			}
 		}
 

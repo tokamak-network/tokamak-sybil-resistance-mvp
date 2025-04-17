@@ -162,14 +162,11 @@ func NewRollupEvents() RollupEvents {
 
 // RollupForgeBatchArgs are the arguments to the ForgeBatch function in the Rollup Smart Contract
 type RollupForgeBatchArgs struct {
-	NewLastIdx     int64
 	NewAccountRoot *big.Int
 	NewScoreRoot   *big.Int
 	NewVouchRoot   *big.Int
 	NewExitRoot    *big.Int
 	L1UserTxs      []common.L1Tx
-	VerifierIdx    uint8
-	L1Batch        bool
 	ProofA         [2]*big.Int
 	ProofB         [2][2]*big.Int
 	ProofC         [2]*big.Int
@@ -177,20 +174,14 @@ type RollupForgeBatchArgs struct {
 
 // RollupForgeBatchArgsAux are the arguments to the ForgeBatch function in the Rollup Smart Contract
 type rollupForgeBatchArgsAux struct {
-	NewLastIdx             *big.Int
-	NewAccountRoot         *big.Int
-	NewVouchRoot           *big.Int
-	NewScoreRoot           *big.Int
-	NewExitRoot            *big.Int
-	EncodedL1CoordinatorTx []byte
-	L1L2TxsData            []byte
-	FeeIdxCoordinator      []byte
+	NewAccountRoot *big.Int
+	NewVouchRoot   *big.Int
+	NewScoreRoot   *big.Int
+	L1L2TxsData    []byte
 	// Circuit selector
-	VerifierIdx uint8
-	L1Batch     bool
-	ProofA      [2]*big.Int
-	ProofB      [2][2]*big.Int
-	ProofC      [2]*big.Int
+	ProofA [2]*big.Int
+	ProofB [2][2]*big.Int
+	ProofC [2]*big.Int
 }
 
 // TODO: Update interfaces and the functions
@@ -414,7 +405,7 @@ func (c *RollupClient) RollupForgeBatch(args *RollupForgeBatchArgs, auth *bind.T
 
 	// nLevels := c.consts.Verifiers[args.VerifierIdx].NLevels //check verifiers
 
-	newLastIdx := big.NewInt(int64(args.NewLastIdx))
+	// newLastIdx := big.NewInt(int64(args.NewLastIdx))
 
 	// var l1TxData []byte
 	// for i := 0; i < len(args.L1UserTxs); i++ {
@@ -429,7 +420,6 @@ func (c *RollupClient) RollupForgeBatch(args *RollupForgeBatchArgs, auth *bind.T
 	// TODO: Need to send ZK Proof here on last param
 	tx, err = c.sybil.ForgeBatch(
 		auth,
-		newLastIdx,
 		args.NewAccountRoot,
 		args.NewVouchRoot,
 		args.NewScoreRoot,
@@ -474,16 +464,12 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 		return nil, nil, common.Wrap(err)
 	}
 	rollupForgeBatchArgs := RollupForgeBatchArgs{
-		L1Batch:        aux.L1Batch,
-		NewExitRoot:    aux.NewExitRoot,
-		NewLastIdx:     aux.NewLastIdx.Int64(),
 		NewAccountRoot: aux.NewAccountRoot,
 		NewVouchRoot:   aux.NewVouchRoot,
 		NewScoreRoot:   aux.NewScoreRoot,
 		ProofA:         aux.ProofA,
 		ProofB:         aux.ProofB,
 		ProofC:         aux.ProofC,
-		VerifierIdx:    aux.VerifierIdx,
 	}
 	nLevels := c.consts.Verifiers[rollupForgeBatchArgs.VerifierIdx].NLevels
 	lenL1TxsBytes := int((nLevels/8)*2 + common.Float40BytesLength + 1) //nolint:gomnd

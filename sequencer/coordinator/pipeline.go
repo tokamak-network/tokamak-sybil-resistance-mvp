@@ -444,15 +444,13 @@ func prepareForgeBatchArgs(batchInfo *BatchInfo) *eth.RollupForgeBatchArgs {
 	proof := batchInfo.Proof
 	zki := batchInfo.ZKInputs
 	return &eth.RollupForgeBatchArgs{
-		NewLastIdx:     int64(zki.NewLastIdxRaw),
 		NewAccountRoot: zki.NewAccountRootRaw.BigInt(),
 		NewVouchRoot:   zki.NewVouchRootRaw.BigInt(),
 		NewScoreRoot:   zki.NewScoreRootRaw.BigInt(),
 		NewExitRoot:    zki.NewExitRootRaw.BigInt(),
 		L1UserTxs:      batchInfo.L1UserTxs,
 		// Circuit selector
-		VerifierIdx: batchInfo.VerifierIdx,
-		ProofA:      [2]*big.Int{proof.PiA[0], proof.PiA[1]},
+		ProofA: [2]*big.Int{proof.PiA[0], proof.PiA[1]},
 		// Implementation of the verifier need a swap on the proofB vector
 		ProofB: [2][2]*big.Int{
 			{proof.PiB[0][1], proof.PiB[0][0]},

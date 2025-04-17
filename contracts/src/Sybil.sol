@@ -78,7 +78,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, IMVPSybil, MVPSybilHe
         address _adminRole
     ) public initializer {
         lastIdx = _RESERVED_IDX;
-        currentFillingBatch = 1;
+        currentFillingBatch = 2;
 
         __AccessControl_init();
         _grantRole(ADMIN_ROLE, _adminRole);

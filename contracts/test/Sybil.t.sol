@@ -55,7 +55,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         vm.prank(address(this));
         sybil.forgeBatch(
             256, 
@@ -63,7 +62,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -79,7 +77,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
 
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -88,7 +85,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -105,7 +101,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -114,7 +109,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -145,7 +139,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -154,7 +147,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0,  
-            txsData,
             proofA,
             proofB,
             proofC
@@ -176,7 +168,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -185,7 +176,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -207,7 +197,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -216,7 +205,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -279,7 +267,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -288,7 +275,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -308,7 +294,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -317,7 +302,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -338,7 +322,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -347,7 +330,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -384,7 +366,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofC = [uint(0), uint(0)];
 
         vm.prank(address(this));
-        bytes memory txsData = "";
         
         // forging to set the lastIdx
         sybil.forgeBatch(
@@ -393,7 +374,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -410,7 +390,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         // forging to set the lastIdx
@@ -420,7 +399,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -439,7 +417,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         // forging to set the lastIdx
@@ -449,7 +426,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0,
-            txsData,
             proofA,
             proofB,
             proofC
@@ -469,7 +445,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         // forging to set the lastIdx
@@ -479,7 +454,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0,
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -496,7 +470,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         // forging to set the lastIdx
@@ -506,7 +479,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -525,7 +497,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         // forging to set the lastIdx
@@ -535,7 +506,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -555,7 +525,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -564,7 +533,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -581,7 +549,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -590,7 +557,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -607,7 +573,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -616,7 +581,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -637,7 +601,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -646,7 +609,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -668,7 +630,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -677,7 +638,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0, 
-            txsData,
             proofA,
             proofB,
             proofC
@@ -699,7 +659,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -708,7 +667,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             0,
-            txsData,
             proofA,
             proofB,
             proofC
@@ -848,7 +806,6 @@ contract MvpTest is Test, TransactionTypeHelper {
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
-        bytes memory txsData = "";
         
         vm.prank(address(this));
         sybil.forgeBatch(
@@ -857,7 +814,6 @@ contract MvpTest is Test, TransactionTypeHelper {
             0, 
             0, 
             uint(exitRoot),
-            txsData,
             proofA,
             proofB,
             proofC

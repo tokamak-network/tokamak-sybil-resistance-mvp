@@ -53,7 +53,7 @@ interface INewSybil {
     function deposit() external payable;
 
     // Withdraw Function
-    function withdraw() external;
+    function withdraw(uint256 amount) external;
 
     // Explode function
     function explodeMultiple(address[] calldata toEthAddrs) external;

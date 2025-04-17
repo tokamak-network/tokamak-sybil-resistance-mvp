@@ -3,15 +3,9 @@ pragma solidity 0.8.23;
 
 interface INewSybil {
     error InvalidVerifierAddress();
-    error LoadAmountExceedsLimit();
-    error LoadAmountDoesNotMatch();
-    error AmountExceedsLimit();
-    error WithdrawAlreadyDone();
     error SmtProofInvalid();
     error EthTransferFailed();
     error InvalidProof();
-    error InvalidFromIdx();
-    error InvalidToIdx();
     error LimitAmountExceeded();
     error InsufficientETH();
     error InsufficientBalance();

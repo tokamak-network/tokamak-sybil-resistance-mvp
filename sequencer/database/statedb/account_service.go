@@ -33,7 +33,6 @@ func (s *StateDB) CreateAccount(idx common.AccountIdx, account *common.Account) 
 		return cpp, common.Wrap(err)
 	}
 	// store idx by EthAddr & BJJ
-	err = s.setIdxByEthAddrBJJ(idx, account.EthAddr, account.BJJ)
 	return cpp, common.Wrap(err)
 }
 

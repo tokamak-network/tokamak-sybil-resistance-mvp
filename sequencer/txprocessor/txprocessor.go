@@ -89,7 +89,6 @@ import (
 	"tokamak-sybil-resistance/database/statedb"
 	"tokamak-sybil-resistance/log"
 
-	"github.com/iden3/go-iden3-crypto/babyjub"
 	"github.com/iden3/go-merkletree"
 	"github.com/iden3/go-merkletree/db"
 	"github.com/iden3/go-merkletree/db/pebble"
@@ -550,10 +549,10 @@ func (txProcessor *TxProcessor) applyDeposit(tx *common.L1Tx) error {
 	if txProcessor.zki != nil {
 		// txProcessor.zki.TokenID1[txProcessor.txIndex] = accSender.TokenID.BigInt()
 		txProcessor.zki.Nonce1[txProcessor.txIndex] = accSender.Nonce.BigInt()
-		senderBJJSign, senderBJJY := babyjub.UnpackSignY(accSender.BJJ)
-		valueBJJSign := senderBJJSign
-		txProcessor.zki.Sign1[txProcessor.txIndex] = &(valueBJJSign)
-		txProcessor.zki.Ay1[txProcessor.txIndex] = senderBJJY
+		// senderBJJSign, senderBJJY := babyjub.UnpackSignY(accSender.BJJ)
+		// valueBJJSign := senderBJJSign
+		// txProcessor.zki.Sign1[txProcessor.txIndex] = &(valueBJJSign)
+		// txProcessor.zki.Ay1[txProcessor.txIndex] = senderBJJY
 		txProcessor.zki.Balance1[txProcessor.txIndex] = accSender.Balance
 		txProcessor.zki.EthAddr1[txProcessor.txIndex] = common.EthAddrToBigInt(accSender.EthAddr)
 	}
@@ -591,10 +590,10 @@ func (txProcessor *TxProcessor) applyExit(exitTree *merkletree.MerkleTree,
 	if txProcessor.zki != nil {
 		// txProcessor.zki.TokenID1[txProcessor.txIndex] = acc.TokenID.BigInt()
 		txProcessor.zki.Nonce1[txProcessor.txIndex] = acc.Nonce.BigInt()
-		accBJJSign, accBJJY := babyjub.UnpackSignY(acc.BJJ)
-		valueAccBjjSign := accBJJSign
-		txProcessor.zki.Sign1[txProcessor.txIndex] = &(valueAccBjjSign)
-		txProcessor.zki.Ay1[txProcessor.txIndex] = accBJJY
+		// accBJJSign, accBJJY := babyjub.UnpackSignY(acc.BJJ)
+		// valueAccBjjSign := accBJJSign
+		// txProcessor.zki.Sign1[txProcessor.txIndex] = &(valueAccBjjSign)
+		// txProcessor.zki.Ay1[txProcessor.txIndex] = accBJJY
 		txProcessor.zki.Balance1[txProcessor.txIndex] = acc.Balance
 		txProcessor.zki.EthAddr1[txProcessor.txIndex] = common.EthAddrToBigInt(acc.EthAddr)
 	}
@@ -646,16 +645,15 @@ func (txProcessor *TxProcessor) applyExit(exitTree *merkletree.MerkleTree,
 			// as is a common.Tx, the tx.Amount is already an
 			// EffectiveAmount
 			Balance: tx.Amount,
-			BJJ:     acc.BJJ,
 			EthAddr: acc.EthAddr,
 		}
 		if txProcessor.zki != nil {
 			// Set the State2 before creating the Exit leaf
 			txProcessor.zki.Nonce2[txProcessor.txIndex] = big.NewInt(0)
-			accBJJSign, accBJJY := babyjub.UnpackSignY(acc.BJJ)
-			valueBjjSign2 := accBJJSign
-			txProcessor.zki.Sign2[txProcessor.txIndex] = &(valueBjjSign2)
-			txProcessor.zki.Ay2[txProcessor.txIndex] = accBJJY
+			// accBJJSign, accBJJY := babyjub.UnpackSignY(acc.BJJ)
+			// valueBjjSign2 := accBJJSign
+			// txProcessor.zki.Sign2[txProcessor.txIndex] = &(valueBjjSign2)
+			// txProcessor.zki.Ay2[txProcessor.txIndex] = accBJJY
 			// Balance2 contains the ExitLeaf Balance before the
 			// leaf update, which is 0
 			txProcessor.zki.Balance2[txProcessor.txIndex] = big.NewInt(0)
@@ -685,10 +683,10 @@ func (txProcessor *TxProcessor) applyExit(exitTree *merkletree.MerkleTree,
 	if txProcessor.zki != nil {
 		// increment nonce from existing ExitLeaf
 		txProcessor.zki.Nonce2[txProcessor.txIndex] = exitAccount.Nonce.BigInt()
-		accBJJSign, accBJJY := babyjub.UnpackSignY(acc.BJJ)
-		valueAccBJJSign := accBJJSign
-		txProcessor.zki.Sign2[txProcessor.txIndex] = &(valueAccBJJSign)
-		txProcessor.zki.Ay2[txProcessor.txIndex] = accBJJY
+		// accBJJSign, accBJJY := babyjub.UnpackSignY(acc.BJJ)
+		// valueAccBJJSign := accBJJSign
+		// txProcessor.zki.Sign2[txProcessor.txIndex] = &(valueAccBJJSign)
+		// txProcessor.zki.Ay2[txProcessor.txIndex] = accBJJY
 		// Balance2 contains the ExitLeaf Balance before the leaf
 		// update
 		txProcessor.zki.Balance2[txProcessor.txIndex] = exitAccount.Balance

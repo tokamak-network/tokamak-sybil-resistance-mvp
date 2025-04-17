@@ -3,12 +3,10 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"math/big"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
-	"github.com/iden3/go-iden3-crypto/babyjub"
 	"github.com/iden3/go-iden3-crypto/poseidon"
 	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
 )
@@ -17,12 +15,11 @@ import (
 // Is the data structure that generates the Value stored in
 // the leaf of the MerkleTree
 type Account struct {
-	Idx      AccountIdx            `meddler:"idx"`
-	BatchNum BatchNum              `meddler:"batch_num"`
-	BJJ      babyjub.PublicKeyComp `meddler:"bjj"`
-	EthAddr  ethCommon.Address     `meddler:"eth_addr"`
-	Nonce    Nonce                 `meddler:"-"` // max of 40 bits used
-	Balance  *big.Int              `meddler:"-"` // max of 192 bits used
+	Idx      AccountIdx        `meddler:"idx"`       // 32 bits
+	BatchNum BatchNum          `meddler:"batch_num"` // 32 bits
+	EthAddr  ethCommon.Address `meddler:"eth_addr"`  // 80 bits used
+	Nonce    Nonce             `meddler:"-"`         // max of 40 bits used
+	Balance  *big.Int          `meddler:"-"`         // max of 192 bits used
 }
 
 // AccountIdx represents the account Index in the MerkleTree
@@ -107,25 +104,9 @@ func (a *Account) Bytes() ([32 * NAccountLeafElems]byte, error) {
 
 	copy(b[23:28], nonceBytes[:])
 
-	pkSign, pkY := babyjub.UnpackSignY(a.BJJ)
-	if pkSign {
-		b[22] = 1
-	}
 	balanceBytes := a.Balance.Bytes()
 	copy(b[64-len(balanceBytes):64], balanceBytes)
-	// Check if there is possibility of finite field overflow
-	ayBytes := pkY.Bytes()
-	if len(ayBytes) == 32 { //nolint:gomnd
-		ayBytes[0] = ayBytes[0] & 0x3f //nolint:gomnd
-		pkY = big.NewInt(0).SetBytes(ayBytes)
-	}
-	finiteFieldMod, ok := big.NewInt(0).SetString("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10) //nolint:gomnd
-	if !ok {
-		return b, errors.New("error setting bjj finite field")
-	}
-	pkY = pkY.Mod(pkY, finiteFieldMod)
-	ayBytes = pkY.Bytes()
-	copy(b[96-len(ayBytes):96], ayBytes)
+
 	copy(b[108:128], a.EthAddr.Bytes())
 	return b, nil
 }
@@ -166,7 +147,6 @@ func AccountFromBytes(b [32 * NAccountLeafElems]byte) (*Account, error) {
 	var nonceBytes5 [5]byte
 	copy(nonceBytes5[:], b[23:28])
 	nonce := FromBytes(nonceBytes5)
-	sign := b[22] == 1
 
 	balance := new(big.Int).SetBytes(b[40:64])
 	// Balance is max of 192 bits (24 bytes)
@@ -174,7 +154,6 @@ func AccountFromBytes(b [32 * NAccountLeafElems]byte) (*Account, error) {
 		return nil, Wrap(fmt.Errorf("%s Balance", ErrNumOverflow))
 	}
 	ay := new(big.Int).SetBytes(b[64:96])
-	publicKeyComp := babyjub.PackSignY(sign, ay)
 	ethAddr := ethCommon.BytesToAddress(b[108:128])
 
 	if !cryptoUtils.CheckBigIntInField(balance) {
@@ -187,7 +166,6 @@ func AccountFromBytes(b [32 * NAccountLeafElems]byte) (*Account, error) {
 	a := Account{
 		Nonce:   nonce,
 		Balance: balance,
-		BJJ:     publicKeyComp,
 		EthAddr: ethAddr,
 	}
 	return &a, nil

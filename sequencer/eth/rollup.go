@@ -471,6 +471,7 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 		ProofB:         aux.ProofB,
 		ProofC:         aux.ProofC,
 	}
+	// TODO: restruct the logic to fetch NLevels -> constants
 	nLevels := c.consts.Verifiers[rollupForgeBatchArgs.VerifierIdx].NLevels
 	lenL1TxsBytes := int((nLevels/8)*2 + common.Float40BytesLength + 1) //nolint:gomnd
 	numBytesL1TxUser := int(l1UserTxsLen) * lenL1TxsBytes

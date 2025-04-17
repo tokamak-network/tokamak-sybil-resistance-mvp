@@ -538,7 +538,6 @@ func (tc *Context) FillBlocksExtra(blocks []common.BlockData, cfg *ConfigExtra) 
 						common.Account{
 							Idx:      common.AccountIdx(tc.extra.idx),
 							BatchNum: batch.Batch.BatchNum,
-							BJJ:      user.BJJ.Public().Compress(),
 							EthAddr:  user.Addr,
 							Nonce:    0,
 							Balance:  big.NewInt(0),

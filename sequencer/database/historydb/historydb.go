@@ -352,7 +352,6 @@ func (hdb *HistoryDB) addAccounts(d meddler.DB, accounts []common.Account) error
 		testAccounts = append(testAccounts, TestAccounts{
 			Idx:      account.Idx,
 			BatchNum: account.BatchNum,
-			BJJ:      account.BJJ,
 			EthAddr:  account.EthAddr,
 			Nonce:    account.Nonce,
 			Balance:  account.Balance.String(),

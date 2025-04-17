@@ -39,20 +39,15 @@ func GenAccounts(totalAccounts, userAccounts int,
 	accs := []common.Account{}
 	for i := 256; i < 256+totalAccounts; i++ {
 		var addr ethCommon.Address
-		var pubK *babyjub.PublicKey
 		if i < 256+userAccounts {
 			addr = *userAddr
-			pubK = userBjj
 		} else {
 			addr = ethCommon.BigToAddress(big.NewInt(int64(i)))
-			privK := babyjub.NewRandPrivKey()
-			pubK = privK.Public()
 		}
 		accs = append(accs, common.Account{
 			Idx:      common.AccountIdx(i),
 			EthAddr:  addr,
 			BatchNum: batches[i%len(batches)].BatchNum,
-			BJJ:      pubK.Compress(),
 			Balance:  big.NewInt(int64(i * 10000000)), //nolint:gomnd
 		})
 	}

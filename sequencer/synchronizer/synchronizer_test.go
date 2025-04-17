@@ -203,7 +203,6 @@ func assertEqualAccountsHistoryDBStateDB(t *testing.T, hdbAccs, sdbAccs []common
 		sdbAcc := sdbAccs[i]
 		assert.Equal(t, hdbAcc.Idx, sdbAcc.Idx)
 		assert.Equal(t, hdbAcc.EthAddr, sdbAcc.EthAddr)
-		assert.Equal(t, hdbAcc.BJJ, sdbAcc.BJJ)
 	}
 }
 

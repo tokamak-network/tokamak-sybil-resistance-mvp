@@ -82,7 +82,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
         address _poseidon3Elements,
         address _adminRole
     ) public initializer {
-        currentFillingBatch = 1;
+        currentFillingBatch = 2;
 
         __AccessControl_init();
         _grantRole(ADMIN_ROLE, _adminRole);

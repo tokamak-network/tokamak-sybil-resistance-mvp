@@ -224,7 +224,7 @@ type RollupInterface interface {
 
 	RollupConstants() (*common.RollupConstants, error)
 	RollupEventsByBlock(blockNum int64, blockHash *ethCommon.Hash) (*RollupEvents, error)
-	RollupForgeBatchArgs(ethCommon.Hash, uint16) (*RollupForgeBatchArgs, *ethCommon.Address, error)
+	RollupForgeBatchArgs(ethCommon.Hash) (*RollupForgeBatchArgs, *ethCommon.Address, error)
 }
 
 //
@@ -512,19 +512,7 @@ func (c *RollupClient) RollupForgeBatch(args *RollupForgeBatchArgs, auth *bind.T
 		auth.GasLimit = 1000000
 	}
 
-	// nLevels := c.consts.Verifiers[args.VerifierIdx].NLevels //check verifiers
-
 	newLastIdx := big.NewInt(int64(args.NewLastIdx))
-
-	// var l1TxData []byte
-	// for i := 0; i < len(args.L1UserTxs); i++ {
-	// 	l1User := args.L1UserTxs[i]
-	// 	bytesl1User, err := l1User.BytesDataAvailability(uint32(nLevels))
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	l1TxData = append(l1TxData, bytesl1User[:]...)
-	// }
 
 	// TODO: Need to send ZK Proof here on last param
 	tx, err = c.sybil.ForgeBatch(
@@ -546,8 +534,7 @@ func (c *RollupClient) RollupForgeBatch(args *RollupForgeBatchArgs, auth *bind.T
 
 // RollupForgeBatchArgs returns the arguments used in a ForgeBatch call in the
 // Rollup Smart Contract in the given transaction, and the sender address.
-func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
-	l1UserTxsLen uint16) (*RollupForgeBatchArgs, *ethCommon.Address, error) {
+func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash) (*RollupForgeBatchArgs, *ethCommon.Address, error) {
 	tx, _, err := c.client.client.TransactionByHash(context.Background(), ethTxHash)
 	if err != nil {
 		return nil, nil, common.Wrap(fmt.Errorf("TransactionByHash: %w", err))
@@ -584,22 +571,6 @@ func (c *RollupClient) RollupForgeBatchArgs(ethTxHash ethCommon.Hash,
 		ProofB:         aux.ProofB,
 		ProofC:         aux.ProofC,
 		VerifierIdx:    aux.VerifierIdx,
-	}
-	nLevels := c.consts.Verifiers[rollupForgeBatchArgs.VerifierIdx].NLevels
-	lenL1TxsBytes := int((nLevels/8)*2 + common.Float40BytesLength + 1) //nolint:gomnd
-	numBytesL1TxUser := int(l1UserTxsLen) * lenL1TxsBytes
-	l1UserTxsData := []byte{}
-	if l1UserTxsLen > 0 {
-		l1UserTxsData = aux.L1L2TxsData[:numBytesL1TxUser]
-	}
-	for i := 0; i < int(l1UserTxsLen); i++ {
-		l1Tx, err :=
-			common.L1TxFromDataAvailability(l1UserTxsData[i*lenL1TxsBytes:(i+1)*lenL1TxsBytes],
-				uint32(nLevels))
-		if err != nil {
-			return nil, nil, common.Wrap(err)
-		}
-		rollupForgeBatchArgs.L1UserTxs = append(rollupForgeBatchArgs.L1UserTxs, *l1Tx)
 	}
 	return &rollupForgeBatchArgs, &sender, nil
 }

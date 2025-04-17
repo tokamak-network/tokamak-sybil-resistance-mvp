@@ -556,22 +556,22 @@ func (n *Node) handleNewBlock(
 
 		Side effects are information like lastBatch, nextForgers, metrics with zeros, defaults or null values
 	*/
-	if stats.Synced() {
-		if err := n.stateAPIUpdater.UpdateNetworkInfo(
-			stats.Eth.LastBlock, stats.Sync.LastBlock,
-			common.BatchNum(stats.Eth.LastBatchNum),
-			// stats.Sync.Auction.CurrentSlot.SlotNum,
-		); err != nil {
-			log.Errorw("ApiStateUpdater.UpdateNetworkInfo", "err", err)
-		}
-	} else {
-		n.stateAPIUpdater.UpdateNetworkInfoBlock(
-			stats.Eth.LastBlock, stats.Sync.LastBlock,
-		)
-	}
-	if err := n.stateAPIUpdater.Store(); err != nil {
-		return common.Wrap(err)
-	}
+	// if stats.Synced() {
+	// 	if err := n.stateAPIUpdater.UpdateNetworkInfo(
+	// 		stats.Eth.LastBlock, stats.Sync.LastBlock,
+	// 		common.BatchNum(stats.Eth.LastBatchNum),
+	// 		// stats.Sync.Auction.CurrentSlot.SlotNum,
+	// 	); err != nil {
+	// 		log.Errorw("ApiStateUpdater.UpdateNetworkInfo", "err", err)
+	// 	}
+	// } else {
+	// 	n.stateAPIUpdater.UpdateNetworkInfoBlock(
+	// 		stats.Eth.LastBlock, stats.Sync.LastBlock,
+	// 	)
+	// }
+	// if err := n.stateAPIUpdater.Store(); err != nil {
+	// 	return common.Wrap(err)
+	// }
 	return nil
 }
 

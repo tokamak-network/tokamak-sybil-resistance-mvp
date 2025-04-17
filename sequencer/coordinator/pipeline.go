@@ -215,20 +215,6 @@ func (p *Pipeline) forgeBatch(batchNum common.BatchNum) (
 	if err != nil {
 		return nil, nil, common.Wrap(err)
 	}
-	// l1UserFutureTxs are the l1UserTxs that are not being forged
-	// in the next batch, but that are also in the queue for the
-	// future batches
-	// l1UserFutureTxs, err := p.historyDB.GetUnforgedL1UserFutureTxs(p.state.lastForgeL1TxsNum + 1)
-	// if err != nil {
-	// 	return nil, nil, common.Wrap(err)
-	// }
-
-	// TODO: figure out what happens here and potentially remove txSelector
-	// _, l1UserTxs, err =
-	// 	p.txSelector.GetL1TxSelection(p.cfg.TxProcessorConfig, _l1UserTxs, l1UserFutureTxs)
-	// if err != nil {
-	// 	return nil, nil, common.Wrap(err)
-	// }
 
 	// TODO: depending on what's happening in txSelector, this might not be necessary as well
 	if skip, reason, err := p.forgePolicySkipPostSelection(now, l1UserTxs, batchInfo); err != nil {
@@ -272,28 +258,29 @@ func (p *Pipeline) forgePolicySkipPostSelection(
 	l1UserTxsExtra []common.L1Tx,
 	batchInfo *BatchInfo,
 ) (bool, string, error) {
-	pendingTxs := true
+	// pendingTxs := true
 	if len(l1UserTxsExtra) == 0 {
-		// Query the number of unforged L1UserTxs
-		// (either in a open queue or in a frozen
-		// not-yet-forged queue).
-		count, err := p.historyDB.GetUnforgedL1UserTxsCount()
-		if err != nil {
-			return false, "", err
-		}
-		// If there are future L1UserTxs, we forge a
-		// batch to advance the queues to be able to
-		// forge the L1UserTxs in the future.
-		// Otherwise, skip.
-		if count == 0 {
-			pendingTxs = false
-		}
+		// // Query the number of unforged L1UserTxs
+		// // (either in a open queue or in a frozen
+		// // not-yet-forged queue).
+		// count, err := p.historyDB.GetUnforgedL1UserTxsCount()
+		// if err != nil {
+		// 	return false, "", err
+		// }
+		// // If there are future L1UserTxs, we forge a
+		// // batch to advance the queues to be able to
+		// // forge the L1UserTxs in the future.
+		// // Otherwise, skip.
+		// if count == 0 {
+		// 	pendingTxs = false
+		// }
+		return true, "no pending txs", nil
 	}
 
-	if pendingTxs {
-		return false, "", nil
-	}
-	return true, "no pending txs", nil
+	// if pendingTxs {
+	// 	return false, "", nil
+	// }
+	return false, "", nil
 }
 
 func (p *Pipeline) setErrAtBatchNum(batchNum common.BatchNum) {

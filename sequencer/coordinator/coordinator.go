@@ -373,10 +373,10 @@ func (c *Coordinator) handleMsgSyncBlock(ctx context.Context, msg *MsgSyncBlock)
 	c.syncSCVars(msg.Vars)
 	c.txManager.SetSyncStatsVars(ctx, &msg.Stats, &msg.Vars)
 
-	// if the synced block is not the latest block, don't do anything
-	if !c.stats.Synced() {
-		return nil
-	}
+	// // if the synced block is not the latest block, don't do anything
+	// if !c.stats.Synced() {
+	// 	return nil
+	// }
 
 	// TODO: comment out with proper forging
 	// else, start forging pipeline

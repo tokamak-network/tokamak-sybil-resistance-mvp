@@ -584,8 +584,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 			return nil, common.Wrap(fmt.Errorf("RollupForgeBatchArgs: %w", err))
 		}
 		ethTxHash := evtForgeBatch.EthTxHash
-		gasUsed := evtForgeBatch.GasUsed
-		gasPrice := evtForgeBatch.GasPrice
 		batchNum := common.BatchNum(evtForgeBatch.BatchNum)
 		var l1UserTxs []common.L1Tx
 		// Get L1UserTxs with toForgeL1TxsNum, which correspond
@@ -717,10 +715,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 			VouchRoot:   forgeBatchArgs.NewVouchRoot,
 			ScoreRoot:   forgeBatchArgs.NewScoreRoot,
 			NumAccounts: len(batchData.CreatedAccounts),
-			ExitRoot:    forgeBatchArgs.NewExitRoot,
-			// SlotNum:            slotNum,
-			GasUsed:  gasUsed,
-			GasPrice: gasPrice,
 		}
 		nextForgeL1TxsNumCpy := nextForgeL1TxsNum
 		batch.ForgeL1TxsNum = &nextForgeL1TxsNumCpy

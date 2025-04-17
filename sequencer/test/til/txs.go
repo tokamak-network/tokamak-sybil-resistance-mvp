@@ -22,7 +22,6 @@ func newBatchData(batchNum int) common.BatchData {
 			AccountRoot: big.NewInt(0),
 			VouchRoot:   big.NewInt(0),
 			ScoreRoot:   big.NewInt(0),
-			ExitRoot:    big.NewInt(0),
 		},
 	}
 }
@@ -285,7 +284,7 @@ func (tc *Context) generateBlocks() ([]common.BlockData, error) {
 
 // setCurrBatch sets the Idxs to the transactions of the tc.currBatch
 func (tc *Context) setCurrBatch() error {
-	tc.currBatch.Batch.LastIdx = int64(tc.idx - 1) // `-1` because tc.idx is the next available idx
+	// tc.currBatch.Batch.LastIdx = int64(tc.idx - 1) // `-1` because tc.idx is the next available idx
 	tc.currBlock.Rollup.Batches = append(tc.currBlock.Rollup.Batches, tc.currBatch)
 	tc.currBatchNum++
 	tc.currBatch = newBatchData(tc.currBatchNum)
@@ -510,9 +509,6 @@ func (tc *Context) FillBlocksExtra(blocks []common.BlockData, cfg *ConfigExtra) 
 				batch.Batch.ForgeL1TxsNum = &toForgeL1TxsNumCpy
 				tc.extra.toForgeL1TxsNum++
 			}
-
-			// TODO: default value is nil but the db column type is not nullable
-			batch.Batch.GasPrice = big.NewInt(0)
 		}
 	}
 

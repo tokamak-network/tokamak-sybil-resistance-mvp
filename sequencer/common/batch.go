@@ -21,18 +21,9 @@ type Batch struct {
 	AccountRoot *big.Int `meddler:"account_root,bigint"`
 	VouchRoot   *big.Int `meddler:"vouch_root,bigint"`
 	ScoreRoot   *big.Int `meddler:"score_root,bigint"`
-	ExitRoot    *big.Int `meddler:"exit_root,bigint"`
 
-	NumAccounts   int      `meddler:"num_accounts"`
-	LastIdx       int64    `meddler:"last_idx"`
-	GasUsed       uint64   `meddler:"gas_used"`
-	GasPrice      *big.Int `meddler:"gas_price,bigint"`
-	EtherPriceUSD float64  `meddler:"ether_price_usd"`
-	// ForgeL1TxsNum is optional, Only when the batch forges L1 txs. Identifier that corresponds
-	// to the group of L1 txs forged in the current batch.
-	ForgeL1TxsNum *int64   `meddler:"forge_l1_txs_num"`
-	SlotNum       int64    `meddler:"slot_num"` // Slot in which the batch is forged
-	TotalFeesUSD  *float64 `meddler:"total_fees_usd"`
+	NumAccounts   int    `meddler:"num_accounts"`
+	ForgeL1TxsNum *int64 `meddler:"forge_l1_txs_num"`
 }
 
 type BatchNum uint32
@@ -64,7 +55,7 @@ func (bn BatchNum) BigInt() *big.Int {
 type BatchData struct {
 	L1Batch bool
 	// L1UserTxs that were forged in the batch
-	L1UserTxs []L1Tx
+	L1UserTxs       []L1Tx
 	CreatedAccounts []Account
 	UpdatedAccounts []AccountUpdate
 	ExitTree        []ExitInfo
@@ -74,8 +65,8 @@ type BatchData struct {
 // NewBatchData creates an empty BatchData with the slices initialized.
 func NewBatchData() *BatchData {
 	return &BatchData{
-		L1Batch:   false,
-		L1UserTxs: make([]L1Tx, 0),
+		L1Batch:         false,
+		L1UserTxs:       make([]L1Tx, 0),
 		CreatedAccounts: make([]Account, 0),
 		ExitTree:        make([]ExitInfo, 0),
 		Batch:           Batch{},

@@ -160,7 +160,6 @@ func TestBatches(t *testing.T) {
 		assert.NoError(t, historyDB.AddBlock(&block.Block))
 		// Combine all generated batches into single array
 		for _, batch := range block.Rollup.Batches {
-			batch.Batch.GasPrice = big.NewInt(0)
 			batches = append(batches, batch.Batch)
 			forgeTxsNum := batch.Batch.ForgeL1TxsNum
 			if forgeTxsNum != nil && (*lastL1TxsNum < *forgeTxsNum) {
@@ -873,12 +872,6 @@ func TestGetFirstBatchBlockNumBySlot(t *testing.T) {
 	}
 	err = tc.FillBlocksExtra(blocks, &tilCfgExtra)
 	require.NoError(t, err)
-
-	for i := range blocks {
-		for j := range blocks[i].Rollup.Batches {
-			blocks[i].Rollup.Batches[j].Batch.SlotNum = int64(i) / 4
-		}
-	}
 
 	// Add all blocks
 	for i := range blocks {

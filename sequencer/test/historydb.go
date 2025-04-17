@@ -74,9 +74,6 @@ func GenBatches(nBatches int, blocks []common.Block) []common.Batch {
 			ScoreRoot:   big.NewInt(int64(i+1) * 7), //nolint:gomnd
 			//nolint:gomnd
 			NumAccounts: 30,
-			ExitRoot:    big.NewInt(int64(i+1) * 16), //nolint:gomnd
-			SlotNum:     int64(i),
-			GasPrice:    big.NewInt(0),
 		}
 		if i%2 == 0 {
 			toForge := new(int64)

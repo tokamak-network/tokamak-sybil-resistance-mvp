@@ -830,7 +830,6 @@ func (c *Client) CtlAddBlocks(blocks []common.BlockData) (err error) {
 				NewAccountRoot: batch.Batch.AccountRoot,
 				NewVouchRoot:   batch.Batch.VouchRoot,
 				NewScoreRoot:   batch.Batch.ScoreRoot,
-				NewExitRoot:    batch.Batch.ExitRoot,
 				// Circuit selector
 				ProofA: [2]*big.Int{},    // Intentionally empty
 				ProofB: [2][2]*big.Int{}, // Intentionally empty

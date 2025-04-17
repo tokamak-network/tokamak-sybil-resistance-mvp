@@ -747,7 +747,6 @@ func (hdb *HistoryDB) AddBlockSCData(blockData *common.BlockData) (err error) {
 	// Add Batches
 	for i := range blockData.Rollup.Batches {
 		batch := &blockData.Rollup.Batches[i]
-		batch.Batch.GasPrice = big.NewInt(0)
 
 		// Add Batch: this will trigger an update on the DB
 		// that will set the batch num of forged L1 txs in this batch

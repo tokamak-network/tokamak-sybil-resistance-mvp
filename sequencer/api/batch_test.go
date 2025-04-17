@@ -77,14 +77,12 @@ func genTestBatches(
 			}
 		}
 		tBatch := testBatch{
-			BatchNum:      cBatches[i].BatchNum,
-			EthBlockNum:   cBatches[i].EthBlockNum,
-			EthBlockHash:  block.Hash,
-			Timestamp:     block.Timestamp,
-			ForgerAddr:    cBatches[i].ForgerAddr,
-			NumAccounts:   cBatches[i].NumAccounts,
-			ExitRoot:      cBatches[i].ExitRoot.String(),
-			ForgeL1TxsNum: cBatches[i].ForgeL1TxsNum,
+			BatchNum:     cBatches[i].BatchNum,
+			EthBlockNum:  cBatches[i].EthBlockNum,
+			EthBlockHash: block.Hash,
+			Timestamp:    block.Timestamp,
+			ForgerAddr:   cBatches[i].ForgerAddr,
+			NumAccounts:  cBatches[i].NumAccounts,
 			// ForgedTxs:     forgedTxs,
 		}
 		tBatches = append(tBatches, tBatch)

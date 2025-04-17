@@ -172,7 +172,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * - All address in `toEthAddrs` must be vouched.
     */
     function explodeMultiple(address[] calldata toEthAddrs) external {
-        for (uint i=0; i < toEthAddrs.length; i++) {
+        for (uint256 i = 0; i < toEthAddrs.length; ++i) {
                 address toEthAddr = toEthAddrs[i]; 
                 if (!vouches[toEthAddr][msg.sender]) {
                     revert NotVouched(msg.sender, toEthAddr);

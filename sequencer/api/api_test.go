@@ -23,7 +23,6 @@ import (
 
 	swagger "github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gin-gonic/gin"
-	"github.com/iden3/go-merkletree"
 
 	ethCommon "github.com/ethereum/go-ethereum/common"
 )
@@ -281,22 +280,6 @@ func AddAdditionalInformation(blocks []common.BlockData) {
 			for q := range blocks[i].Rollup.Batches[x].CreatedAccounts {
 				blocks[i].Rollup.Batches[x].CreatedAccounts[q].Balance =
 					big.NewInt(int64(blocks[i].Rollup.Batches[x].CreatedAccounts[q].Idx * 10000000))
-			}
-			for y := range blocks[i].Rollup.Batches[x].ExitTree {
-				blocks[i].Rollup.Batches[x].ExitTree[y].MerkleProof =
-					&merkletree.CircomVerifierProof{
-						Root: &merkletree.Hash{byte(y), byte(y + 1)},
-						Siblings: []*merkletree.Hash{
-							merkletree.NewHashFromBigInt(big.NewInt(int64(y) * 10)),
-							merkletree.NewHashFromBigInt(big.NewInt(int64(y)*100 + 1)),
-							merkletree.NewHashFromBigInt(big.NewInt(int64(y)*1000 + 2))},
-						OldKey:   &merkletree.Hash{byte(y * 1), byte(y*1 + 1)},
-						OldValue: &merkletree.Hash{byte(y * 2), byte(y*2 + 1)},
-						IsOld0:   y%2 == 0,
-						Key:      &merkletree.Hash{byte(y * 3), byte(y*3 + 1)},
-						Value:    &merkletree.Hash{byte(y * 4), byte(y*4 + 1)},
-						Fnc:      y % 2,
-					}
 			}
 		}
 	}

@@ -776,11 +776,6 @@ func (hdb *HistoryDB) AddBlockSCData(blockData *common.BlockData) (err error) {
 				return common.Wrap(err)
 			}
 		}
-
-		// Add exit tree
-		if err := hdb.addExitTree(txn, batch.ExitTree); err != nil {
-			return common.Wrap(err)
-		}
 	}
 	// Add user L1 txs that won't be forged in this block
 	if userL1sNotForgedInThisBlock, ok := userL1s[0]; ok {

@@ -681,7 +681,6 @@ func (s *Synchronizer) rollupSync(ethBlock *common.Block) (*common.RollupData, e
 			exit := &processTxsOut.ExitInfos[i]
 			exit.BatchNum = batchNum
 		}
-		batchData.ExitTree = processTxsOut.ExitInfos
 
 		for i := range processTxsOut.CreatedAccounts {
 			createdAccount := &processTxsOut.CreatedAccounts[i]

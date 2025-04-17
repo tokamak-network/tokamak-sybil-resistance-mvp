@@ -2,7 +2,6 @@ package synchronizer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"os"
@@ -93,9 +92,6 @@ func checkSyncBlock(t *testing.T, s *Synchronizer, blockNum int, block,
 	dbBatches, err := s.historyDB.GetAllBatches()
 	require.NoError(t, err)
 
-	require.NoError(t, err)
-	dbExits, err := s.historyDB.GetAllExits()
-	require.NoError(t, err)
 	for i, batch := range block.Rollup.Batches {
 		var dbBatch *common.Batch
 		// Find batch in DB output
@@ -122,16 +118,6 @@ func checkSyncBlock(t *testing.T, s *Synchronizer, blockNum int, block,
 		// }
 		// assert.Equal(t, batch.L1UserTxs, syncBatch.L1UserTxs)
 
-		// In exit tree, we only check AccountIdx and Balance, because
-		// it's what we have precomputed before.
-		require.Equal(t, len(batch.ExitTree), len(syncBatch.ExitTree))
-		for j := range batch.ExitTree {
-			exit := &batch.ExitTree[j]
-			assert.Equal(t, exit.AccountIdx, syncBatch.ExitTree[j].AccountIdx)
-			assert.Equal(t, exit.Balance, syncBatch.ExitTree[j].Balance)
-			*exit = syncBatch.ExitTree[j]
-		}
-		assert.Equal(t, batch.Batch, syncBatch.Batch)
 		// Ignore updated accounts
 		syncBatch.UpdatedAccounts = nil
 		assert.Equal(t, batch, syncBatch)
@@ -156,31 +142,6 @@ func checkSyncBlock(t *testing.T, s *Synchronizer, blockNum int, block,
 			syncTx := &syncBlock.Rollup.Batches[i].L1UserTxs[j]
 			assert.Equal(t, syncTx.DepositAmount, syncTx.EffectiveDepositAmount)
 			assert.Equal(t, syncTx.Amount, syncTx.EffectiveAmount)
-		}
-
-		// Check Exits from DB
-		for _, exit := range batch.ExitTree {
-			var dbExit *common.ExitInfo
-			// Find exit in DB output
-			for _, _dbExit := range dbExits {
-				if exit.BatchNum == _dbExit.BatchNum &&
-					exit.AccountIdx == _dbExit.AccountIdx {
-					dbExit = new(common.ExitInfo)
-					*dbExit = _dbExit
-					break
-				}
-			}
-			// Compare MerkleProof in JSON because unmarshaled 0
-			// big.Int leaves the internal big.Int array at nil,
-			// and gives trouble when comparing big.Int with
-			// internal big.Int array != nil but empty.
-			mtp, err := json.Marshal(exit.MerkleProof)
-			require.NoError(t, err)
-			dbMtp, err := json.Marshal(dbExit.MerkleProof)
-			require.NoError(t, err)
-			assert.Equal(t, mtp, dbMtp)
-			dbExit.MerkleProof = exit.MerkleProof
-			assert.Equal(t, &exit, dbExit) //nolint:gosec
 		}
 	}
 

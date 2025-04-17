@@ -544,27 +544,5 @@ func (tc *Context) FillBlocksExtra(blocks []common.BlockData, cfg *ConfigExtra) 
 			}
 		}
 	}
-
-	// Fill ExitTree (only AccountIdx and Balance)
-	for i := range blocks {
-		block := &blocks[i]
-		for j := range block.Rollup.Batches {
-			batch := &block.Rollup.Batches[j]
-			if batch.L1Batch {
-				for _, _tx := range tc.Queues[*batch.Batch.ForgeL1TxsNum] {
-					tx := _tx.L1Tx
-					if tx.Type == common.TxTypeWithdraw {
-						batch.ExitTree =
-							append(batch.ExitTree,
-								common.ExitInfo{
-									BatchNum:   batch.Batch.BatchNum,
-									AccountIdx: tx.FromIdx,
-									Balance:    tx.Amount,
-								})
-					}
-				}
-			}
-		}
-	}
 	return nil
 }

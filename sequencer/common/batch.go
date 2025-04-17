@@ -58,7 +58,6 @@ type BatchData struct {
 	L1UserTxs       []L1Tx
 	CreatedAccounts []Account
 	UpdatedAccounts []AccountUpdate
-	ExitTree        []ExitInfo
 	Batch           Batch
 }
 
@@ -68,7 +67,6 @@ func NewBatchData() *BatchData {
 		L1Batch:         false,
 		L1UserTxs:       make([]L1Tx, 0),
 		CreatedAccounts: make([]Account, 0),
-		ExitTree:        make([]ExitInfo, 0),
 		Batch:           Batch{},
 	}
 }

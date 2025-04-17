@@ -227,8 +227,6 @@ func (ei *RollupEventInitialize) RollupVariables() *common.RollupVariables {
 	return &common.RollupVariables{
 		EthBlockNum:           0,
 		ForgeL1L2BatchTimeout: int64(ei.ForgeL1L2BatchTimeout),
-		Buckets:               []common.BucketParams{},
-		SafeMode:              false,
 	}
 }
 

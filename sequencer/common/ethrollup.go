@@ -53,32 +53,10 @@ var (
 		"0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF")
 )
 
-// BucketParams are the parameter variables of each Bucket of Rollup Smart
-// Contract
-type BucketParams struct {
-	CeilUSD         *big.Int
-	BlockStamp      *big.Int
-	Withdrawals     *big.Int
-	RateBlocks      *big.Int
-	RateWithdrawals *big.Int
-	MaxWithdrawals  *big.Int
-}
-
-// BucketUpdate are the bucket updates (tracking the withdrawals value changes)
-// in Rollup Smart Contract
-type BucketUpdate struct {
-	EthBlockNum int64    `meddler:"eth_block_num"`
-	NumBucket   int      `meddler:"num_bucket"`
-	BlockStamp  int64    `meddler:"block_stamp"`
-	Withdrawals *big.Int `meddler:"withdrawals,bigint"`
-}
-
 // RollupVariables are the variables of the Rollup Smart Contract
 type RollupVariables struct {
-	EthBlockNum           int64          `meddler:"eth_block_num"`
-	ForgeL1L2BatchTimeout int64          `meddler:"forge_l1_timeout" validate:"required"`
-	Buckets               []BucketParams `meddler:"buckets,json"`
-	SafeMode              bool           `meddler:"safe_mode"`
+	EthBlockNum           int64 `meddler:"eth_block_num"`
+	ForgeL1L2BatchTimeout int64 `meddler:"forge_l1_timeout" validate:"required"`
 }
 
 // RollupVerifierStruct is the information about verifiers of the Rollup Smart Contract

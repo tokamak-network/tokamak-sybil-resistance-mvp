@@ -123,7 +123,6 @@ func NewClientSetupExample() *ClientSetup {
 	}
 	rollupVariables := &common.RollupVariables{
 		ForgeL1L2BatchTimeout: 10,
-		Buckets:               []common.BucketParams{},
 	}
 	return &ClientSetup{
 		RollupConstants: rollupConstants,

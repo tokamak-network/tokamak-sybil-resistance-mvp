@@ -598,39 +598,6 @@ func (hdb *HistoryDB) GetSCVars() (*common.RollupVariables, error) {
 	return &rollup, nil
 }
 
-func (hdb *HistoryDB) addBucketUpdates(d meddler.DB, bucketUpdates []common.BucketUpdate) error {
-	if len(bucketUpdates) == 0 {
-		return nil
-	}
-	return common.Wrap(database.BulkInsert(
-		d,
-		`INSERT INTO bucket_update (
-		 	eth_block_num,
-		 	num_bucket,
-		 	block_stamp,
-		 	withdrawals
-		) VALUES %s;`,
-		bucketUpdates,
-	))
-}
-
-// AddBucketUpdatesTest allows call to unexported method
-// only for internal testing purposes
-func (hdb *HistoryDB) AddBucketUpdatesTest(d meddler.DB, bucketUpdates []common.BucketUpdate) error {
-	return hdb.addBucketUpdates(d, bucketUpdates)
-}
-
-// GetAllBucketUpdates retrieves all the bucket updates
-func (hdb *HistoryDB) GetAllBucketUpdates() ([]common.BucketUpdate, error) {
-	var bucketUpdates []*common.BucketUpdate
-	err := meddler.QueryAll(
-		hdb.dbRead, &bucketUpdates,
-		`SELECT eth_block_num, num_bucket, block_stamp, withdrawals  
-		FROM bucket_update ORDER BY item_id;`,
-	)
-	return database.SlicePtrsToSlice(bucketUpdates).([]common.BucketUpdate), common.Wrap(err)
-}
-
 // setExtraInfoForgedL1UserTxs sets the EffectiveAmount, EffectiveDepositAmount
 // and EffectiveFromIdx of the given l1UserTxs (with an UPDATE)
 func (hdb *HistoryDB) setExtraInfoForgedL1UserTxs(d sqlx.Ext, txs []common.L1Tx) error {

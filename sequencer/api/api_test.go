@@ -204,7 +204,6 @@ func TestMain(m *testing.M) {
 	rollupVars := common.RollupVariables{
 		EthBlockNum:           int64(3),
 		ForgeL1L2BatchTimeout: int64(44),
-		SafeMode:              false,
 	}
 
 	stateAPIUpdater, err = stateapiupdater.NewUpdater(hdb, nodeConfig, &common.SCVariables{

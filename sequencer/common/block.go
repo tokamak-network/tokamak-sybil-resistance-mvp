@@ -23,20 +23,16 @@ type BlockData struct {
 // RollupData contains information returned by the Rollup smart contract
 type RollupData struct {
 	// L1UserTxs that were submitted in the block
-	L1UserTxs            []L1Tx
-	Batches              []BatchData
-	Withdrawals          []WithdrawInfo
-	UpdateBucketWithdraw []BucketUpdate
-	Vars                 *RollupVariables
-	AddedTokens          []Token
+	L1UserTxs []L1Tx
+	Batches   []BatchData
+	Vars      *RollupVariables
 }
 
 // NewRollupData creates an empty RollupData with the slices initialized.
 func NewRollupData() RollupData {
 	return RollupData{
-		L1UserTxs:   make([]L1Tx, 0),
-		Batches:     make([]BatchData, 0),
-		Withdrawals: make([]WithdrawInfo, 0),
-		Vars:        nil,
+		L1UserTxs: make([]L1Tx, 0),
+		Batches:   make([]BatchData, 0),
+		Vars:      nil,
 	}
 }

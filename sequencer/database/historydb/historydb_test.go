@@ -570,12 +570,8 @@ func exampleInitSCVars() *common.RollupVariables { // *common.AuctionVariables,
 	// *common.WDelayerVariables,
 
 	rollup := &common.RollupVariables{
-		EthBlockNum: 0,
-		// FeeAddToken:           big.NewInt(10),
+		EthBlockNum:           0,
 		ForgeL1L2BatchTimeout: 12,
-		// WithdrawalDelay:       13,
-		Buckets:  []common.BucketParams{},
-		SafeMode: false,
 	}
 	// auction := &common.AuctionVariables{
 	// 	EthBlockNum:        0,
@@ -790,34 +786,6 @@ func TestSetExtraInfoForgedL1UserTxs(t *testing.T) {
 // 	// }
 // 	// require.Equal(t, block.Block.Num, dbExitsByIdx[257].DelayedWithdrawn)
 // }
-
-func TestAddBucketUpdates(t *testing.T) {
-	setup(historyDB, t)
-
-	const fromBlock int64 = 1
-	const toBlock int64 = 5 + 1
-	setTestBlocks(fromBlock, toBlock)
-
-	bucketUpdates := []common.BucketUpdate{
-		{
-			EthBlockNum: 4,
-			NumBucket:   0,
-			BlockStamp:  4,
-			Withdrawals: big.NewInt(123),
-		},
-		{
-			EthBlockNum: 5,
-			NumBucket:   2,
-			BlockStamp:  5,
-			Withdrawals: big.NewInt(42),
-		},
-	}
-	err := historyDB.addBucketUpdates(historyDB.dbWrite, bucketUpdates)
-	require.NoError(t, err)
-	dbBucketUpdates, err := historyDB.GetAllBucketUpdates()
-	require.NoError(t, err)
-	assert.Equal(t, bucketUpdates, dbBucketUpdates)
-}
 
 func TestGetLastL1TxsNum(t *testing.T) {
 	setup(historyDB, t)

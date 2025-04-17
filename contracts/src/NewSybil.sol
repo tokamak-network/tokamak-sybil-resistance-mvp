@@ -21,14 +21,14 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
 		uint32 batchNum;
     }
 
-    uint256 constant _EXPLODE_AMOUNT = (1 << 50);
     uint256 constant _TXN_TOTALBYTES = 73; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 256; // Max transactions per batch
     uint256 constant _LIMIT_AMOUNT = (1 << 128); // Max loadAmount per call
-    uint256 constant _MIN_BALANCE = (1 << 1);
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
+    uint256 public explodeAmount = (1 << 50);
+    uint256 public minBalance = (1 << 1);
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
 
@@ -103,7 +103,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
         if (msg.value >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (msg.value < _MIN_BALANCE) {
+        if (msg.value < minBalance) {
             revert InsufficientETH();
         }
         if(balances[msg.sender] == 0) {
@@ -119,7 +119,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
             revert LimitAmountExceeded();
         }
         // require(amount < _LIMIT_AMOUNT, LimitAmountExceeded());
-        if (amount + _MIN_BALANCE > balances[msg.sender]) {
+        if (amount + minBalance > balances[msg.sender]) {
             revert InsufficientBalance();
         }
         balances[msg.sender] -= amount;
@@ -181,7 +181,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
                 if (!vouches[toEthAddr][msg.sender]) {
                     revert NotVouched(msg.sender, toEthAddr);
                 }
-                uint256 penalty = Math.min(_EXPLODE_AMOUNT, balances[toEthAddr] - _MIN_BALANCE);
+                uint256 penalty = Math.min(explodeAmount, balances[toEthAddr] - minBalance);
                 balances[toEthAddr] -= penalty;
                 balances[msg.sender] += penalty;
                 vouches[toEthAddr][msg.sender] = false;
@@ -270,8 +270,8 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * @notice This function can only be called by an account with the `ADMIN_ROLE`.
     */
     function updateExplodeAmount(uint256 _explodeAmount) external override onlyRole(ADMIN_ROLE) {
-        _EXPLODE_AMOUNT = _explodeAmount;
-        emit ExplodeAmountUpdated(_EXPLODE_AMOUNT);
+        explodeAmount = _explodeAmount;
+        emit ExplodeAmountUpdated(explodeAmount);
     }
 
     /**
@@ -282,8 +282,8 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * @notice This function can only be called by an account with the `ADMIN_ROLE`.
     */
     function updateMinBalance(uint256 _minBalance) external override onlyRole(ADMIN_ROLE){
-        _MIN_BALANCE = _minBalance;
-        emit MinBalanceUpdated(_MIN_BALANCE);
+        minBalance = _minBalance;
+        emit MinBalanceUpdated(minBalance);
     }
 
     /**

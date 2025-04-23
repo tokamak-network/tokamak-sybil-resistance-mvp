@@ -101,4 +101,31 @@ contract MvpTest is Test, NewTransactionTypeHelper {
         bytes memory expectedTxData = abi.encodePacked(identifer, address(this), address(0), amount);
         assertEq(txData, expectedTxData);
     }
+
+    function testGetQueueLength() public {
+        uint32 queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 2);
+
+        vm.prank(address(this));
+        sybil.deposit {
+            value: 1 ether
+        }();
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            0xabc, 
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC
+        );
+
+        queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 2);
+    }
 }

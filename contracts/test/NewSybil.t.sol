@@ -275,4 +275,14 @@ contract MvpTest is Test {
         assertEq(sybil.vouches(address(this), address(0x123)), false);
     }
 
+function testUnvouchWithNotVouched() public {
+    assertEq(sybil.vouches(address(this), address(0x123)), false);
+
+    vm.expectRevert(abi.encodeWithSelector(INewSybil.NotVouched.selector, address(this), address(0x123)));
+    vm.prank(address(this));
+    sybil.unvouch(address(0x123));
+
+    assertEq(sybil.vouches(address(this), address(0x123)), false);
+}
+
 }

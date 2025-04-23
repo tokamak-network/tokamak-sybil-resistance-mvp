@@ -304,5 +304,14 @@ contract MvpTest is Test {
         sybil.withdraw(amount);
     }
 
+    function testWithdrawTransactionWithInsufficientBalance() public {
+        vm.prank(address(this));
+        sybil.deposit{
+            value: 1 ether
+        }();
+        vm.expectRevert(INewSybil.InsufficientBalance.selector);
+        sybil.withdraw(1 ether);
+    }
+
     receive() external payable { }
 }

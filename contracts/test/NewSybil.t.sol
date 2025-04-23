@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 import "../src/NewSybil.sol";
 import "../src/interfaces/INewSybil.sol";
 import "./utils/Constants.sol";
-import "./types/NewTransactionTypes.sol";
 import "../src/Verifier.sol";
 import "forge-std/console.sol";
+
 contract MockPoseidon2 is PoseidonUnit2 {
     function poseidon(
         uint256[2] memory input
@@ -20,7 +20,7 @@ contract MockPoseidon3 is PoseidonUnit3 {
     ) external pure override returns (uint256) {}
 }
 
-contract MvpTest is Test, NewTransactionTypeHelper {
+contract MvpTest is Test {
     NewSybil public sybil;
     bytes32[] public hashes;
 
@@ -218,6 +218,23 @@ contract MvpTest is Test, NewTransactionTypeHelper {
         sybil.deposit();
         uint256 balance = sybil.balances(address(this));
         assertEq(balance, 0 ether);
+    }
+
+    function testVouch() public {
+        vm.prank(address(this));
+        sybil.deposit{
+            value: 1 ether
+        }();
+
+        vm.deal(address(0x123), 1 ether);
+        vm.prank(address(0x123));
+        sybil.deposit{
+            value: 1 ether
+        }();
+        vm.prank(address(this));
+        sybil.vouch(address(0x123));
+
+        assertEq(sybil.vouches(address(this), address(0x123)), true);
     }
 
 }

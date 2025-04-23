@@ -19,3 +19,33 @@ contract MockPoseidon3 is PoseidonUnit3 {
         uint256[3] memory input
     ) external pure override returns (uint256) {}
 }
+
+contract MvpTest is Test, NewTransactionTypeHelper {
+    NewSybil public sybil;
+    bytes32[] public hashes;
+
+    function setup() public {
+        PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
+        PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
+        emit log_address(address(mockPoseidon2));
+        emit log_address(address(mockPoseidon3));
+
+        Verifier verifierStub = new Verifier();
+
+        address verifiers = address(verifierStub);
+        address adminRole = address(this);
+        uint256 maxTx = uint256(256);
+        uint256 nLevels = uint256(1);
+
+        sybil = new NewSybil();
+
+        sybil.initialize(
+            verifiers, 
+            maxTx, 
+            nLevels, 
+            address(mockPoseidon2), 
+            address(mockPoseidon3), 
+            adminRole
+        );
+    }
+}

@@ -275,14 +275,26 @@ contract MvpTest is Test {
         assertEq(sybil.vouches(address(this), address(0x123)), false);
     }
 
-function testUnvouchWithNotVouched() public {
-    assertEq(sybil.vouches(address(this), address(0x123)), false);
+    function testUnvouchWithNotVouched() public {
+        assertEq(sybil.vouches(address(this), address(0x123)), false);
 
-    vm.expectRevert(abi.encodeWithSelector(INewSybil.NotVouched.selector, address(this), address(0x123)));
-    vm.prank(address(this));
-    sybil.unvouch(address(0x123));
+        vm.expectRevert(abi.encodeWithSelector(INewSybil.NotVouched.selector, address(this), address(0x123)));
+        vm.prank(address(this));
+        sybil.unvouch(address(0x123));
 
-    assertEq(sybil.vouches(address(this), address(0x123)), false);
-}
+        assertEq(sybil.vouches(address(this), address(0x123)), false);
+    }
 
+    function testWithdrawTransaction() public {
+        vm.prank(address(this));
+        sybil.deposit{
+            value: 2 ether
+        }();
+
+        uint256 amount = 1 ether;
+        sybil.withdraw(amount);
+        assertEq(sybil.balances(address(this)), 1 ether);
+    }
+
+    receive() external payable { }
 }

@@ -63,7 +63,29 @@ contract MvpTest is Test, NewTransactionTypeHelper {
             proofC
         );
         uint32 batchNum = sybil.lastForgedBatch();
-        uint256 stateRoot = sybil.getStateRoot(batchNum);
+        uint256 stateRoot = sybil.accountRootMap(batchNum);
         assertEq(stateRoot, 0xabc);
+    }
+
+    function testGetLastForgedBatch() public {
+        uint32 lastForged = sybil.lastForgedBatch();
+        assertEq(lastForged, 0);
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            0xabc,
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC
+        );
+
+        lastForged = sybil.lastForgedBatch();
+        assertEq(lastForged, 1);
     }
 }

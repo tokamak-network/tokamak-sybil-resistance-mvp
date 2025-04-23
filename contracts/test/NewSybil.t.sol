@@ -159,4 +159,19 @@ contract MvpTest is Test, NewTransactionTypeHelper {
             value: 1 ether
         }();
     }
+
+    function testCreateDepositAccountTransaction() public {
+        uint256 balance = sybil.balances(address(this));
+        // balance zero means the account has not been created
+        assertEq(balance, 0 ether);
+        vm.prank(address(this));
+        // account is created in this deposit function
+        sybil.deposit{
+            value: 1 ether
+        }();
+        balance = sybil.balances(address(this));
+        assertEq(balance, 1 ether);
+    }
+
+
 }

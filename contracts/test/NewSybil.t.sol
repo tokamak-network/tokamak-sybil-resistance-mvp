@@ -128,4 +128,23 @@ contract MvpTest is Test, NewTransactionTypeHelper {
         queueLength = sybil.getQueueLength();
         assertEq(queueLength, 2);
     }
+
+    function testForgeBatchEventEmission() public {
+        vm.expectEmit(true, true, true, true);
+        emit NewSybil.ForgeBatch(1, 3);
+
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            0xabc, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC
+        );
+    }
 }

@@ -88,4 +88,17 @@ contract MvpTest is Test, NewTransactionTypeHelper {
         lastForged = sybil.lastForgedBatch();
         assertEq(lastForged, 1);
     }
+
+    function testGetL1TransactionQueue() public {
+        vm.prank(address(this));
+        sybil.deposit {
+            value: 1 ether
+        }();
+
+        bytes memory txData = sybil.unprocessedBatchesMap(uint32(2));
+        uint256 identifer = 0;
+        uint256 amount = 1 ether;
+        bytes memory expectedTxData = abi.encodePacked(identifer, address(this), address(0), amount);
+        assertEq(txData, expectedTxData);
+    }
 }

@@ -199,4 +199,17 @@ contract MvpTest is Test, NewTransactionTypeHelper {
         uint256 balance = sybil.balances(address(this));
         assertEq(balance, 2 ether);
     }
+
+    function testDepositTransactionWithLimitAmountExceeded() public {
+        uint256 _LIMIT_AMOUNT = (1 << 129);
+        uint num = 1 << 129;
+        vm.deal(address(this), num);
+
+        vm.prank(address(this));
+        vm.expectRevert(INewSybil.LimitAmountExceeded.selector);
+        sybil.deposit {
+            value: _LIMIT_AMOUNT
+        }();
+    }
+
 }

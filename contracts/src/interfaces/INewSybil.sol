@@ -33,14 +33,6 @@ interface INewSybil {
         uint256[2] calldata proofC
     ) external;
 
-    // Getter functions
-    function getStateRoot(uint32 batchNum) external view returns (uint256);
-    function getLastForgedBatch() external view returns (uint32);
-
-    // L1 Transaction Queue functions
-    function getL1TransactionQueue(
-        uint32 queueIndex
-    ) external view returns (bytes memory);
     function getQueueLength() external view returns (uint32);
 
     // Deposit Function

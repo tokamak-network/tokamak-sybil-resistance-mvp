@@ -254,4 +254,25 @@ contract MvpTest is Test {
         sybil.vouch(address(0x123));
     }
 
+    function testUnvouch() public {
+        vm.prank(address(this));
+        sybil.deposit{
+            value: 1 ether
+        }();
+
+        vm.deal(address(0x123), 1 ether);
+        vm.prank(address(0x123));
+        sybil.deposit{
+            value: 1 ether
+        }();
+        vm.prank(address(this));
+        sybil.vouch(address(0x123));
+
+        // first vouch for another address to unvouch it
+        vm.prank(address(this));
+        sybil.unvouch(address(0x123));
+
+        assertEq(sybil.vouches(address(this), address(0x123)), false);
+    }
+
 }

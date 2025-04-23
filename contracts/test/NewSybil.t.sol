@@ -237,4 +237,10 @@ contract MvpTest is Test {
         assertEq(sybil.vouches(address(this), address(0x123)), true);
     }
 
+    function testInvalidVouchWithSenderHasZeroBalance() public {
+        vm.prank(address(this));
+        vm.expectRevert(INewSybil.SenderHasZeroBalance.selector);
+        sybil.vouch(address(0x123));
+    }
+
 }

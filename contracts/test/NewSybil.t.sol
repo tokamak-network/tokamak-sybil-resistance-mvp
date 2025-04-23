@@ -201,14 +201,13 @@ contract MvpTest is Test {
     }
 
     function testDepositTransactionWithLimitAmountExceeded() public {
-        uint256 _LIMIT_AMOUNT = (1 << 129);
-        uint num = 1 << 129;
-        vm.deal(address(this), num);
+        uint256 amount = (1 << 129);
+        vm.deal(address(this), amount);
 
         vm.prank(address(this));
         vm.expectRevert(INewSybil.LimitAmountExceeded.selector);
         sybil.deposit {
-            value: _LIMIT_AMOUNT
+            value: amount
         }();
     }
 
@@ -294,6 +293,15 @@ contract MvpTest is Test {
         uint256 amount = 1 ether;
         sybil.withdraw(amount);
         assertEq(sybil.balances(address(this)), 1 ether);
+    }
+
+    function testWithdrawTransactionWithLimitAmountExceeded() public {
+        uint256 amount = (1 << 129);
+        vm.deal(address(this), amount);
+
+        vm.prank(address(this));
+        vm.expectRevert(INewSybil.LimitAmountExceeded.selector);
+        sybil.withdraw(amount);
     }
 
     receive() external payable { }

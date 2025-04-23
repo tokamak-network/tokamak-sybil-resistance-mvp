@@ -131,7 +131,7 @@ contract MvpTest is Test, NewTransactionTypeHelper {
 
     function testForgeBatchEventEmission() public {
         vm.expectEmit(true, true, true, true);
-        emit NewSybil.ForgeBatch(1, 3);
+        emit NewSybil.ForgeBatch(1, 0);
 
         uint256[2] memory proofA = [uint(0),uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
@@ -146,5 +146,17 @@ contract MvpTest is Test, NewTransactionTypeHelper {
             proofB,
             proofC
         );
+    }
+
+    function testL1UserTxEventEmission() public {
+        vm.expectEmit(true, true, true, true);
+        uint256 identifer = 0;
+        uint256 amount = 1 ether;
+        emit NewSybil.L1UserTxEvent(2, 0, abi.encodePacked(identifer, address(this), address(0), amount));
+
+        vm.prank(address(this));
+        sybil.deposit {
+            value: 1 ether
+        }();
     }
 }

@@ -7,7 +7,7 @@ import "../src/interfaces/INewSybil.sol";
 import "./utils/Constants.sol";
 import "./types/NewTransactionTypes.sol";
 import "../src/Verifier.sol";
-
+import "forge-std/console.sol";
 contract MockPoseidon2 is PoseidonUnit2 {
     function poseidon(
         uint256[2] memory input
@@ -24,11 +24,11 @@ contract MvpTest is Test, NewTransactionTypeHelper {
     NewSybil public sybil;
     bytes32[] public hashes;
 
-    function setup() public {
+    function setUp() public {
         PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
         PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
-        emit log_address(address(mockPoseidon2));
-        emit log_address(address(mockPoseidon3));
+        // emit log_address(address(mockPoseidon2));
+        // emit log_address(address(mockPoseidon3));
 
         Verifier verifierStub = new Verifier();
 
@@ -47,5 +47,23 @@ contract MvpTest is Test, NewTransactionTypeHelper {
             address(mockPoseidon3), 
             adminRole
         );
+    }
+
+    function testGetStateRoot() public {
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            0xabc,
+            0, 
+            0,
+            proofA,
+            proofB,
+            proofC
+        );
+        uint32 batchNum = sybil.lastForgedBatch();
+        uint256 stateRoot = sybil.getStateRoot(batchNum);
+        assertEq(stateRoot, 0xabc);
     }
 }

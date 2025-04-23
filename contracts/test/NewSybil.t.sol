@@ -243,4 +243,15 @@ contract MvpTest is Test {
         sybil.vouch(address(0x123));
     }
 
+    function testInvalidVouchWithReceiverHasZeroBalance() public {
+        vm.prank(address(this));
+        sybil.deposit{
+            value: 1 ether
+        }();
+
+        vm.expectRevert(INewSybil.ReceiverHasZeroBalance.selector);
+        vm.prank(address(this));
+        sybil.vouch(address(0x123));
+    }
+
 }

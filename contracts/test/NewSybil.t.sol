@@ -173,5 +173,30 @@ contract MvpTest is Test, NewTransactionTypeHelper {
         assertEq(balance, 1 ether);
     }
 
-
+    function testDepositTransaction() public {
+        uint256[2] memory proofA = [uint(0),uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        // account is created in this deposit function
+        vm.prank(address(this));
+        sybil.deposit {
+            value: 1 ether
+        }();
+        vm.prank(address(this));
+        sybil.forgeBatch(
+            0xabc, 
+            0, 
+            0, 
+            proofA,
+            proofB,
+            proofC
+        );
+        // balance is added in this deposit function
+        vm.prank(address(this));
+        sybil.deposit {
+            value: 1 ether
+        }();
+        uint256 balance = sybil.balances(address(this));
+        assertEq(balance, 2 ether);
+    }
 }

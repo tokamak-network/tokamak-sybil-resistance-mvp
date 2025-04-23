@@ -212,4 +212,12 @@ contract MvpTest is Test, NewTransactionTypeHelper {
         }();
     }
 
+    function testDepositTransactionWithInsufficientETH() public {
+        vm.prank(address(this));
+        vm.expectRevert(INewSybil.InsufficientETH.selector);
+        sybil.deposit();
+        uint256 balance = sybil.balances(address(this));
+        assertEq(balance, 0 ether);
+    }
+
 }

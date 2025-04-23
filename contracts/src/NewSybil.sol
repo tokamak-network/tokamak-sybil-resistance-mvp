@@ -283,35 +283,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     }
 
     /**
-     * @dev Retrieves the state root for a specific batch number.
-     *
-     * @param batchNum The batch number associated with the state root.
-     * @return The account root of the specified batch number.
-    */
-    function getStateRoot(uint32 batchNum) external view override returns (uint256) {
-        return accountRootMap[batchNum];
-    }
-
-    /**
-     * @dev Retrieves the last forged batch number.
-     *
-     * @return The last forged batch number.
-    */
-    function getLastForgedBatch() external view override returns (uint32) {
-        return lastForgedBatch;
-    }
-
-    /**
-     * @dev Retrieves the transaction queue for a specific index.
-     * 
-     * @param queueIndex The index of the transaction queue.
-     * @return A bytes array containing the unprocessed transactions for the specified index.
-    */
-    function getL1TransactionQueue(uint32 queueIndex) external view override returns (bytes memory) {
-        return unprocessedBatchesMap[queueIndex];
-    }
-
-    /**
      * @dev Retrieves the length of the transaction queue.
      *
      * @return The number of batches in the transaction queue.

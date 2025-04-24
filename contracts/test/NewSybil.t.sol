@@ -94,7 +94,7 @@ contract MvpTest is Test {
         sybil.deposit {
             value: 1 ether
         }();
-
+        console.log(sybil.balances(address(this)));
         bytes memory txData = sybil.unprocessedBatchesMap(uint32(2));
         uint256 identifer = 0;
         uint256 amount = 1 ether;
@@ -311,6 +311,39 @@ contract MvpTest is Test {
         }();
         vm.expectRevert(INewSybil.InsufficientBalance.selector);
         sybil.withdraw(1 ether);
+    }
+
+    function testInitializeWithInvalidPoseidonAddresses() public {
+        PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
+        PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
+        Verifier verifierStub = new Verifier(); 
+        
+        address verifiers = address(verifierStub);
+        uint256 maxTx = uint(256);
+        uint256 nLevels = uint(1);
+
+        address invalidAddress = address(0);
+
+        NewSybil newSybil = new NewSybil();
+        vm.expectRevert();
+        newSybil.initialize(
+            verifiers, 
+            maxTx, 
+            nLevels, 
+            invalidAddress, 
+            address(mockPoseidon3), 
+            address(this)
+        );
+
+        vm.expectRevert();
+        newSybil.initialize(
+            verifiers, 
+            maxTx, 
+            nLevels, 
+            address(mockPoseidon2), 
+            invalidAddress, 
+            address(this)
+        );
     }
 
     receive() external payable { }

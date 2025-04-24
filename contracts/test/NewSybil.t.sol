@@ -94,7 +94,7 @@ contract MvpTest is Test {
         sybil.deposit {
             value: 1 ether
         }();
-        
+
         bytes memory txData = sybil.unprocessedBatchesMap(uint32(2));
         uint256 identifer = 0;
         uint256 amount = 1 ether;
@@ -397,6 +397,16 @@ contract MvpTest is Test {
             vm.prank(addArray[i]);
             assertEq(sybil.vouches(addArray[i], sender), false);
         }
+    }
+
+    function testProveScoreMerkleProof() public {
+        uint32 numScoreRoot = 0;
+        uint24 idx = 0;
+		uint32 score = 100;
+		uint256[] memory siblings = new uint256[](2);
+
+        vm.prank(address(this));
+        sybil.proveScoreMerkleProof(numScoreRoot, idx, score, siblings);
     }
 
     receive() external payable { }

@@ -102,31 +102,31 @@ contract MVPSybilHelpers {
 
     /**
      * @dev Verify sparse merkle tree proof
-     * @param root Root to verify
+     * @param scoreRoot Root to verify
      * @param siblings Siblings necessary to compute the merkle proof
-     * @param key Key to verify
-     * @param value Value to verify
+     * @param idx Key to verify
+     * @param stateHash Value to verify
      * @return True if verification is correct, false otherwise
      */
     function _smtVerifier(
-        uint256 root,
+        uint256 scoreRoot,
         uint256[] calldata siblings,
-        uint256 key,
-        uint256 value
+        uint256 idx,
+        uint256 stateHash
     ) internal view returns (bool) {
         // Step 2: Calcuate root
-        uint256 nextHash = _hashFinalNode(key, value);
+        uint256 nextHash = _hashFinalNode(idx, stateHash);
         uint256 siblingTmp;
         for (int256 i = int256(siblings.length) - 1; i >= 0; i--) {
             siblingTmp = siblings[uint256(i)];
-            bool leftRight = (uint8(key >> uint256(i)) & 0x01) == 1;
+            bool leftRight = (uint8(idx >> uint256(i)) & 0x01) == 1;
             nextHash = leftRight
                 ? _hashNode(siblingTmp, nextHash)
                 : _hashNode(nextHash, siblingTmp);
         }
 
         // Step 3: Check root
-        return root == nextHash;
+        return scoreRoot == nextHash;
     }
 
     /**

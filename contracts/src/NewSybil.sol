@@ -346,29 +346,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     }
 
     /**
-     * @dev Transfers Ether to the specified address.
-     *
-     * @param value The amount of Ether to transfer, specified in wei.
-     *
-     * @dev Reverts with `EthTransferFailed` if the transfer is unsuccessful.
-    */
-    // function _safeTransfer(uint256 value) internal {
-    //     (bool success, ) = msg.sender.call{value: value}(new bytes(0));
-    //     if (!success) {
-    //         revert EthTransferFailed();
-    //     }
-    // }
-
-    /**
-    //  * @dev Withdraws a specified amount of funds from the contract.
-    //  *
-    //  * @param amount The amount of Ether to withdraw, specified in wei.
-    // */
-    // function _withdrawFunds(uint192 amount) internal {
-    //     _safeTransfer(amount);
-    // }
-
-    /**
      * @dev Initializes the rollup verifier with the specified parameters.
      *
      * @param _verifier The address of the verifier contract to be used.

@@ -346,5 +346,25 @@ contract MvpTest is Test {
         );
     }
 
+    function testInitializeWithInvalidVerifierAddresses() public {
+        PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
+        PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
+        
+        address verifier = address(0);
+        uint256 maxTx = uint(256);
+        uint256 nLevel = uint(1);
+
+        NewSybil newSybil = new NewSybil();
+        vm.expectRevert(INewSybil.InvalidVerifierAddress.selector);
+        newSybil.initialize(
+            verifier, 
+            maxTx, 
+            nLevel, 
+            address(mockPoseidon2), 
+            address(mockPoseidon3),
+            address(this)
+        );
+    }
+    
     receive() external payable { }
 }

@@ -94,7 +94,7 @@ contract MvpTest is Test {
         sybil.deposit {
             value: 1 ether
         }();
-        console.log(sybil.balances(address(this)));
+        
         bytes memory txData = sybil.unprocessedBatchesMap(uint32(2));
         uint256 identifer = 0;
         uint256 amount = 1 ether;
@@ -366,5 +366,38 @@ contract MvpTest is Test {
         );
     }
     
+    function testExplodeMultiple() public {
+        address[] memory addArray = new address[](4);
+        addArray[0] = address(1);
+        addArray[1] = address(2);
+        addArray[2] = address(3);
+        addArray[3] = address(4);
+        address sender = address(this);
+
+        vm.prank(sender);
+        sybil.deposit{
+            value: 2 ether
+        }();
+
+        for (uint256 i = 0; i < addArray.length; ++i) {
+            vm.deal(addArray[i], 10 ether);
+            vm.prank(addArray[i]);
+            sybil.deposit{ 
+                value: 2 ether 
+            }();
+        }
+        for (uint256 i = 0; i < addArray.length; ++i) {
+            vm.prank(addArray[i]);
+            sybil.vouch(sender);
+        }
+
+        vm.prank(sender);
+        sybil.explodeMultiple(addArray);
+        for(uint256 i = 0; i < addArray.length; ++i) {
+            vm.prank(addArray[i]);
+            assertEq(sybil.vouches(addArray[i], sender), false);
+        }
+    }
+
     receive() external payable { }
 }

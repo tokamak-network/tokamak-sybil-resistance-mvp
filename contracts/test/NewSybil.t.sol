@@ -432,5 +432,13 @@ contract MvpTest is Test {
         assertEq(sybil.explodeAmount(), newExplodeAmount);
     }
 
+    function testUpdateMinBalance() public {
+        uint256 newMinBalance = 1000;
+        vm.prank(address(this));
+        sybil.updateMinBalance(newMinBalance);
+
+        assertEq(sybil.minBalance(), newMinBalance);
+    }
+
     receive() external payable { }
 }

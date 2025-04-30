@@ -241,18 +241,17 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
 		uint32 score, 
 		uint256[] calldata siblings
     ) external {
-        uint256[2] memory arrayState = _buildTreeState(
-            score,
-            msg.sender
-        );
-        uint256 stateHash = _hash2Elements(arrayState);
+        uint256[2] memory arrayState;
+        arrayState[0] = score;
+        arrayState[0] = uint256(uint160(msg.sender));
+
+        uint256 stateHash = _insPoseidonUnit2.poseidon(arrayState);
         uint256 scoreRoot = scoreRootMap[numScoreRoot];
         
         if(!_smtVerifier(scoreRoot, siblings, idx, stateHash)) {
             revert SmtProofInvalid();
         }
-        // require(_smtVerifier(scoreRoot, siblings, idx, stateHash), SmtProofInvalid());
-        
+
         scoreSnapshots[msg.sender].batchNum = numScoreRoot;
         scoreSnapshots[msg.sender].score = score;
     }

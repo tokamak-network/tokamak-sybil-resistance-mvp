@@ -413,7 +413,7 @@ contract MvpTest is Test {
             assertEq(sybil.vouches(addArray[i], sender), false);
         }
     }
-    
+
     function testProveScoreMerkleProof() public {
         uint32 numScoreRoot = 0;
         uint24 idx = 0;
@@ -422,6 +422,14 @@ contract MvpTest is Test {
 
         vm.prank(address(this));
         sybil.proveScoreMerkleProof(numScoreRoot, idx, score, siblings);
+    }
+
+    function testUpdateExplodeAmount() public {
+        uint256 newExplodeAmount = 500;
+        vm.prank(address(this));
+        sybil.updateExplodeAmount(newExplodeAmount);
+
+        assertEq(sybil.explodeAmount(), newExplodeAmount);
     }
 
     receive() external payable { }

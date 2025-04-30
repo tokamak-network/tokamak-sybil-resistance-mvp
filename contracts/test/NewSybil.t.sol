@@ -399,6 +399,21 @@ contract MvpTest is Test {
         }
     }
 
+    function testExplodeMultipleWithNotVouched() public {
+        address[] memory addArray = new address[](4);
+        addArray[0] = address(1);
+        addArray[1] = address(2);
+        address sender = address(this);
+
+        vm.prank(sender);
+        vm.expectRevert(abi.encodeWithSelector(INewSybil.NotVouched.selector, sender, addArray[0]));
+        sybil.explodeMultiple(addArray);
+        for(uint256 i = 0; i < addArray.length; ++i) {
+            vm.prank(addArray[i]);
+            assertEq(sybil.vouches(addArray[i], sender), false);
+        }
+    }
+    
     function testProveScoreMerkleProof() public {
         uint32 numScoreRoot = 0;
         uint24 idx = 0;

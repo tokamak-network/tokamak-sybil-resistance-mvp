@@ -447,6 +447,15 @@ contract MvpTest is Test {
         vm.expectRevert();
         sybil.updateExplodeAmount(newExplodeAmount);
     }
+    
+    function testUpdateMinBalanceByNonAdmin() public {
+        uint256 newMinBalance = 1000;
+        address user = address(0);
+
+        vm.prank(user);
+        vm.expectRevert();
+        sybil.updateMinBalance(newMinBalance);
+    }
 
     receive() external payable { }
 }

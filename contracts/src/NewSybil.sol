@@ -27,7 +27,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    uint256 public explodeAmount = (1 << 50);
+    uint256 public explodeAmount  = (1 << 50);
     uint256 public minBalance = (1 << 1);
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
@@ -315,6 +315,11 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
 
         uint256 currentPosition = unprocessedBatchesMap[currentFillingBatch].length /
             _TXN_TOTALBYTES;
+
+        unprocessedBatchesMap[currentFillingBatch] = bytes.concat(
+             unprocessedBatchesMap[currentFillingBatch],
+             l1Tx
+         );
 
         emit L1UserTxEvent(currentFillingBatch, uint8(currentPosition), l1Tx);
 

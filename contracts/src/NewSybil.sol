@@ -301,7 +301,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
      * @dev Emits a {L1User TxEvent} event.
     */
     function _addTx(
-        uint256 identifer,
+        uint8 identifer,
         address from,
         address to,
         uint256 amount
@@ -315,11 +315,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
 
         uint256 currentPosition = unprocessedBatchesMap[currentFillingBatch].length /
             _TXN_TOTALBYTES;
-
-        unprocessedBatchesMap[currentFillingBatch] = bytes.concat(
-            unprocessedBatchesMap[currentFillingBatch],
-            l1Tx
-        );
 
         emit L1UserTxEvent(currentFillingBatch, uint8(currentPosition), l1Tx);
 

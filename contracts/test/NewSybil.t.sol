@@ -78,10 +78,10 @@ contract MvpTest is Test {
         sybil.deposit{value: 1 ether}();
 
         bytes memory txData = sybil.unprocessedBatchesMap(uint32(2));
-        uint256 identifer = 0;
+        uint8 identifier = 0;
         uint256 amount = 1 ether;
         bytes memory expectedTxData = abi.encodePacked(
-            identifer,
+            identifier,
             address(this),
             address(0),
             amount
@@ -121,7 +121,7 @@ contract MvpTest is Test {
 
     function testL1UserTxEventEmission() public {
         vm.expectEmit(true, true, true, true);
-        uint256 identifer = 0;
+        uint8 identifer = 0;
         uint256 amount = 1 ether;
         emit NewSybil.L1UserTxEvent(
             2,

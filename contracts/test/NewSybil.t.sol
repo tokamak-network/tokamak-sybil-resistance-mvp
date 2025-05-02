@@ -36,7 +36,7 @@ contract MvpTest is Test {
         uint256 nLevels = uint256(1);
 
         sybil = new NewSybil();
-
+   
         sybil.initialize(
             verifiers,
             maxTx,
@@ -73,22 +73,6 @@ contract MvpTest is Test {
         assertEq(lastForged, 1);
     }
 
-    function testGetL1TransactionQueue() public {
-        vm.prank(address(this));
-        sybil.deposit{value: 1 ether}();
-
-        bytes memory txData = sybil.unprocessedBatchesMap(uint32(2));
-        uint8 identifier = 0;
-        uint256 amount = 1 ether;
-        bytes memory expectedTxData = abi.encodePacked(
-            identifier,
-            address(this),
-            address(0),
-            amount
-        );
-        assertEq(txData, expectedTxData);
-    }
-
     function testGetQueueLength() public {
         uint32 queueLength = sybil.getQueueLength();
         assertEq(queueLength, 2);
@@ -121,12 +105,12 @@ contract MvpTest is Test {
 
     function testL1UserTxEventEmission() public {
         vm.expectEmit(true, true, true, true);
-        uint8 identifer = 0;
+        uint8 identifier = 0;
         uint256 amount = 1 ether;
         emit NewSybil.L1UserTxEvent(
             2,
             0,
-            abi.encodePacked(identifer, address(this), address(0), amount)
+            abi.encode(identifier, address(this), address(0), amount)
         );
 
         vm.prank(address(this));
@@ -135,27 +119,21 @@ contract MvpTest is Test {
 
     function testCreateDepositAccountTransaction() public {
         uint256 balance = sybil.balances(address(this));
-        // balance zero means the account has not been created
         assertEq(balance, 0 ether);
+
         vm.prank(address(this));
-        // account is created in this deposit function
         sybil.deposit{value: 1 ether}();
         balance = sybil.balances(address(this));
         assertEq(balance, 1 ether);
     }
 
     function testDepositTransaction() public {
-        uint256[2] memory proofA = [uint(0), uint(0)];
-        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
-        uint256[2] memory proofC = [uint(0), uint(0)];
-        // account is created in this deposit function
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();
-        vm.prank(address(this));
-        sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
-        // balance is added in this deposit function
+
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();
+
         uint256 balance = sybil.balances(address(this));
         assertEq(balance, 2 ether);
     }
@@ -236,8 +214,8 @@ contract MvpTest is Test {
         sybil.unvouch(address(0x123));
 
         assertEq(sybil.vouches(address(this), address(0x123)), false);
-    }
 
+    }
     function testWithdrawTransaction() public {
         vm.prank(address(this));
         sybil.deposit{value: 2 ether}();

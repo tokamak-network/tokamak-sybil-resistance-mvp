@@ -7,7 +7,6 @@ import "./interfaces/INewSybil.sol";
 import "./interfaces/IVerifier.sol";
 import "./types/SybilHelpers.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "forge-std/console.sol";
 
 contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybilHelpers {
     struct Verifier {
@@ -184,6 +183,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
             balances[toEthAddr] -= penalty;
             balances[msg.sender] += penalty;
             vouches[toEthAddr][msg.sender] = false;
+            vouches[msg.sender][toEthAddr] = false;
             _addTx(5, msg.sender, toEthAddr, 0);
         }
     }

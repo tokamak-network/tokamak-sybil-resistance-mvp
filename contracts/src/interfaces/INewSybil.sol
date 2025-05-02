@@ -51,15 +51,9 @@ interface INewSybil {
     function unvouch(address toEthAddr) external;
 
     // Updates the score
-    function proveScoreMerkleProof(
-        uint32 numScoreRoot, 
-		uint24 idx,
-		uint32 score, 
-		uint256[] memory siblings
-    ) external;
+    function proveScoreMerkleProof(uint32 numScoreRoot, uint24 idx, uint32 score, uint256[] memory siblings) external;
 
     // setter functions
     function updateExplodeAmount(uint256 _explodeAmount) external;
     function updateMinBalance(uint256 _minBalance) external;
-
 }

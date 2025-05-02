@@ -24,13 +24,7 @@ interface IMVPSybil {
     ) external;
 
     // L1 Transaction functions
-    function _addTx(
-        address ethAddress,
-        uint48 fromIdx,
-        uint40 loadAmountF,
-        uint40 amountF,
-        uint48 toIdx
-    ) external;
+    function _addTx(address ethAddress, uint48 fromIdx, uint40 loadAmountF, uint40 amountF, uint48 toIdx) external;
 
     // Batch forging function
     function forgeBatch(
@@ -50,9 +44,7 @@ interface IMVPSybil {
     function getLastForgedBatch() external view returns (uint32);
 
     // L1 Transaction Queue functions
-    function getL1TransactionQueue(
-        uint32 queueIndex
-    ) external view returns (bytes memory);
+    function getL1TransactionQueue(uint32 queueIndex) external view returns (bytes memory);
     function getQueueLength() external view returns (uint32);
 
     // Create the Account
@@ -73,15 +65,10 @@ interface IMVPSybil {
     // Unvouch function
     function unvouch(uint48 fromIdx, uint48 toIdx) external;
 
-    function withdrawMerkleProof(
-        uint192 amount,
-        uint32 numExitRoot,
-        uint256[] calldata siblings,
-        uint48 idx
-    ) external;
+    function withdrawMerkleProof(uint192 amount, uint32 numExitRoot, uint256[] calldata siblings, uint48 idx)
+        external;
 
     // setter functions
     function updateExplodeAmount(uint256 _explodeAmount) external;
     function updateMinBalance(uint256 _minBalance) external;
-
 }

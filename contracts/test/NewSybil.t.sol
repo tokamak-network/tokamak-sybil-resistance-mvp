@@ -183,6 +183,15 @@ contract MvpTest is Test {
         sybil.vouch(address(0x123));
     }
 
+    function testInvalidVouchWithSelfVouch() public {
+        vm.prank(address(this));
+        sybil.deposit{value: 1 ether}();
+
+        vm.expectRevert(INewSybil.SelfVouch.selector);
+        vm.prank(address(this));
+        sybil.vouch(address(this));
+    }
+
     function testUnvouch() public {
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();

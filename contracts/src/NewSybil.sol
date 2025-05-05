@@ -139,6 +139,9 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
         if (balances[msg.sender] == 0) {
             revert SenderHasZeroBalance();
         }
+        if (toEthAddr == msg.sender) {
+            revert SelfVouch();
+        }
         if (balances[toEthAddr] == 0) {
             revert ReceiverHasZeroBalance();
         }

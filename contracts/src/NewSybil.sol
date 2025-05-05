@@ -96,28 +96,33 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     }
 
     function deposit() external payable override {
+        uint256 userBalance = balances[msg.sender];
         if (msg.value >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
         if (msg.value < minBalance) {
             revert InsufficientETH();
         }
-        if (balances[msg.sender] == 0) {
+        if (userBalance == 0) {
             _addTx(0, msg.sender, address(0), msg.value);
         } else {
             _addTx(1, msg.sender, address(0), msg.value);
         }
-        balances[msg.sender] += msg.value;
+        balances[msg.sender] = userBalance + msg.value;
     }
 
     function withdraw(uint256 amount) external {
+        uint256 userBalance = balances[msg.sender];
         if (amount >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (amount + minBalance > balances[msg.sender]) {
+        if (amount + minBalance > userBalance) {
             revert InsufficientBalance();
         }
-        balances[msg.sender] -= amount;
+        
+        unchecked {
+            balances[msg.sender] = userBalance - amount;
+        }
         (bool success, ) = msg.sender.call{value: amount}("");
         if (!success) {
             revert EthTransferFailed();
@@ -176,12 +181,15 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
 
         for (uint256 i = 0; i < toEthAddrs.length; ++i) {
             address toEthAddr = toEthAddrs[i];
+            uint256 userBalance = balances[toEthAddr];
             uint256 penalty = Math.min(
                 explodeAmount,
-                balances[toEthAddr] - minBalance
+                userBalance - minBalance
             );
-            balances[toEthAddr] -= penalty;
-            balances[msg.sender] += penalty;
+            unchecked {
+                balances[toEthAddr] = userBalance - penalty;
+            }
+            balances[msg.sender] = balances[msg.sender] + penalty;
             vouches[toEthAddr][msg.sender] = false;
             vouches[msg.sender][toEthAddr] = false;
             _addTx(5, msg.sender, toEthAddr, 0);

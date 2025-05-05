@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.23;
 
-error InvalidPoseidonAddress(string elementType);
+error InvalidPoseidon2Address();
+error InvalidPoseidon3Address();
 
 /**
  * @dev Interface poseidon hash function 2 elements
@@ -33,10 +34,10 @@ contract MVPSybilHelpers {
         address _poseidon3Elements
     ) internal {
         if (_poseidon2Elements == address(0)) {
-            revert InvalidPoseidonAddress("poseidon2Elements");
+            revert InvalidPoseidon2Address();
         }
         if (_poseidon3Elements == address(0)) {
-            revert InvalidPoseidonAddress("poseidon3Elements");
+            revert InvalidPoseidon3Address();
         }
 
         _insPoseidonUnit2 = PoseidonUnit2(_poseidon2Elements);

@@ -12,7 +12,7 @@ interface INewSybil {
     error SenderHasZeroBalance();
     error ReceiverHasZeroBalance();
     error NotVouched(address from, address to);
-
+    error SelfVouch();
     // Initialization function
     function initialize(
         address verifier,

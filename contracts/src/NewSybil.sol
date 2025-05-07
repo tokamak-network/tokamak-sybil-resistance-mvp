@@ -49,9 +49,6 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     mapping(address => mapping(address => bool)) public vouches;
     mapping(address => ScoreSnapshot) public scoreSnapshots;
 
-    // Mapping of exit nullifiers, only allowing each withdrawal to be made once
-    mapping(uint32 => mapping(uint48 => bool)) public exitNullifierMap;
-
     // Verifier
     Verifier public verifier;
 

@@ -31,10 +31,10 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     uint256 constant _MAX_TXNS = 256; // Max transactions per batch
     uint256 constant _LIMIT_AMOUNT = (1 << 128); // Max loadAmount per call
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 public _MIN_BALANCE = 1;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     uint256 public explodeAmount = (1 << 50);
-    uint256 public minBalance = (1 << 1);
     uint256 public scoringRequiredBalance = (1 << 16);
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
@@ -60,7 +60,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     event ForgeBatch(uint32 indexed batchNum, uint16 l1UserTxsLen);
     event WithdrawEvent(uint48 indexed idx, uint32 indexed numExitRoot);
     event ExplodeAmountUpdated(uint256 explodeAmount);
-    event MinBalanceUpdated(uint256 minBalance);
     event ScoringRequiredBalanceUpdated(uint256 newBalance);
 
     /**
@@ -93,12 +92,12 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         _initializeHelpers(_poseidon2Elements, _poseidon3Elements);
     }
 
-    function deposit() external payable override {
+    function deposit() external payable {
         uint256 userBalance = balances[msg.sender];
         if (msg.value >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (msg.value < minBalance) {
+        if (msg.value < _MIN_BALANCE) {
             revert InsufficientETH();
         }
         if (userBalance == 0) {
@@ -114,7 +113,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         if (amount >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (amount + minBalance > userBalance) {
+        if (amount + _MIN_BALANCE > userBalance) {
             revert InsufficientBalance();
         }
         
@@ -185,7 +184,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
             uint256 userBalance = balances[toEthAddr];
             uint256 penalty = Math.min(
                 explodeAmount,
-                userBalance - minBalance
+                userBalance - _MIN_BALANCE
             );
             unchecked {
                 balances[toEthAddr] = userBalance - penalty;
@@ -218,7 +217,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint256[2] calldata proofA,
         uint256[2][2] calldata proofB,
         uint256[2] calldata proofC
-    ) external override {
+    ) external {
         uint256 input = _constructCircuitInput(
             newAccountRoot,
             newVouchRoot,
@@ -277,23 +276,9 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
      */
     function updateExplodeAmount(
         uint256 _explodeAmount
-    ) external override onlyRole(ADMIN_ROLE) {
+    ) external onlyRole(ADMIN_ROLE) {
         explodeAmount = _explodeAmount;
         emit ExplodeAmountUpdated(explodeAmount);
-    }
-
-    /**
-     * @dev Updates the minimum balance required for accounts.
-     *
-     * @param _minBalance The new minimum balance to be set.
-     *
-     * @notice This function can only be called by an account with the `ADMIN_ROLE`.
-     */
-    function updateMinBalance(
-        uint256 _minBalance
-    ) external override onlyRole(ADMIN_ROLE) {
-        minBalance = _minBalance;
-        emit MinBalanceUpdated(minBalance);
     }
 
     function updateScoringRequiredBalance(
@@ -308,7 +293,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
      *
      * @return The number of batches in the transaction queue.
      */
-    function getQueueLength() external view override returns (uint32) {
+    function getQueueLength() external view returns (uint32) {
         return currentFillingBatch - lastForgedBatch;
     }
 

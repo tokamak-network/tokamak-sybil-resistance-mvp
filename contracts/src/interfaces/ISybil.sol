@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-interface INewSybil {
+interface ISybil {
     error InvalidVerifierAddress();
     error SmtProofInvalid();
     error EthTransferFailed();

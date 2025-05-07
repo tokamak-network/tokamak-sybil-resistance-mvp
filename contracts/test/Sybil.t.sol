@@ -2,9 +2,8 @@
 pragma solidity 0.8.23;
 
 import "forge-std/Test.sol";
-import "../src/NewSybil.sol";
-import "../src/interfaces/INewSybil.sol";
-import "./utils/Constants.sol";
+import "../src/Sybil.sol";
+import "../src/interfaces/ISybil.sol";
 import "../src/Verifier.sol";
 import "forge-std/console.sol";
 
@@ -21,7 +20,7 @@ contract MockPoseidon3 is PoseidonUnit3 {
 }
 
 contract MvpTest is Test {
-    NewSybil public sybil;
+    Sybil public sybil;
     bytes32[] public hashes;
 
     function setUp() public {
@@ -35,7 +34,7 @@ contract MvpTest is Test {
         uint256 maxTx = uint256(256);
         uint256 nLevels = uint256(1);
 
-        sybil = new NewSybil();
+        sybil = new Sybil();
    
         sybil.initialize(
             verifiers,
@@ -93,7 +92,7 @@ contract MvpTest is Test {
 
     function testForgeBatchEventEmission() public {
         vm.expectEmit(true, true, true, true);
-        emit NewSybil.ForgeBatch(1, 0);
+        emit Sybil.ForgeBatch(1, 0);
 
         uint256[2] memory proofA = [uint(0), uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
@@ -107,7 +106,7 @@ contract MvpTest is Test {
         vm.expectEmit(true, true, true, true);
         uint8 identifier = 0;
         uint256 amount = 1 ether;
-        emit NewSybil.L1UserTxEvent(
+        emit Sybil.L1UserTxEvent(
             2,
             0,
             abi.encode(identifier, address(this), address(0), amount)
@@ -143,13 +142,13 @@ contract MvpTest is Test {
         vm.deal(address(this), amount);
 
         vm.prank(address(this));
-        vm.expectRevert(INewSybil.LimitAmountExceeded.selector);
+        vm.expectRevert(ISybil.LimitAmountExceeded.selector);
         sybil.deposit{value: amount}();
     }
 
     function testDepositTransactionWithInsufficientETH() public {
         vm.prank(address(this));
-        vm.expectRevert(INewSybil.InsufficientETH.selector);
+        vm.expectRevert(ISybil.InsufficientETH.selector);
         sybil.deposit();
         uint256 balance = sybil.balances(address(this));
         assertEq(balance, 0 ether);
@@ -170,7 +169,7 @@ contract MvpTest is Test {
 
     function testInvalidVouchWithSenderHasZeroBalance() public {
         vm.prank(address(this));
-        vm.expectRevert(INewSybil.SenderHasZeroBalance.selector);
+        vm.expectRevert(ISybil.SenderHasZeroBalance.selector);
         sybil.vouch(address(0x123));
     }
 
@@ -178,7 +177,7 @@ contract MvpTest is Test {
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();
 
-        vm.expectRevert(INewSybil.ReceiverHasZeroBalance.selector);
+        vm.expectRevert(ISybil.ReceiverHasZeroBalance.selector);
         vm.prank(address(this));
         sybil.vouch(address(0x123));
     }
@@ -187,7 +186,7 @@ contract MvpTest is Test {
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();
 
-        vm.expectRevert(INewSybil.SelfVouch.selector);
+        vm.expectRevert(ISybil.SelfVouch.selector);
         vm.prank(address(this));
         sybil.vouch(address(this));
     }
@@ -214,7 +213,7 @@ contract MvpTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                INewSybil.NotVouched.selector,
+                ISybil.NotVouched.selector,
                 address(this),
                 address(0x123)
             )
@@ -239,14 +238,14 @@ contract MvpTest is Test {
         vm.deal(address(this), amount);
 
         vm.prank(address(this));
-        vm.expectRevert(INewSybil.LimitAmountExceeded.selector);
+        vm.expectRevert(ISybil.LimitAmountExceeded.selector);
         sybil.withdraw(amount);
     }
 
     function testWithdrawTransactionWithInsufficientBalance() public {
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();
-        vm.expectRevert(INewSybil.InsufficientBalance.selector);
+        vm.expectRevert(ISybil.InsufficientBalance.selector);
         sybil.withdraw(1 ether);
     }
 
@@ -261,7 +260,7 @@ contract MvpTest is Test {
 
         address invalidAddress = address(0);
 
-        NewSybil newSybil = new NewSybil();
+        Sybil newSybil = new Sybil();
         vm.expectRevert();
         newSybil.initialize(
             verifiers,
@@ -291,8 +290,8 @@ contract MvpTest is Test {
         uint256 maxTx = uint(256);
         uint256 nLevel = uint(1);
 
-        NewSybil newSybil = new NewSybil();
-        vm.expectRevert(INewSybil.InvalidVerifierAddress.selector);
+        Sybil newSybil = new Sybil();
+        vm.expectRevert(ISybil.InvalidVerifierAddress.selector);
         newSybil.initialize(
             verifier,
             maxTx,
@@ -341,7 +340,7 @@ contract MvpTest is Test {
         vm.prank(sender);
         vm.expectRevert(
             abi.encodeWithSelector(
-                INewSybil.NotVouched.selector,
+                ISybil.NotVouched.selector,
                 sender,
                 addArray[0]
             )

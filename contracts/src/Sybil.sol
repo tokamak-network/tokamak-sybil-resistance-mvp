@@ -3,12 +3,12 @@ pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "./interfaces/INewSybil.sol";
+import "./interfaces/ISybil.sol";
 import "./interfaces/IVerifier.sol";
 import "./types/SybilHelpers.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybilHelpers {
+contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers {
     struct Verifier {
         IVerifier verifierInterface;
         uint256 maxTx; // maximum rollup transactions in a batch: L1-tx transactions

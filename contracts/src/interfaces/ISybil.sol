@@ -61,6 +61,5 @@ interface ISybil {
 
     // setter functions
     function updateExplodeAmount(uint256 _explodeAmount) external;
-
-    function updateMinBalance(uint256 _minBalance) external;
+    
 }

@@ -31,11 +31,11 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     uint256 constant _MAX_TXNS = 256; // Max transactions per batch
     uint256 constant _LIMIT_AMOUNT = (1 << 128); // Max loadAmount per call
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-    uint256 constant _SCORING_REQ_BALANCE = (1 << 16);
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     uint256 public explodeAmount = (1 << 50);
     uint256 public minBalance = (1 << 1);
+    uint256 public scoringRequiredBalance = (1 << 16);
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
 
@@ -61,6 +61,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     event WithdrawEvent(uint48 indexed idx, uint32 indexed numExitRoot);
     event ExplodeAmountUpdated(uint256 explodeAmount);
     event MinBalanceUpdated(uint256 minBalance);
+    event ScoringRequiredBalanceUpdated(uint256 newBalance);
 
     /**
      * @dev Initializes the contract with the specified parameters.
@@ -293,6 +294,13 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     ) external override onlyRole(ADMIN_ROLE) {
         minBalance = _minBalance;
         emit MinBalanceUpdated(minBalance);
+    }
+
+    function updateScoringRequiredBalance(
+        uint256 _scoringRequiredBalance
+    ) external onlyRole(ADMIN_ROLE) {
+        scoringRequiredBalance = _scoringRequiredBalance;
+        emit ScoringRequiredBalanceUpdated(scoringRequiredBalance);
     }
 
     /**

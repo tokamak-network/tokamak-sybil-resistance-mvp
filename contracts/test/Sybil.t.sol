@@ -370,12 +370,12 @@ contract MvpTest is Test {
         assertEq(sybil.explodeAmount(), newExplodeAmount);
     }
 
-    function testUpdateMinBalance() public {
-        uint256 newMinBalance = 1000;
+    function testUpdateScoringRequiredBalance() public {
+        uint256 newBalance = 1000;
         vm.prank(address(this));
-        sybil.updateMinBalance(newMinBalance);
+        sybil.updateScoringRequiredBalance(newBalance);
 
-        assertEq(sybil.minBalance(), newMinBalance);
+        assertEq(sybil.scoringRequiredBalance(), newBalance);
     }
 
     function testUpdateExplodeAmountByNonAdmin() public {
@@ -387,13 +387,13 @@ contract MvpTest is Test {
         sybil.updateExplodeAmount(newExplodeAmount);
     }
 
-    function testUpdateMinBalanceByNonAdmin() public {
-        uint256 newMinBalance = 1000;
+    function testUpdateScoringRequiredBalanceByNonAdmin() public {
+        uint256 newBalance = 1000;
         address user = address(0);
 
         vm.prank(user);
         vm.expectRevert();
-        sybil.updateMinBalance(newMinBalance);
+        sybil.updateScoringRequiredBalance(newBalance);
     }
 
     receive() external payable {}

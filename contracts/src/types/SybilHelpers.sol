@@ -21,7 +21,7 @@ interface PoseidonUnit3 {
 /**
  * @dev Sybil helper functions
  */
-contract MVPSybilHelpers {
+contract SybilHelpers {
     PoseidonUnit2 _insPoseidonUnit2;
     PoseidonUnit3 _insPoseidonUnit3;
 
@@ -42,24 +42,6 @@ contract MVPSybilHelpers {
 
         _insPoseidonUnit2 = PoseidonUnit2(_poseidon2Elements);
         _insPoseidonUnit3 = PoseidonUnit3(_poseidon3Elements);
-    }
-
-    // /**
-    //  * @dev Builds the state for the Merkle tree.
-    //  *
-    //  * @param amount The amount to be included in the state.
-    //  * @param user The address of the user associated with the state.
-    //  *
-    //  * @return A uint256 array representing the state for the Merkle tree.
-    // */
-    function _buildTreeState(
-        uint192 amount,
-        address user
-    ) internal pure returns (uint256[2] memory) {
-        uint256[2] memory state;
-        state[0] = amount;
-        state[1] = uint256(uint160(user)); // Convert address to uint256
-        return state;
     }
 
     /**

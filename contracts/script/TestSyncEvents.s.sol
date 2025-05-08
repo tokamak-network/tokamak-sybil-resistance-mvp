@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import {Sybil} from "../src/Sybil.sol";
+import {NewSybil} from "../src/NewSybil.sol";
 
 contract TestSyncEvents is Script {
     struct TxParams {
@@ -18,16 +18,14 @@ contract TestSyncEvents is Script {
 
         vm.startBroadcast();
         // Using the Deployed Sybil contract
-        Sybil sybilContract = Sybil(sybilContractAddress);
+        NewSybil sybilContract = NewSybil(sybilContractAddress);
 
         console2.log("Sybil contract is deployed at:", address(sybilContract));
 
         TxParams memory params1 = validCreateAccountDeposit();
         uint256 loadAmount1 = _float2Fix(params1.loadAmountF);
 
-        sybilContract.createAccountDeposit{value: loadAmount1}(
-            params1.loadAmountF
-        );
+        sybilContract.deposit{value: loadAmount1}();
 
         vm.stopBroadcast();
     }

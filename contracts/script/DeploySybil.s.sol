@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
-import { NewSybil } from "contracts/src/NewSybil.sol";
+import { NewSybil } from "../src/NewSybil.sol";
 import {Verifier} from "../src/Verifier.sol";
 
 contract FunctionScript is Script {

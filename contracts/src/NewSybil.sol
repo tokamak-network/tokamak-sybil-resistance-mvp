@@ -28,7 +28,7 @@ contract NewSybil is Initializable, AccessControlUpgradeable, INewSybil, MVPSybi
     }
 
     uint256 constant _TXN_TOTALBYTES = 73; // Total bytes per transaction
-    uint256 constant _MAX_TXNS = 256; // Max transactions per batch
+    uint256 constant _MAX_TXNS = 3; // Max transactions per batch
     uint256 constant _LIMIT_AMOUNT = (1 << 128); // Max loadAmount per call
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 constant _SCORING_REQ_BALANCE = (1 << 16);

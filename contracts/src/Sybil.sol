@@ -326,7 +326,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         emit L1UserTxEvent(
             currentFillingBatch,
             uint8(currentPosition),
-            abi.encode(transaction)
+            abi.encodePacked(identifier, from, to, amount)
         );
 
         if (currentPosition + 1 >= _MAX_TXNS) {

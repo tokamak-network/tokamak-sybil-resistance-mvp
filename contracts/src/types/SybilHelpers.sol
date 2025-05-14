@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.23;
 
-error InvalidPoseidonAddress(string elementType);
+error InvalidPoseidon2Address();
+error InvalidPoseidon3Address();
 
 /**
  * @dev Interface poseidon hash function 2 elements
@@ -20,7 +21,7 @@ interface PoseidonUnit3 {
 /**
  * @dev Sybil helper functions
  */
-contract MVPSybilHelpers {
+contract SybilHelpers {
     PoseidonUnit2 _insPoseidonUnit2;
     PoseidonUnit3 _insPoseidonUnit3;
 
@@ -33,32 +34,14 @@ contract MVPSybilHelpers {
         address _poseidon3Elements
     ) internal {
         if (_poseidon2Elements == address(0)) {
-            revert InvalidPoseidonAddress("poseidon2Elements");
+            revert InvalidPoseidon2Address();
         }
         if (_poseidon3Elements == address(0)) {
-            revert InvalidPoseidonAddress("poseidon3Elements");
+            revert InvalidPoseidon3Address();
         }
 
         _insPoseidonUnit2 = PoseidonUnit2(_poseidon2Elements);
         _insPoseidonUnit3 = PoseidonUnit3(_poseidon3Elements);
-    }
-
-    // /**
-    //  * @dev Builds the state for the Merkle tree.
-    //  *
-    //  * @param amount The amount to be included in the state.
-    //  * @param user The address of the user associated with the state.
-    //  *
-    //  * @return A uint256 array representing the state for the Merkle tree.
-    // */
-    function _buildTreeState(
-        uint192 amount,
-        address user
-    ) internal pure returns (uint256[2] memory) {
-        uint256[2] memory state;
-        state[0] = amount;
-        state[1] = uint256(uint160(user)); // Convert address to uint256
-        return state;
     }
 
     /**
@@ -102,31 +85,31 @@ contract MVPSybilHelpers {
 
     /**
      * @dev Verify sparse merkle tree proof
-     * @param root Root to verify
+     * @param scoreRoot Root to verify
      * @param siblings Siblings necessary to compute the merkle proof
-     * @param key Key to verify
-     * @param value Value to verify
+     * @param idx Key to verify
+     * @param stateHash Value to verify
      * @return True if verification is correct, false otherwise
      */
     function _smtVerifier(
-        uint256 root,
+        uint256 scoreRoot,
         uint256[] calldata siblings,
-        uint256 key,
-        uint256 value
+        uint256 idx,
+        uint256 stateHash
     ) internal view returns (bool) {
         // Step 2: Calcuate root
-        uint256 nextHash = _hashFinalNode(key, value);
+        uint256 nextHash = _hashFinalNode(idx, stateHash);
         uint256 siblingTmp;
         for (int256 i = int256(siblings.length) - 1; i >= 0; i--) {
             siblingTmp = siblings[uint256(i)];
-            bool leftRight = (uint8(key >> uint256(i)) & 0x01) == 1;
+            bool leftRight = (uint8(idx >> uint256(i)) & 0x01) == 1;
             nextHash = leftRight
                 ? _hashNode(siblingTmp, nextHash)
                 : _hashNode(nextHash, siblingTmp);
         }
 
         // Step 3: Check root
-        return root == nextHash;
+        return scoreRoot == nextHash;
     }
 
     /**

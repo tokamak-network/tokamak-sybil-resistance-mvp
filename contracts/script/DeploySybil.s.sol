@@ -1,19 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 import "forge-std/Script.sol";
 import {Sybil} from "../src/Sybil.sol";
 import {Verifier} from "../src/Verifier.sol";
 
 contract FunctionScript is Script {
-    error VerifierRollupStubNotDeployed();
 
     function run() external {
-        address verifier = DevOpsTools.get_most_recent_deployment(
-            "VerifierRollupStub",
-            block.chainid
-        );
+        address verifier = vm.envAddress("VERIFIER");
         uint256 maxTx = vm.envUint("MAXTX");
         uint256 nLevel = vm.envUint("NLEVEL");
 

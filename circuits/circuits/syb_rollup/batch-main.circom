@@ -8,10 +8,6 @@ template BatchMain(nTx, nLevels) {
     // Public output signals
     //signal output hashGlobalInputs;
 
-    // Public system parameters set in the contract
-    signal input MIN_BALANCE;
-    signal input EXPLODE_AMOUNT;
-
     // Private signals that participate in hash inputs
     signal input oldLastIdx;
     signal input oldAccountRoot;
@@ -41,12 +37,6 @@ template BatchMain(nTx, nLevels) {
     signal input isOld0_3[nTx];
     signal input oldKey3[nTx];
     signal input oldValue3[nTx];
-    
-    // Vouch Tree 2 (to->from)
-    signal input siblings4[nTx][2*nLevels + 1];
-    signal input isOld0_4[nTx];
-    signal input oldKey4[nTx];
-    signal input oldValue4[nTx];
 
     var i, j;
 
@@ -58,7 +48,6 @@ template BatchMain(nTx, nLevels) {
         isOld0_1[i] * (isOld0_1[i] - 1) === 0;
         isOld0_2[i] * (isOld0_2[i] - 1) === 0;
         isOld0_3[i] * (isOld0_3[i] - 1) === 0;
-        isOld0_4[i] * (isOld0_4[i] - 1) === 0;
     }
 
     // B - Decode transactions
@@ -73,13 +62,10 @@ template BatchMain(nTx, nLevels) {
         batchTx[i].fromIdx <== decodeTx[i].fromIdx;
         batchTx[i].toIdx <== decodeTx[i].toIdx;
         batchTx[i].amount <== decodeTx[i].amount;
-        batchTx[i].MIN_BALANCE <== MIN_BALANCE;
-        batchTx[i].EXPLODE_AMOUNT <== EXPLODE_AMOUNT;
         batchTx[i].txnType <== decodeTx[i].txnType;
 
         // Sender state
         batchTx[i].balance1 <== balance1[i];
-        batchTx[i].fromEthAddr <== ethAddr1[i];
         for (j = 0; j < nLevels + 1; j++) {
             batchTx[i].siblings1[j] <== siblings1[i][j];
         }
@@ -89,7 +75,6 @@ template BatchMain(nTx, nLevels) {
 
         // Receiver state
         batchTx[i].balance2 <== balance2[i];
-        batchTx[i].toEthAddr <== ethAddr2[i];
         for (j = 0; j < nLevels + 1; j++) {
             batchTx[i].siblings2[j] <== siblings2[i][j];
         }
@@ -100,14 +85,10 @@ template BatchMain(nTx, nLevels) {
         // Vouch state
         for (j = 0; j < 2*nLevels + 1; j++) {
             batchTx[i].siblings3[j] <== siblings3[i][j];
-            batchTx[i].siblings4[j] <== siblings4[i][j];
         }
         batchTx[i].isOld0_3 <== isOld0_3[i];
         batchTx[i].oldKey3 <== oldKey3[i];
         batchTx[i].oldValue3 <== oldValue3[i];
-        batchTx[i].isOld0_4 <== isOld0_4[i];
-        batchTx[i].oldKey4 <== oldKey4[i];
-        batchTx[i].oldValue4 <== oldValue4[i];
 
         // Roots
         if (i == 0) {
@@ -144,5 +125,3 @@ template BatchMain(nTx, nLevels) {
     newAccountRoot <== batchTx[nTx-1].newAccountRoot;
     newVouchRoot <== batchTx[nTx-1].newVouchRoot;
 }
-
-component main = BatchMain(1, 24);

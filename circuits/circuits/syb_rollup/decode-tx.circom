@@ -53,10 +53,10 @@ template DecodeTx(nLevels) {
     }
     txnType <== txnType_bits2Num.out;
     
-    // Validate txnType (only values in 0-5 range are allowed)
+    // Validate txnType (only values in 0-6 range are allowed)
     component isTxnTypeValid = LessThan(8);
     isTxnTypeValid.in[0] <== txnType;
-    isTxnTypeValid.in[1] <== 6; // Only 0,1,2,3,4,5 are valid
+    isTxnTypeValid.in[1] <== 7; // Only 0-6 are valid
     
     // txnType must be valid
     1 === isTxnTypeValid.out;

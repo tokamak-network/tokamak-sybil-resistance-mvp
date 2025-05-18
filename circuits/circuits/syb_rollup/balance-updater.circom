@@ -7,18 +7,16 @@ template BalanceUpdater() {
     signal input oldStBalanceSender;
     signal input oldStBalanceReceiver;
     signal input amount;
-    signal input effectiveExplodeAmount;
     signal input isCreateAccount;
     signal input isDeposit;
     signal input isWithdraw;
     signal input isExplode;
-    //signal input nop;
 
     // Outputs
     signal output newStBalanceSender;
     signal output newStBalanceReceiver;
     
-    // Create/Deposit: Existing balance + amount
+    // Create/Deposit/Explode: Existing balance + amount
     signal depositBalance;
     depositBalance <== oldStBalanceSender + amount;
     
@@ -26,38 +24,27 @@ template BalanceUpdater() {
     signal withdrawBalance;
     withdrawBalance <== oldStBalanceSender - amount;
     
-    // Explode: Existing balance + amount (taken from receiver)
-    signal explodedBalance;
-    explodedBalance <== oldStBalanceSender + effectiveExplodeAmount;
-    
     // Selection based on transaction type
     component selectBalSender = Mux1();
     component selectType = Mux1();
     
     // Deposit or account creation
-    signal isDepositOrCreate;
-    isDepositOrCreate <== isDeposit + isCreateAccount;
+    signal isDepositOrCreateOrExplode;
+    isDepositOrCreateOrExplode <== isDeposit + isCreateAccount + isExplode;
     
-    selectType.c[0] <== withdrawBalance;
-    selectType.c[1] <== depositBalance;
-    selectType.s <== isDepositOrCreate;
-    
+    selectType.c[0] <== oldStBalanceSender;
+    selectType.c[1] <== withdrawBalance;
+    selectType.s <== isWithdraw;
+
     selectBalSender.c[0] <== selectType.out;
-    selectBalSender.c[1] <== explodedBalance;
-    selectBalSender.s <== isExplode;
-    
-    // // Maintain existing balance if NOP
-    // component senderMux = Mux1();
-    // senderMux.c[0] <== selectBalSender.out;
-    // senderMux.c[1] <== oldStBalanceSender;
-    // senderMux.s <== nop;
-    //newStBalanceSender <== senderMux.out;
+    selectBalSender.c[1] <== depositBalance;
+    selectBalSender.s <== isDepositOrCreateOrExplode;
 
     newStBalanceSender <== selectBalSender.out;
     
     // Explode: Existing balance - amount
     signal explodedReceiverBalance;
-    explodedReceiverBalance <== oldStBalanceReceiver - effectiveExplodeAmount;
+    explodedReceiverBalance <== oldStBalanceReceiver - amount;
     
     // Subtract amount only if Explode, otherwise no change
     component selectBalReceiver = Mux1();
@@ -66,12 +53,4 @@ template BalanceUpdater() {
     selectBalReceiver.s <== isExplode;
 
     newStBalanceReceiver <== selectBalReceiver.out;
-    
-    // // Maintain existing balance if NOP
-    // Receiver balance update logic (only changes in explode)
-    //component receiverMux = Mux1();
-    // receiverMux.c[0] <== selectBalReceiver.out;
-    // receiverMux.c[1] <== oldStBalanceReceiver;
-    // receiverMux.s <== nop;
-    // newStBalanceReceiver <== receiverMux.out;
 }

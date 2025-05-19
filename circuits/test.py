@@ -43,7 +43,7 @@ def compute_W(A):
     return W
 
 
-# Get 
+# Get the pagerank vector for each node
 def compute_P(W, alpha, tol=1e-3, max_iter=1000):
     W = np.array(W)
     n = W.shape[0]
@@ -57,12 +57,13 @@ def compute_P(W, alpha, tol=1e-3, max_iter=1000):
         print("Warning: P did not converge within max_iter")
     return P
 
-
+# Get the node ordering given by the pagerank vector for each node
 def compute_Q(P):
     P = np.array(P)
     Q = np.argsort(-P, axis=1)
     return Q
 
+# Get the sequence of subsets defined by the ordering for each node
 def compute_J(Q):
     Q = np.array(Q)
     n = Q.shape[0]
@@ -74,6 +75,7 @@ def compute_J(Q):
             J[i, k, top_k] = 1
     return J
 
+# Compute which subsets satisfy the condition based on the old score vector
 def compute_s(J, x):
     J = np.array(J)
     x = np.array(x)
@@ -87,6 +89,7 @@ def compute_s(J, x):
                 s[i, k] = 1
     return s
 
+# Compute new scores
 def compute_y(J, s, W):
     J = np.array(J)
     s = np.array(s)
@@ -131,6 +134,6 @@ y_round = np.round(y, 3)
 
 
 
-# Plot graph g
+# Plot graph g with new score for each node
 ig.plot(g, target=ax, vertex_label=[str([i,y_round[i]]) for i in range(g.vcount())])
 plt.show()

@@ -20,13 +20,17 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint32 batchNum;
     }
 
+    struct AccountInfo {
+        uint192 balance; 
+        uint24 idx;      
+    }
+
     struct Transaction {
         uint8 identifier;
         address from;
         address to;
         uint256 amount;
     }
-
     uint256 constant _TXN_TOTALBYTES = 73; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 256; // Max transactions per batch
     uint256 constant _LIMIT_AMOUNT = (1 << 128); // Max loadAmount per call
@@ -34,11 +38,13 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     uint256 public _MIN_BALANCE = 1;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
+    uint24 public lastIdx;
     uint256 public explodeAmount = (1 << 50);
     uint256 public scoringRequiredBalance = (1 << 16);
     uint32 public lastForgedBatch;
     uint32 public currentFillingBatch;
 
+    mapping(address => AccountInfo) public accountInfo;
     mapping(uint32 => uint256) public accountRootMap;
     mapping(uint32 => uint256) public vouchRootMap;
     mapping(uint32 => uint256) public scoreRootMap;
@@ -93,19 +99,20 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     }
 
     function deposit() external payable {
-        uint256 userBalance = balances[msg.sender];
+        AccountInfo memory info = accountInfo[msg.sender];
         if (msg.value >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
         if (msg.value < _MIN_BALANCE) {
             revert InsufficientETH();
         }
-        if (userBalance == 0) {
-            _addTx(0, msg.sender, address(0), msg.value);
+        if (info.balance == 0) {
+            lastIdx = lastIdx + 1;
+            _addTx(0, lastIdx, uint24(0), msg.value);
         } else {
-            _addTx(1, msg.sender, address(0), msg.value);
+            _addTx(1, info.idx, uint24(0), msg.value);
         }
-        balances[msg.sender] = userBalance + msg.value;
+        info.balance = info.balance + uint192(msg.value);
     }
 
     function withdraw(uint256 amount) external {
@@ -309,8 +316,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
      */
     function _addTx(
         uint8 identifier,
-        address from,
-        address to,
+        uint24 from,
+        uint24 to,
         uint256 amount
     ) internal {
         Transaction memory transaction = Transaction(

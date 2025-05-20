@@ -27,8 +27,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
 
     struct Transaction {
         uint8 identifier;
-        address from;
-        address to;
+        uint24 from;
+        uint24 to;
         uint256 amount;
     }
     uint256 constant _TXN_TOTALBYTES = 73; // Total bytes per transaction
@@ -51,7 +51,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     mapping(uint32 => uint256) public exitRootMap;
     mapping(uint32 => Transaction[]) public unprocessedBatchesMap;
     mapping(uint32 => bytes32) public txsDataHashMap;
-    mapping(address => uint256) public balances;
+    // mapping(address => uint256) public balances;
     mapping(address => mapping(address => bool)) public vouches;
     mapping(address => ScoreSnapshot) public scoreSnapshots;
 
@@ -116,22 +116,22 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     }
 
     function withdraw(uint256 amount) external {
-        uint256 userBalance = balances[msg.sender];
+        AccountInfo memory info = accountInfo[msg.sender];
         if (amount >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (amount + _MIN_BALANCE > userBalance) {
+        if (amount + _MIN_BALANCE > info.balance) {
             revert InsufficientBalance();
         }
         
         unchecked {
-            balances[msg.sender] = userBalance - amount;
+            info.balance = info.balance - uint192(amount);
         }
         (bool success, ) = msg.sender.call{value: amount}("");
         if (!success) {
             revert EthTransferFailed();
         }
-        _addTx(2, msg.sender, address(0), amount);
+        _addTx(2, info.idx, uint24(0), amount);
     }
 
     /**
@@ -140,17 +140,19 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
      * @param toEthAddr The index of the account that is being vouched.
      */
     function vouch(address toEthAddr) external {
-        if (balances[msg.sender] == 0) {
+        AccountInfo memory senderInfo = accountInfo[msg.sender];
+        AccountInfo memory receiverInfo = accountInfo[toEthAddr];
+        if (senderInfo.balance == 0) {
             revert SenderHasZeroBalance();
         }
         if (toEthAddr == msg.sender) {
             revert SelfVouch();
         }
-        if (balances[toEthAddr] == 0) {
+        if (receiverInfo.balance == 0) {
             revert ReceiverHasZeroBalance();
         }
         vouches[msg.sender][toEthAddr] = true;
-        _addTx(3, msg.sender, toEthAddr, 0);
+        _addTx(3, senderInfo.idx, receiverInfo.idx, 0);
     }
 
     /**
@@ -165,7 +167,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         }
 
         vouches[msg.sender][toEthAddr] = false;
-        _addTx(4, msg.sender, toEthAddr, 0);
+        _addTx(4, accountInfo[msg.sender].idx, accountInfo[toEthAddr].idx, 0);
     }
 
     /**
@@ -186,20 +188,21 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
             }
         }
 
+           AccountInfo memory senderInfo = accountInfo[msg.sender];
         for (uint256 i = 0; i < toEthAddrs.length; ++i) {
             address toEthAddr = toEthAddrs[i];
-            uint256 userBalance = balances[toEthAddr];
-            uint256 penalty = Math.min(
+           AccountInfo memory receiverInfo = accountInfo[toEthAddr];
+            uint192 penalty = uint192(Math.min(
                 explodeAmount,
-                userBalance - _MIN_BALANCE
-            );
+                receiverInfo.balance - _MIN_BALANCE
+            ));
             unchecked {
-                balances[toEthAddr] = userBalance - penalty;
+                receiverInfo.balance = receiverInfo.balance - penalty;
             }
-            balances[msg.sender] = balances[msg.sender] + penalty;
+            senderInfo.balance = senderInfo.balance + penalty;
             vouches[toEthAddr][msg.sender] = false;
             vouches[msg.sender][toEthAddr] = false;
-            _addTx(5, msg.sender, toEthAddr, 0);
+            _addTx(5, senderInfo.idx, receiverInfo.idx, 0);
         }
     }
 

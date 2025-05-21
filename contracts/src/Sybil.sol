@@ -112,12 +112,12 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
             revert InsufficientETH();
         }
         if (info.balance == 0) {
-            lastIdx = lastIdx + 1;
+            lastIdx++;
             _addTx(0, lastIdx, uint24(0), msg.value);
         } else {
             _addTx(1, info.idx, uint24(0), msg.value);
         }
-        info.balance = info.balance + uint192(msg.value);
+        accountInfo[msg.sender].balance = info.balance + uint192(msg.value);
     }
 
     function withdraw(uint256 amount) external {
@@ -130,7 +130,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         }
         
         unchecked {
-            info.balance = info.balance - uint192(amount);
+            accountInfo[msg.sender].balance = info.balance - uint192(amount);
         }
         (bool success, ) = msg.sender.call{value: amount}("");
         if (!success) {
@@ -193,18 +193,18 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
             }
         }
 
-           AccountInfo memory senderInfo = accountInfo[msg.sender];
+        AccountInfo memory senderInfo = accountInfo[msg.sender];
         for (uint256 i = 0; i < toEthAddrs.length; ++i) {
             address toEthAddr = toEthAddrs[i];
-           AccountInfo memory receiverInfo = accountInfo[toEthAddr];
+            AccountInfo memory receiverInfo = accountInfo[toEthAddr];
             uint192 penalty = uint192(Math.min(
                 explodeAmount,
                 receiverInfo.balance - _MIN_BALANCE
             ));
             unchecked {
-                receiverInfo.balance = receiverInfo.balance - penalty;
+                accountInfo[toEthAddr].balance = receiverInfo.balance - penalty;
             }
-            senderInfo.balance = senderInfo.balance + penalty;
+            accountInfo[msg.sender].balance = senderInfo.balance + penalty;
             vouches[toEthAddr][msg.sender] = false;
             vouches[msg.sender][toEthAddr] = false;
             _addTx(5, senderInfo.idx, receiverInfo.idx, 0);
@@ -233,7 +233,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint256[2][2] calldata proofB,
         uint256[2] calldata proofC
     ) external {
-        if (lastAddedTxn <= lastForgedTxn + batchSize) {
+        if (lastAddedTxn < lastForgedTxn + batchSize) {
             revert BatchNotFull();
         }
         uint256 input = _constructCircuitInput(
@@ -254,13 +254,13 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
             revert InvalidProof();
         }
 
+        _clearBatchFromQueue();
         lastForgedBatch++;
+
         accountRootMap[lastForgedBatch] = newAccountRoot;
         vouchRootMap[lastForgedBatch] = newVouchRoot;
         scoreRootMap[lastForgedBatch] = newScoreRoot;
-
-        _clearBatchFromQueue();
-
+        
         emit ForgeBatch(lastForgedBatch, lastForgedTxn, batchSize);
     }
 
@@ -331,13 +331,13 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint24 to,
         uint256 amount
     ) internal {
-        lastAddedTxn++;
         unprocessedBatchesMap[lastAddedTxn] = Transaction(
             identifier,
             from,
             to,
             amount
         );
+        lastAddedTxn++;
 
         emit TxEvent(lastAddedTxn, identifier, from, to, amount);
     }
@@ -346,16 +346,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
      * @dev Clears the processed batch from the transaction queue.
      */
     function _clearBatchFromQueue() internal {
-        // uint16 l1UserTxsLen = uint16(
-        //     unprocessedBatchesMap[lastForgedBatch].length / _TXN_TOTALBYTES
-        // );
-        // delete unprocessedBatchesMap[lastForgedBatch];
-        // if (lastForgedBatch + 1 == currentFillingBatch) {
-        //     currentFillingBatch++;
-        // }
-        // return l1UserTxsLen;
         for (uint256 i = 0; i < _MAX_TXNS; ++i) {
-            delete unprocessedBatchesMap[lastForgedBatch + 1];
+            delete unprocessedBatchesMap[lastForgedBatch + i];
         }
         lastForgedTxn = lastForgedTxn + batchSize;
     }
@@ -402,9 +394,10 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint256 oldAccountRoot = accountRootMap[lastForgedBatch];
         uint256 oldVouchRoot = vouchRootMap[lastForgedBatch];
         uint256 oldScoreRoot = scoreRootMap[lastForgedBatch];
-        Transaction memory transactions = unprocessedBatchesMap[
-            lastForgedBatch + 1
-        ];
+        Transaction[] memory transactions = new Transaction[](batchSize);
+        for (uint256 i = lastForgedTxn; i < lastForgedTxn + batchSize; ++i) {
+            transactions[i] = unprocessedBatchesMap[lastForgedBatch + i];
+        }
 
         bytes memory txnData = abi.encode(transactions);
 

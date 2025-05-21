@@ -2,16 +2,18 @@ pragma circom 2.0.0;
 
 include "./decode-tx.circom";
 include "./batch-tx.circom";
-// include "./hash-inputs.circom";
+include "./hash-inputs.circom";
 
 template BatchMain(nTx, nLevels) {
     // Public output signals
-    //signal output hashGlobalInputs;
+    signal output hashGlobalInputs;
 
     // Private signals that participate in hash inputs
     signal input oldLastIdx;
     signal input oldAccountRoot;
     signal input oldVouchRoot;
+    signal input oldScoreRoot;
+    signal input newScoreRoot; //@TODO: Integrate scoring circuit for validating the correctness of ScoreRoot
 
     // txnType | fromIdx | toIdx | amount
     signal input txData[nTx];
@@ -100,28 +102,23 @@ template BatchMain(nTx, nLevels) {
         }
     }
 
-    // // D - Calculate global inputs hash
-    // component hasherInputs = HashInputs(nLevels, nTx);
+    // D - Calculate global inputs hash
+    component hasherInputs = HashInputs(nTx, nLevels);
 
-    // hasherInputs.oldAccountRoot <== oldAccountRoot;
-    // hasherInputs.oldVouchRoot <== oldVouchRoot;
-    // hasherInputs.newAccountRoot <== batchTx[nTx-1].newAccountRoot;
-    // hasherInputs.newVouchRoot <== batchTx[nTx-1].newVouchRoot;
+    hasherInputs.oldAccountRoot <== oldAccountRoot;
+    hasherInputs.oldVouchRoot <== oldVouchRoot;
+    hasherInputs.oldScoreRoot <== oldScoreRoot;
+    hasherInputs.newAccountRoot <== batchTx[nTx-1].newAccountRoot;
+    hasherInputs.newVouchRoot <== batchTx[nTx-1].newVouchRoot;
+    hasherInputs.newScoreRoot <== newScoreRoot;
 
-    // // Set L1 transaction data
-    // var txDataBits = (23 * 8); // txnType[8], fromIdx[24], toIdx[24], amount[128]
-    // for (i = 0; i < nTx; i++) {
-    //     for (j = 0; j < txDataBits; j++) {
-    //         hasherInputs.TxsData[i*txDataBits + j] <== decodeTx[i].bitsTxData[j];
-    //     }
-    // }
+    // Set L1 transaction data
+    var txDataBits = (8 + nLevels + nLevels + 128); // txnType[8] | fromIdx[nLevels] | toIdx[nLevels] | amount[128]
+    for (i = 0; i < nTx; i++) {
+        for (j = 0; j < txDataBits; j++) {
+            hasherInputs.TxsData[i*txDataBits + j] <== decodeTx[i].bitsTxData[j];
+        }
+    }
 
-    // hashGlobalInputs <== hasherInputs.hashInputsOut;
-
-    // Used temporarily instead of hashGlobalInputs
-    signal output newAccountRoot;
-    signal output newVouchRoot;
-
-    newAccountRoot <== batchTx[nTx-1].newAccountRoot;
-    newVouchRoot <== batchTx[nTx-1].newVouchRoot;
+    hashGlobalInputs <== hasherInputs.hashInputsOut;
 }

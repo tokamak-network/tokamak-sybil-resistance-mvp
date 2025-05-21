@@ -6,13 +6,15 @@ include "../../node_modules/circomlib/circuits/bitify.circom";
 template HashInputs(nTx, nLevels) {
     var bitsRoots = 256;       // Root size (256 bits)
     var bitsTxsData = nTx * (1 + nLevels + nLevels + 128); // Transaction data size
-    var totalBitsSha256 = 4*bitsRoots + bitsTxsData; // Total SHA256 input bits
+    var totalBitsSha256 = 6*bitsRoots + bitsTxsData; // Total SHA256 input bits
     
     // Inputs
     signal input oldAccountRoot;   // Previous account root
     signal input oldVouchRoot;     // Previous voucher root
+    signal input oldScoreRoot;     // Previous score root
     signal input newAccountRoot;   // New account root
     signal input newVouchRoot;     // New voucher root
+    signal input newScoreRoot;     // New score root
     signal input TxsData[bitsTxsData]; // Transaction data
     
     // Output
@@ -26,6 +28,9 @@ template HashInputs(nTx, nLevels) {
     
     component n2bOldVouchRoot = Num2Bits(256);
     n2bOldVouchRoot.in <== oldVouchRoot;
+
+    component n2bOldScoreRoot = Num2Bits(256);
+    n2bOldScoreRoot.in <== oldScoreRoot;
     
     component n2bNewAccountRoot = Num2Bits(256);
     n2bNewAccountRoot.in <== newAccountRoot;
@@ -33,6 +38,9 @@ template HashInputs(nTx, nLevels) {
     component n2bNewVouchRoot = Num2Bits(256);
     n2bNewVouchRoot.in <== newVouchRoot;
     
+    component n2bNewScoreRoot = Num2Bits(256);
+    n2bNewScoreRoot.in <== newScoreRoot;
+
     // Configure SHA256
     component inputsHasher = Sha256(totalBitsSha256);
     
@@ -49,6 +57,12 @@ template HashInputs(nTx, nLevels) {
         inputsHasher.in[offset + bitsRoots - 1 - i] <== n2bOldVouchRoot.out[i];
     }
     offset += bitsRoots;
+
+    // Add oldScoreRoot
+    for (i = 0; i < bitsRoots; i++) {
+        inputsHasher.in[offset + bitsRoots - 1 - i] <== n2bOldScoreRoot.out[i];
+    }
+    offset += bitsRoots;
     
     // Add newAccountRoot
     for (i = 0; i < bitsRoots; i++) {
@@ -59,6 +73,12 @@ template HashInputs(nTx, nLevels) {
     // Add newVouchRoot
     for (i = 0; i < bitsRoots; i++) {
         inputsHasher.in[offset + bitsRoots - 1 - i] <== n2bNewVouchRoot.out[i];
+    }
+    offset += bitsRoots;
+    
+    // Add newScoreRoot
+    for (i = 0; i < bitsRoots; i++) {
+        inputsHasher.in[offset + bitsRoots - 1 - i] <== n2bNewScoreRoot.out[i];
     }
     offset += bitsRoots;
     

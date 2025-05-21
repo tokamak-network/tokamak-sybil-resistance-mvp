@@ -5,53 +5,53 @@ include "../../node_modules/circomlib/circuits/comparators.circom";
 
 template DecodeTx(nLevels) {
     // Input
-    signal input txData; // 23 bytes transaction data
+    signal input txData; // (8 + nLevels + nLevels + 128) bits transaction data
     
     // Outputs
-    signal output txnType;       // Transaction type (0-5, 1 byte)
+    signal output txnType;       // Transaction type (0-6, 1 byte)
     signal output fromIdx;       // Sender index (nLevels bits, nLevels/8 bytes)
     signal output toIdx;         // Receiver index (nLevels bits, nLevels/8 bytes)
     signal output amount;        // Amount (128 bits, 16 bytes)
     
-    //signal output bitsTxData[23 * 8]; //for HashGlobalInputs
+    signal output bitsTxData[8 + nLevels + nLevels + 128]; //for HashGlobalInputs
 
-    var txDataBitsLength = 128 + nLevels + nLevels + 8;
+    var txDataBitsLength = 8 + nLevels + nLevels + 128;
     
     // Convert txData to bits
-    component txDataBits = Num2Bits(txDataBitsLength); // 23bytes => 184 bits
+    component txDataBits = Num2Bits(txDataBitsLength); // (8 + nLevels + nLevels + 128) bits
     txDataBits.in <== txData;
 
-    // Extract amount (lowest 128 bits)
-    component amount_bits2Num = Bits2Num(128);
-    for (var i = 0; i < 128; i++) {
-        amount_bits2Num.in[i] <== txDataBits.out[i];
-        //bitsTxData[i] <== txDataBits.out[i];
+    // Extract txnType (lowest 8 bits)
+    component txnType_bits2Num = Bits2Num(8);
+    for (var i = 0; i < 8; i++) {
+        txnType_bits2Num.in[i] <== txDataBits.out[i];
+        bitsTxData[i] <== txDataBits.out[i];
     }
-    amount <== amount_bits2Num.out;
-    
-    // Extract toIdx (next nLevels bits)
-    component toIdx_bits2Num = Bits2Num(nLevels);
-    for (var i = 0; i < nLevels; i++) {
-        toIdx_bits2Num.in[i] <== txDataBits.out[128 + i];
-        //bitsTxData[128 + i] <== txDataBits.out[128 + i];
-    }
-    toIdx <== toIdx_bits2Num.out;
+    txnType <== txnType_bits2Num.out;
     
     // Extract fromIdx (next nLevels bits)
     component fromIdx_bits2Num = Bits2Num(nLevels);
     for (var i = 0; i < nLevels; i++) {
-        fromIdx_bits2Num.in[i] <== txDataBits.out[128 + nLevels + i];
-        //bitsTxData[128 + nLevels + i] <== txDataBits.out[128 + nLevels + i];
+        fromIdx_bits2Num.in[i] <== txDataBits.out[8 + i];
+        bitsTxData[8 + i] <== txDataBits.out[8 + i];
     }
     fromIdx <== fromIdx_bits2Num.out;
     
-    // Extract txnType (highest 8 bits)
-    component txnType_bits2Num = Bits2Num(8);
-    for (var i = 0; i < 8; i++) {
-        txnType_bits2Num.in[i] <== txDataBits.out[128 + nLevels + nLevels + i];
-        //bitsTxData[128 + nLevels + nLevels + i] <== txDataBits.out[128 + nLevels + nLevels + i];
+    // Extract toIdx (next nLevels bits)
+    component toIdx_bits2Num = Bits2Num(nLevels);
+    for (var i = 0; i < nLevels; i++) {
+        toIdx_bits2Num.in[i] <== txDataBits.out[8 + nLevels + i];
+        bitsTxData[8 + nLevels + i] <== txDataBits.out[8 + nLevels + i];
     }
-    txnType <== txnType_bits2Num.out;
+    toIdx <== toIdx_bits2Num.out;
+    
+    // Extract amount (highest 128 bits)
+    component amount_bits2Num = Bits2Num(128);
+    for (var i = 0; i < 128; i++) {
+        amount_bits2Num.in[i] <== txDataBits.out[8 + nLevels + nLevels + i];
+        bitsTxData[8 + nLevels + nLevels + i] <== txDataBits.out[8 + nLevels + nLevels + i];
+    }
+    amount <== amount_bits2Num.out;
     
     // Validate txnType (only values in 0-6 range are allowed)
     component isTxnTypeValid = LessThan(8);

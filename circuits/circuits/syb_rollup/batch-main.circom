@@ -116,7 +116,7 @@ template BatchMain(nTx, nLevels) {
     var txDataBits = (8 + nLevels + nLevels + 128); // txnType[8] | fromIdx[nLevels] | toIdx[nLevels] | amount[128]
     for (i = 0; i < nTx; i++) {
         for (j = 0; j < txDataBits; j++) {
-            hasherInputs.TxsData[i*txDataBits + j] <== decodeTx[i].bitsTxData[j];
+            hasherInputs.txsData[i*txDataBits + j] <== decodeTx[i].bitsTxData[j];
         }
     }
 

@@ -5,7 +5,7 @@ include "../../node_modules/circomlib/circuits/bitify.circom";
 
 template HashInputs(nTx, nLevels) {
     var bitsRoots = 256;       // Root size (256 bits)
-    var bitsTxsData = nTx * (1 + nLevels + nLevels + 128); // Transaction data size
+    var bitsTxsData = nTx * (8 + nLevels + nLevels + 128); // Transaction data size
     var totalBitsSha256 = 6*bitsRoots + bitsTxsData; // Total SHA256 input bits
     
     // Inputs
@@ -15,7 +15,7 @@ template HashInputs(nTx, nLevels) {
     signal input newAccountRoot;   // New account root
     signal input newVouchRoot;     // New voucher root
     signal input newScoreRoot;     // New score root
-    signal input TxsData[bitsTxsData]; // Transaction data
+    signal input txsData[bitsTxsData]; // Transaction data
     
     // Output
     signal output hashInputsOut;   // Final hash output
@@ -75,16 +75,16 @@ template HashInputs(nTx, nLevels) {
         inputsHasher.in[offset + bitsRoots - 1 - i] <== n2bNewVouchRoot.out[i];
     }
     offset += bitsRoots;
-    
+
     // Add newScoreRoot
     for (i = 0; i < bitsRoots; i++) {
         inputsHasher.in[offset + bitsRoots - 1 - i] <== n2bNewScoreRoot.out[i];
     }
     offset += bitsRoots;
     
-    // Add TxsData (data in format: txnType, fromIdx, toIdx, amount)
+    // Add txsData (data in format: txnType, fromIdx, toIdx, amount)
     for (i = 0; i < bitsTxsData; i++) {
-        inputsHasher.in[offset + i] <== TxsData[i];
+        inputsHasher.in[offset + i] <== txsData[i];
     }
     
     // Convert hash result to number

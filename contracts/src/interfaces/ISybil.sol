@@ -13,6 +13,7 @@ interface ISybil {
     error ReceiverHasZeroBalance();
     error NotVouched(address from, address to);
     error SelfVouch();
+    error BatchNotFull();
 
     // Initialization function
     function initialize(

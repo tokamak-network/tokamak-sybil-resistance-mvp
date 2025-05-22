@@ -1,62 +1,56 @@
 pragma circom 2.0.0;
 
-include "../../node_modules/circomlib/circuits/bitify.circom";
-include "../../node_modules/circomlib/circuits/comparators.circom";
+include "../../node_modules/circomlib/circuits/mux1.circom";
 
-/**
- * Updates balances for a transaction
- */
 template BalanceUpdater() {
+    // Inputs
     signal input oldStBalanceSender;
     signal input oldStBalanceReceiver;
     signal input amount;
-    signal input loadAmount;
-    signal input nop;
-    signal input nullifyLoadAmount;
-    signal input nullifyAmount;
+    signal input isCreateAccount;
+    signal input isDeposit;
+    signal input isWithdraw;
+    signal input isExplode;
 
+    // Outputs
     signal output newStBalanceSender;
     signal output newStBalanceReceiver;
-    signal output isP2Nop;
-    signal output isAmountNullified;
+    
+    // Create/Deposit/Explode: Existing balance + amount
+    signal depositBalance;
+    depositBalance <== oldStBalanceSender + amount;
+    
+    // Withdraw: Existing balance - amount
+    signal withdrawBalance;
+    withdrawBalance <== oldStBalanceSender - amount;
+    
+    // Selection based on transaction type
+    component selectBalSender = Mux1();
+    component selectType = Mux1();
+    
+    // Deposit or account creation
+    signal isDepositOrCreateOrExplode;
+    isDepositOrCreateOrExplode <== isDeposit + isCreateAccount + isExplode;
+    
+    selectType.c[0] <== oldStBalanceSender;
+    selectType.c[1] <== withdrawBalance;
+    selectType.s <== isWithdraw;
 
-    signal underflowOk;             // 1 if sender balance is > 0
-    signal effectiveAmount1;        // original amount to transfer. Set to 0 if tx is NOP
-    signal effectiveAmount2;        // tx amount once nullifyAmount is applied
-    signal effectiveAmount3;        // tx amount once checked if sender has enough balance
-    signal effectiveLoadAmount1;    // original loadAmount to load
-    signal effectiveLoadAmount2;    // tx loadAmount once nullifyLoadAmount is applied
+    selectBalSender.c[0] <== selectType.out;
+    selectBalSender.c[1] <== depositBalance;
+    selectBalSender.s <== isDepositOrCreateOrExplode;
 
-    // compute effective loadAmount and amount
-    effectiveLoadAmount1 <== loadAmount;
-    effectiveLoadAmount2 <== effectiveLoadAmount1*(1-nullifyLoadAmount);
-    effectiveAmount1 <== amount*(1-nop);                     //nop makes amount 0
-    effectiveAmount2 <== effectiveAmount1*(1-nullifyAmount); //nullifyAmount makes amount 0
+    newStBalanceSender <== selectBalSender.out;
+    
+    // Explode: Existing balance - amount
+    signal explodedReceiverBalance;
+    explodedReceiverBalance <== oldStBalanceReceiver - amount;
+    
+    // Subtract amount only if Explode, otherwise no change
+    component selectBalReceiver = Mux1();
+    selectBalReceiver.c[0] <== oldStBalanceReceiver;
+    selectBalReceiver.c[1] <== explodedReceiverBalance;
+    selectBalReceiver.s <== isExplode;
 
-    // check balance sender
-    // Overflow check:
-    // - smart contract does not allow deposits over 2^128
-    // - smart contract does not allow transfers over 2^192
-    // - it is assumed that maximum balance accumulated would be 2^192
-    // Underflow check:
-    // - assuming 192 bits as maximum allowed balance for a single account
-    // - bit 193 is set to 1
-    // - if account has not enough balance, bit 193 will be 0
-    component n2bSender = Num2Bits(193);
-    n2bSender.in <== (1<<192) + oldStBalanceSender + effectiveLoadAmount2 - effectiveAmount2;
-
-    underflowOk <== n2bSender.out[192];
-
-    effectiveAmount3 <== underflowOk*effectiveAmount2;
-
-    newStBalanceSender <== oldStBalanceSender + effectiveLoadAmount2 - effectiveAmount3;
-    newStBalanceReceiver <== oldStBalanceReceiver + effectiveAmount3;
-
-    component effectiveAmountIsZero = IsZero();
-    effectiveAmountIsZero.in <== effectiveAmount1;
-
-    isAmountNullified <== 1 - (1 - nullifyAmount)*underflowOk;
-
-    // Set NOP function on processor 2 (receiver account) if original amount to transfer is 0
-    isP2Nop <== (1 - effectiveAmountIsZero.out);
+    newStBalanceReceiver <== selectBalReceiver.out;
 }

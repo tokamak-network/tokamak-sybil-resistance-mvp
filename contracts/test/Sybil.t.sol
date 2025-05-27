@@ -77,37 +77,39 @@ contract MvpTest is Test {
         assertEq(lastForged, 1);
     }
 
-    // function testGetQueueLength() public {
-    //     uint32 queueLength = sybil.getQueueLength();
-    //     assertEq(queueLength, 2);
+    function testGetQueueLength() public {
+        uint256 queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 0);
 
-    //     vm.prank(address(this));
-    //     for (uint256 i = 0; i < 5; ++i) {
-    //         sybil.deposit{value : 1 ether}();
-    //     }
+        vm.prank(address(this));
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value : 1 ether}();
+        }
 
-    //     uint256[2] memory proofA = [uint(0), uint(0)];
-    //     uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
-    //     uint256[2] memory proofC = [uint(0), uint(0)];
+        queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 5);
 
-    //     vm.prank(address(this));
-    //     sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
+        uint256[2] memory proofA = [uint(0), uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
 
-    //     queueLength = sybil.getQueueLength();
-    //     assertEq(queueLength, 2);
-    // }
+        vm.prank(address(this));
+        sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
+
+        queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 0);
+    }
 
     function testForgeBatchEventEmission() public {
-        vm.expectEmit(true, true, true, true);
-        // emit Sybil.ForgeBatch(1, 5, 5);
         for(uint256 i = 0; i < 5; i++) {
             sybil.deposit{value: 1 ether}();
         }
         uint256[2] memory proofA = [uint(0), uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
-        uint256[2] memory proofC = [uint(0), uint(0)];
 
-        // vm.expectRevert();
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        vm.expectEmit(true, true, true, true);
+        emit Sybil.ForgeBatch(uint32(1), 5, 5);
         vm.prank(address(this));
         sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
     }

@@ -35,7 +35,7 @@ interface ISybil {
         uint256[2] calldata proofC
     ) external;
 
-    function getQueueLength() external view returns (uint32);
+    function getQueueLength() external view returns (uint256);
 
     // Deposit Function
     function deposit() external payable;

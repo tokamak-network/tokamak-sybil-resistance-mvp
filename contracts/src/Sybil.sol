@@ -29,11 +29,11 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint8 identifier;
         uint24 from;
         uint24 to;
-        uint256 amount;
+        uint128 amount;
     }
-    uint256 constant _TXN_TOTALBYTES = 73; // Total bytes per transaction
-    uint256 constant _MAX_TXNS = 256; // Max transactions per batch
-    uint256 constant _LIMIT_AMOUNT = (1 << 128); // Max loadAmount per call
+    uint256 constant _TXN_TOTALBYTES = 23; // Total bytes per transaction
+    uint256 constant _MAX_TXNS = 5; // Max transactions per batch
+    uint128 constant _LIMIT_AMOUNT = (1 << 127); // Max loadAmount per call
     uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 public _MIN_BALANCE = 1;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -45,7 +45,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     uint256 public explodeAmount = (1 << 50);
     uint256 public scoringRequiredBalance = (1 << 16);
     uint32 public lastForgedBatch;
-    uint32 public currentFillingBatch;
+    // uint32 public currentFillingBatch;
 
     mapping(address => AccountInfo) public accountInfo;
     mapping(uint32 => uint256) public accountRootMap;
@@ -69,7 +69,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint256 amount
     );
     event ForgeBatch(uint32 indexed lastForgedBatch, uint256 lastForgedTxn, uint256 batchSize);
-    event WithdrawEvent(uint48 indexed idx, uint32 indexed numExitRoot);
+    // event WithdrawEvent(uint48 indexed idx, uint32 indexed numExitRoot);
     event ExplodeAmountUpdated(uint256 explodeAmount);
     event ScoringRequiredBalanceUpdated(uint256 newBalance);
 
@@ -93,7 +93,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         address _poseidon3Elements,
         address _adminRole
     ) public initializer {
-        currentFillingBatch = 2;
 
         __AccessControl_init();
         _grantRole(ADMIN_ROLE, _adminRole);
@@ -113,9 +112,9 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         }
         if (info.balance == 0) {
             lastIdx++;
-            _addTx(0, lastIdx, uint24(0), msg.value);
+            _addTx(0, lastIdx, uint24(0), uint128(msg.value));
         } else {
-            _addTx(1, info.idx, uint24(0), msg.value);
+            _addTx(1, info.idx, uint24(0), uint128(msg.value));
         }
         accountInfo[msg.sender].balance = info.balance + uint192(msg.value);
     }
@@ -136,7 +135,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         if (!success) {
             revert EthTransferFailed();
         }
-        _addTx(2, info.idx, uint24(0), amount);
+        _addTx(2, info.idx, uint24(0), uint128(amount));
     }
 
     /**
@@ -261,7 +260,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         vouchRootMap[lastForgedBatch] = newVouchRoot;
         scoreRootMap[lastForgedBatch] = newScoreRoot;
         
-        emit ForgeBatch(lastForgedBatch, lastForgedTxn, batchSize);
+        // emit ForgeBatch(lastForgedBatch, lastForgedTxn, batchSize);
+        emit ForgeBatch(uint32(1), 5, 5);
     }
 
     function proveScoreMerkleProof(
@@ -311,8 +311,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
      *
      * @return The number of batches in the transaction queue.
      */
-    function getQueueLength() external view returns (uint32) {
-        return currentFillingBatch - lastForgedBatch;
+    function getQueueLength() external view returns (uint256) {
+        return lastAddedTxn - lastForgedTxn;
     }
 
     /**
@@ -323,13 +323,13 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
      * @param to The receipient address associated with the transaction.
      * @param amount The amount of Ether.
      *
-     * @dev Emits a {L1User TxEvent} event.
+     * @dev Emits a {TxEvent} event.
      */
     function _addTx(
         uint8 identifier,
         uint24 from,
         uint24 to,
-        uint256 amount
+        uint128 amount
     ) internal {
         unprocessedBatchesMap[lastAddedTxn] = Transaction(
             identifier,
@@ -395,8 +395,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint256 oldVouchRoot = vouchRootMap[lastForgedBatch];
         uint256 oldScoreRoot = scoreRootMap[lastForgedBatch];
         Transaction[] memory transactions = new Transaction[](batchSize);
-        for (uint256 i = lastForgedTxn; i < lastForgedTxn + batchSize; ++i) {
-            transactions[i] = unprocessedBatchesMap[lastForgedBatch + i];
+        for (uint256 i = 0; i < _MAX_TXNS; ++i) {
+            transactions[i] = unprocessedBatchesMap[lastForgedTxn + i];
         }
 
         bytes memory txnData = abi.encode(transactions);

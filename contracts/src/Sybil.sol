@@ -112,6 +112,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         }
         if (info.balance == 0) {
             lastIdx++;
+            accountInfo[msg.sender].idx = lastIdx;
             _addTx(0, lastIdx, uint24(0), uint128(msg.value));
         } else {
             _addTx(1, info.idx, uint24(0), uint128(msg.value));

@@ -45,7 +45,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     uint256 public explodeAmount = (1 << 50);
     uint256 public scoringRequiredBalance = (1 << 16);
     uint32 public lastForgedBatch;
-    // uint32 public currentFillingBatch;
 
     mapping(address => AccountInfo) public accountInfo;
     mapping(uint32 => uint256) public accountRootMap;
@@ -53,8 +52,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     mapping(uint32 => uint256) public scoreRootMap;
     mapping(uint32 => uint256) public exitRootMap;
     mapping(uint256 => Transaction) public unprocessedBatchesMap;
-    mapping(uint32 => bytes32) public txsDataHashMap;
-    // mapping(address => uint256) public balances;
     mapping(address => mapping(address => bool)) public vouches;
     mapping(address => ScoreSnapshot) public scoreSnapshots;
 
@@ -69,7 +66,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint256 amount
     );
     event ForgeBatch(uint32 indexed lastForgedBatch, uint256 lastForgedTxn, uint256 batchSize);
-    // event WithdrawEvent(uint48 indexed idx, uint32 indexed numExitRoot);
     event ExplodeAmountUpdated(uint256 explodeAmount);
     event ScoringRequiredBalanceUpdated(uint256 newBalance);
 
@@ -261,8 +257,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         vouchRootMap[lastForgedBatch] = newVouchRoot;
         scoreRootMap[lastForgedBatch] = newScoreRoot;
         
-        // emit ForgeBatch(lastForgedBatch, lastForgedTxn, batchSize);
-        emit ForgeBatch(uint32(1), 5, 5);
+        emit ForgeBatch(lastForgedBatch, lastForgedTxn, batchSize);
     }
 
     function proveScoreMerkleProof(

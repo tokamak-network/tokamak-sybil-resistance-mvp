@@ -13,6 +13,7 @@ interface ISybil {
     error ReceiverHasZeroBalance();
     error NotVouched(address from, address to);
     error SelfVouch();
+    error BatchNotFull();
 
     // Initialization function
     function initialize(
@@ -34,7 +35,7 @@ interface ISybil {
         uint256[2] calldata proofC
     ) external;
 
-    function getQueueLength() external view returns (uint32);
+    function getQueueLength() external view returns (uint256);
 
     // Deposit Function
     function deposit() external payable;

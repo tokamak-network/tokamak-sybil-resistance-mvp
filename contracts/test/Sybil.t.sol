@@ -50,6 +50,9 @@ contract MvpTest is Test {
         uint256[2] memory proofA = [uint(0), uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value : 1 ether}();
+        }
         vm.prank(address(this));
         sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
         uint32 batchNum = sybil.lastForgedBatch();
@@ -60,24 +63,31 @@ contract MvpTest is Test {
     function testGetLastForgedBatch() public {
         uint32 lastForged = sybil.lastForgedBatch();
         assertEq(lastForged, 0);
-
+        vm.startPrank(address(this));
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value : 1 ether}();
+        }
         uint256[2] memory proofA = [uint(0), uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
 
-        vm.prank(address(this));
         sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
-
+        vm.stopPrank();
         lastForged = sybil.lastForgedBatch();
         assertEq(lastForged, 1);
     }
 
     function testGetQueueLength() public {
-        uint32 queueLength = sybil.getQueueLength();
-        assertEq(queueLength, 2);
+        uint256 queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 0);
 
         vm.prank(address(this));
-        sybil.deposit{value: 1 ether}();
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value : 1 ether}();
+        }
+
+        queueLength = sybil.getQueueLength();
+        assertEq(queueLength, 5);
 
         uint256[2] memory proofA = [uint(0), uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
@@ -87,29 +97,31 @@ contract MvpTest is Test {
         sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
 
         queueLength = sybil.getQueueLength();
-        assertEq(queueLength, 2);
+        assertEq(queueLength, 0);
     }
 
     function testForgeBatchEventEmission() public {
-        vm.expectEmit(true, true, true, true);
-        emit Sybil.ForgeBatch(1, 0);
-
+        for(uint256 i = 0; i < 5; i++) {
+            sybil.deposit{value: 1 ether}();
+        }
         uint256[2] memory proofA = [uint(0), uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
-        uint256[2] memory proofC = [uint(0), uint(0)];
 
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        vm.expectEmit(true, true, true, true);
+        emit Sybil.ForgeBatch(uint32(1), 5, 5);
         vm.prank(address(this));
         sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
     }
 
-    function testL1UserTxEventEmission() public {
+    function testTxEventEmission() public {
         vm.expectEmit(true, true, true, true);
+        uint256 lastAddedTxn = 1;
         uint8 identifier = 0;
+        uint24 senderIdx = 1;
         uint256 amount = 1 ether;
-        emit Sybil.L1UserTxEvent(
-            2,
-            0,
-            abi.encode(identifier, address(this), address(0), amount)
+        emit Sybil.TxEvent(
+          lastAddedTxn, identifier, senderIdx, uint24(0), amount
         );
 
         vm.prank(address(this));
@@ -117,12 +129,12 @@ contract MvpTest is Test {
     }
 
     function testCreateDepositAccountTransaction() public {
-        uint256 balance = sybil.balances(address(this));
+        (uint192 balance, ) = sybil.accountInfo(msg.sender);
         assertEq(balance, 0 ether);
 
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();
-        balance = sybil.balances(address(this));
+       (balance, ) = sybil.accountInfo(address(this));
         assertEq(balance, 1 ether);
     }
 
@@ -133,7 +145,7 @@ contract MvpTest is Test {
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();
 
-        uint256 balance = sybil.balances(address(this));
+        (uint192 balance, ) = sybil.accountInfo(address(this));
         assertEq(balance, 2 ether);
     }
 
@@ -150,7 +162,7 @@ contract MvpTest is Test {
         vm.prank(address(this));
         vm.expectRevert(ISybil.InsufficientETH.selector);
         sybil.deposit();
-        uint256 balance = sybil.balances(address(this));
+        (uint192 balance, ) = sybil.accountInfo(msg.sender);
         assertEq(balance, 0 ether);
     }
 
@@ -230,7 +242,8 @@ contract MvpTest is Test {
 
         uint256 amount = 1 ether;
         sybil.withdraw(amount);
-        assertEq(sybil.balances(address(this)), 1 ether);
+        (uint192 balance, ) = sybil.accountInfo(address(this));
+        assertEq(balance, 1 ether);
     }
 
     function testWithdrawTransactionWithLimitAmountExceeded() public {

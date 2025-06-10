@@ -9,37 +9,75 @@ const (
 	n       = 10
 	alpha   = 0.5
 	maxIter = 100
+	req_bal = 9
+	cutoff  = 6
 )
 
 func main() {
-	edges := [][2]int{
-		{0, 1}, {2, 3}, {0, 3}, {0, 2}, {1, 5}, {2, 4},
-		{4, 5}, {4, 1}, {6, 7}, {4, 6}, {1, 3}, {3, 5},
-		{2, 6}, {7, 9}, {8, 9}, {7, 8},
+	// Test data for vouch_matrix, balances and old_scores. The sizes must be nxn, n and n.
+	vouch_matrix := [][]float64{
+		{0, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+		{1, 0, 0, 1, 1, 1, 0, 0, 0, 0},
+		{1, 0, 0, 1, 1, 0, 1, 0, 0, 0},
+		{1, 1, 1, 0, 0, 1, 0, 0, 0, 0},
+		{0, 1, 1, 0, 0, 1, 1, 0, 0, 0},
+		{0, 1, 0, 1, 1, 0, 0, 0, 0, 0},
+		{0, 0, 1, 0, 1, 0, 0, 1, 0, 0},
+		{0, 0, 0, 0, 0, 0, 1, 0, 1, 1},
+		{0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
+		{0, 0, 0, 0, 0, 0, 0, 1, 1, 0},
+	}
+	balances := []float64{10, 3, 10, 10, 20, 10, 20, 30, 10, 10}
+	old_scores := []float64{1, 1, 1, 1, 1, 1, 1, 0, 0, 0}
+
+	// Compute the new_scores
+
+	active_nodes := 0
+	for _, val := range balances {
+		if val >= req_bal {
+			active_nodes++
+		}
+	}
+	new_scores := make([]float64, n)
+	if active_nodes < cutoff {
+		for i, val := range balances {
+			if val >= req_bal {
+				new_scores[i] = 1.0 / float64(active_nodes)
+			}
+		}
+	} else {
+		A := computeA(vouch_matrix, balances)
+		W := computeW(A)
+		P := computeP(W, alpha, maxIter)
+		Q := computeQ(P)
+		J := computeJ(Q)
+		s := computeS(J, old_scores)
+		new_scores = computeY(J, s, W)
 	}
 
+	fmt.Println("New Scores:")
+	for i, val := range new_scores {
+		fmt.Printf("Node %d: %.4f\n", i, val)
+	}
+}
+
+func computeA(vouchMatrix [][]float64, balances []float64) [][]float64 {
 	A := make([][]float64, n)
 	for i := range A {
 		A[i] = make([]float64, n)
 	}
-	for _, e := range edges {
-		A[e[0]][e[1]] = 1
-		A[e[1]][e[0]] = 1
+
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			if vouchMatrix[i][j] == 1 &&
+				vouchMatrix[j][i] == 1 &&
+				balances[i] >= 9 &&
+				balances[j] >= 9 {
+				A[i][j] = 1
+			}
+		}
 	}
-
-	x := []float64{1, 1, 1, 1, 1, 1, 1, 0, 0, 0}
-
-	W := computeW(A)
-	P := computeP(W, alpha, maxIter)
-	Q := computeQ(P)
-	J := computeJ(Q)
-	s := computeS(J, x)
-	y := computeY(J, s, W)
-
-	fmt.Println("New Scores:")
-	for i, val := range y {
-		fmt.Printf("Node %d: %.4f\n", i, val)
-	}
+	return A
 }
 
 func computeW(A [][]float64) [][]float64 {
@@ -118,7 +156,7 @@ func computeJ(Q [][]int) [][][]int {
 	return J
 }
 
-func computeS(J [][][]int, x []float64) [][]int {
+func computeS(J [][][]int, old_scores []float64) [][]int {
 	s := make([][]int, n)
 	for i := 0; i < n; i++ {
 		s[i] = make([]int, n)
@@ -126,9 +164,9 @@ func computeS(J [][][]int, x []float64) [][]int {
 			var sumJ, sumC float64
 			for j := 0; j < n; j++ {
 				if J[i][k][j] == 1 {
-					sumJ += x[j]
+					sumJ += old_scores[j]
 				} else {
-					sumC += x[j]
+					sumC += old_scores[j]
 				}
 			}
 			if sumJ <= sumC {

@@ -8,7 +8,12 @@ import "./interfaces/IVerifier.sol";
 import "./types/SybilHelpers.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers {
+contract Sybil is
+    Initializable,
+    AccessControlUpgradeable,
+    ISybil,
+    SybilHelpers
+{
     struct Verifier {
         IVerifier verifierInterface;
         uint256 maxTx; // maximum rollup transactions in a batch: L1-tx transactions
@@ -21,8 +26,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     }
 
     struct AccountInfo {
-        uint192 balance; 
-        uint24 idx;      
+        uint192 balance;
+        uint24 idx;
     }
 
     struct Transaction {
@@ -34,7 +39,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     uint256 constant _TXN_TOTALBYTES = 23; // Total bytes per transaction
     uint256 constant _MAX_TXNS = 5; // Max transactions per batch
     uint128 constant _LIMIT_AMOUNT = (1 << 127); // Max loadAmount per call
-    uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant _RFIELD =
+        21888242871839275222246405745257275088548364400416034343698204186575808495617;
     uint256 public _MIN_BALANCE = 1;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
@@ -65,7 +71,12 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint24 to,
         uint256 amount
     );
-    event ForgeBatch(uint32 indexed lastForgedBatch, uint256 lastForgedTxn, uint256 batchSize);
+    event ForgeBatch(
+        uint32 indexed lastForgedBatch,
+        uint256 lastForgedTxn,
+        uint256 batchSize,
+        bytes txnData
+    );
     event ExplodeAmountUpdated(uint256 explodeAmount);
     event ScoringRequiredBalanceUpdated(uint256 newBalance);
 
@@ -89,7 +100,6 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         address _poseidon3Elements,
         address _adminRole
     ) public initializer {
-
         __AccessControl_init();
         _grantRole(ADMIN_ROLE, _adminRole);
 
@@ -124,7 +134,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         if (amount + _MIN_BALANCE > info.balance) {
             revert InsufficientBalance();
         }
-        
+
         unchecked {
             accountInfo[msg.sender].balance = info.balance - uint192(amount);
         }
@@ -193,10 +203,9 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         for (uint256 i = 0; i < toEthAddrs.length; ++i) {
             address toEthAddr = toEthAddrs[i];
             AccountInfo memory receiverInfo = accountInfo[toEthAddr];
-            uint192 penalty = uint192(Math.min(
-                explodeAmount,
-                receiverInfo.balance - _MIN_BALANCE
-            ));
+            uint192 penalty = uint192(
+                Math.min(explodeAmount, receiverInfo.balance - _MIN_BALANCE)
+            );
             unchecked {
                 accountInfo[toEthAddr].balance = receiverInfo.balance - penalty;
             }
@@ -232,10 +241,18 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         if (lastAddedTxn < lastForgedTxn + batchSize) {
             revert BatchNotFull();
         }
+
+        Transaction[] memory transactions = new Transaction[](batchSize);
+        for (uint256 i = 0; i < _MAX_TXNS; ++i) {
+            transactions[i] = unprocessedBatchesMap[lastForgedTxn + i];
+        }
+        bytes memory txnData = abi.encode(transactions);
+
         uint256 input = _constructCircuitInput(
             newAccountRoot,
             newVouchRoot,
-            newScoreRoot
+            newScoreRoot,
+            txnData
         );
 
         // Verify the proof
@@ -256,8 +273,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         accountRootMap[lastForgedBatch] = newAccountRoot;
         vouchRootMap[lastForgedBatch] = newVouchRoot;
         scoreRootMap[lastForgedBatch] = newScoreRoot;
-        
-        emit ForgeBatch(lastForgedBatch, lastForgedTxn, batchSize);
+
+        emit ForgeBatch(lastForgedBatch, lastForgedTxn, batchSize, txnData);
     }
 
     function proveScoreMerkleProof(
@@ -389,17 +406,12 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     function _constructCircuitInput(
         uint256 newAccountRoot,
         uint256 newVouchRoot,
-        uint256 newScoreRoot
+        uint256 newScoreRoot,
+        bytes memory txnData
     ) internal view returns (uint256) {
         uint256 oldAccountRoot = accountRootMap[lastForgedBatch];
         uint256 oldVouchRoot = vouchRootMap[lastForgedBatch];
         uint256 oldScoreRoot = scoreRootMap[lastForgedBatch];
-        Transaction[] memory transactions = new Transaction[](batchSize);
-        for (uint256 i = 0; i < _MAX_TXNS; ++i) {
-            transactions[i] = unprocessedBatchesMap[lastForgedTxn + i];
-        }
-
-        bytes memory txnData = abi.encode(transactions);
 
         bytes memory inputBytes = abi.encodePacked(
             oldAccountRoot,

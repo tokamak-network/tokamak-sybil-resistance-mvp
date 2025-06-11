@@ -311,6 +311,10 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         return lastAddedTxn - lastForgedTxn;
     }
 
+    function getScore(address user) external view returns (uint32 score) {
+        return scoreSnapshots[user].score;
+    }
+
     /**
      * @dev Adds a transaction to the current filling batch.
      *

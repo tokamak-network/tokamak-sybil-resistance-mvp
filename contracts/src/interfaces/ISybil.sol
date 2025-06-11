@@ -62,5 +62,8 @@ interface ISybil {
 
     // setter functions
     function updateExplodeAmount(uint256 _explodeAmount) external;
-    
+    function updateScoringRequiredBalance(uint256 _scoringRequiredBalance) external;
+
+    // getter function
+    function getScore(address user) external view returns (uint32);
 }

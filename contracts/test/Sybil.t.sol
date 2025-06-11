@@ -35,7 +35,7 @@ contract MvpTest is Test {
         uint256 nLevels = uint256(1);
 
         sybil = new Sybil();
-   
+
         sybil.initialize(
             verifiers,
             maxTx,
@@ -51,8 +51,9 @@ contract MvpTest is Test {
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
         uint256[2] memory proofC = [uint(0), uint(0)];
         for (uint256 i = 0; i < 5; ++i) {
-            sybil.deposit{value : 1 ether}();
+            sybil.deposit{value: 1 ether}();
         }
+
         vm.prank(address(this));
         sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
         uint32 batchNum = sybil.lastForgedBatch();
@@ -65,7 +66,7 @@ contract MvpTest is Test {
         assertEq(lastForged, 0);
         vm.startPrank(address(this));
         for (uint256 i = 0; i < 5; ++i) {
-            sybil.deposit{value : 1 ether}();
+            sybil.deposit{value: 1 ether}();
         }
         uint256[2] memory proofA = [uint(0), uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
@@ -83,7 +84,7 @@ contract MvpTest is Test {
 
         vm.prank(address(this));
         for (uint256 i = 0; i < 5; ++i) {
-            sybil.deposit{value : 1 ether}();
+            sybil.deposit{value: 1 ether}();
         }
 
         queueLength = sybil.getQueueLength();
@@ -101,15 +102,26 @@ contract MvpTest is Test {
     }
 
     function testForgeBatchEventEmission() public {
-        for(uint256 i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 5; i++) {
             sybil.deposit{value: 1 ether}();
         }
+
         uint256[2] memory proofA = [uint(0), uint(0)];
         uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
-
         uint256[2] memory proofC = [uint(0), uint(0)];
+
+        Sybil.Transaction[] memory transactions = new Sybil.Transaction[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            (uint8 identifier, uint24 from, uint24 to, uint128 amount) = sybil
+                .unprocessedBatchesMap(i);
+            transactions[i] = Sybil.Transaction(identifier, from, to, amount);
+        }
+
+        bytes memory expectedTxnData = abi.encode(transactions);
+
         vm.expectEmit(true, true, true, true);
-        emit Sybil.ForgeBatch(uint32(1), 5, 5);
+        emit Sybil.ForgeBatch(uint32(1), 5, 5, expectedTxnData);
+
         vm.prank(address(this));
         sybil.forgeBatch(0xabc, 0, 0, proofA, proofB, proofC);
     }
@@ -121,7 +133,11 @@ contract MvpTest is Test {
         uint24 senderIdx = 1;
         uint256 amount = 1 ether;
         emit Sybil.TxEvent(
-          lastAddedTxn, identifier, senderIdx, uint24(0), amount
+            lastAddedTxn,
+            identifier,
+            senderIdx,
+            uint24(0),
+            amount
         );
 
         vm.prank(address(this));
@@ -134,7 +150,7 @@ contract MvpTest is Test {
 
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();
-       (balance, ) = sybil.accountInfo(address(this));
+        (balance, ) = sybil.accountInfo(address(this));
         assertEq(balance, 1 ether);
     }
 
@@ -234,8 +250,8 @@ contract MvpTest is Test {
         sybil.unvouch(address(0x123));
 
         assertEq(sybil.vouches(address(this), address(0x123)), false);
-
     }
+
     function testWithdrawTransaction() public {
         vm.prank(address(this));
         sybil.deposit{value: 2 ether}();

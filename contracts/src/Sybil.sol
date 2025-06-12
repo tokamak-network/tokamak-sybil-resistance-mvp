@@ -212,7 +212,7 @@ contract Sybil is
             accountInfo[msg.sender].balance = senderInfo.balance + penalty;
             vouches[toEthAddr][msg.sender] = false;
             vouches[msg.sender][toEthAddr] = false;
-            _addTx(5, senderInfo.idx, receiverInfo.idx, 0);
+            _addTx(5, senderInfo.idx, receiverInfo.idx, uint128(penalty));
         }
     }
 

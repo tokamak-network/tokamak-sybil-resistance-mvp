@@ -298,6 +298,10 @@ contract Sybil is
         scoreSnapshots[msg.sender].score = score;
     }
 
+    function updateScore(address user, uint32 score) external {
+        scoreSnapshots[user].score = score;
+    }
+
     /**
      * @dev Updates the amount used for the explode operation.
      *

@@ -153,6 +153,10 @@ contract Sybil is
     function vouch(address toEthAddr) external {
         AccountInfo memory senderInfo = accountInfo[msg.sender];
         AccountInfo memory receiverInfo = accountInfo[toEthAddr];
+        
+        if (vouches[msg.sender][toEthAddr]) {
+            revert AlreadyVouched(msg.sender, toEthAddr);
+        }
         if (senderInfo.balance == 0) {
             revert SenderHasZeroBalance();
         }

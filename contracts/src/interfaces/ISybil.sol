@@ -14,7 +14,8 @@ interface ISybil {
     error NotVouched(address from, address to);
     error SelfVouch();
     error BatchNotFull();
-
+    error AlreadyVouched(address from, address to);
+    
     // Initialization function
     function initialize(
         address verifier,

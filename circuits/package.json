@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "verifier": "bash scripts/generate-verifier.sh",
     "test": "echo \"Error: no test specified\" && exit 1",
     "singleTx": "ts-node src/index.ts"
   },

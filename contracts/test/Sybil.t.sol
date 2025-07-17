@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/Sybil.sol";
 import "../src/interfaces/ISybil.sol";
 import "../src/Verifier.sol";
-import "forge-std/console.sol";
+
 
 contract MockPoseidon2 is PoseidonUnit2 {
     function poseidon(

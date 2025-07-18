@@ -82,6 +82,12 @@ Poseidon4Elements deployed at: 0xF8AB2781AA06A1c3eF41Bd379Ec1681a70A148e0
 # Generate .go file from the Sybil contract
 Navigate to the contracts folder inside the tokamak-sybil-resistance-mvp directory.
 
-Run the followig command:
+Before running the script, you need to install `abigen`. Please [Follow the instructions here](https://geth.ethereum.org/docs/getting-started/installing-geth).
 
-```sh sybil_go.sh```
+Run the following command:
+
+```shell
+sh sybil_go.sh
+```
+
+This will generate the `sybil.go` file in the `../sequencer/eth/contracts` folder.

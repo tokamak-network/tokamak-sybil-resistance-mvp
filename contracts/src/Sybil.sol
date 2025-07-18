@@ -131,7 +131,7 @@ contract Sybil is
         if (amount >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (amount + _MIN_BALANCE > info.balance) {
+        if (amount + _MIN_BALANCE < info.balance) {
             revert InsufficientBalance();
         }
 

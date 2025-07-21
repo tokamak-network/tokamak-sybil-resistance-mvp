@@ -19,18 +19,18 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # Change to project directory
-cd "$PROJECT_DIR" || { echo -e "${RED}Failed to change to project directory${NC}"; exit 1; }
+cd "$PROJECT_DIR" || { echo -e "${RED}❌ Failed to change to project directory${NC}"; exit 1; }
 
 # Check if we're in the right directory
 if [ ! -f "package.json" ]; then
-    echo -e "${RED}❌ Error: package.json not found. Please run from circuits directory${NC}"
+    echo -e "${RED}❌ package.json not found. Please run from circuits directory${NC}"
     exit 1
 fi
 
 # Check if circomkit is installed
 if ! npm list circomkit >/dev/null 2>&1; then
     echo -e "${YELLOW}Installing circomkit...${NC}"
-    npm install circomkit || { echo -e "${RED}Failed to install circomkit${NC}"; exit 1; }
+    npm install circomkit || { echo -e "${RED}❌ Failed to install circomkit${NC}"; exit 1; }
 fi
 
 # Parameter input with validation
@@ -106,12 +106,13 @@ run_command() {
         echo -e "${GREEN}✅ $desc completed in ${duration} seconds${NC}"
         echo ""
     else
+        local exit_code=$?
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
         echo "$output"
         echo -e "${RED}❌ $desc failed after ${duration} seconds${NC}"
         echo -e "${RED}Command: $cmd${NC}"
-        echo -e "${RED}Exit code: $?${NC}"
+        echo -e "${RED}Exit code: $exit_code${NC}"
         exit 1
     fi
 }
@@ -121,83 +122,35 @@ run_command "1" "Compiling circuit" "npx circomkit compile batch_main"
 
 # Check if r1cs file was generated
 if [ ! -f "build/batch_main/batch_main.r1cs" ]; then
-    echo -e "${RED}❌ Error: r1cs file not generated${NC}"
+    echo -e "${RED}❌ r1cs file not generated${NC}"
     exit 1
 fi
 
 run_command "2" "Circuit info" "npx circomkit info batch_main"
 
-# Calculate required ptau power
-echo -e "${YELLOW}Calculating required ptau power...${NC}"
-CONSTRAINTS=$(npx circomkit info batch_main 2>/dev/null | grep -i "constraints" | grep -o '[0-9]\+' | tail -1)
-if [ -z "$CONSTRAINTS" ]; then
-    echo -e "${YELLOW}Could not determine constraints, using default ptau power 21${NC}"
-    PTAU_POWER=21
-else
-    # Calculate required power (log2 of constraints, rounded up)
-    # For 1818151 constraints, we need at least power 21
-    if [ "$CONSTRAINTS" -lt 1024 ]; then
-        PTAU_POWER=10
-    elif [ "$CONSTRAINTS" -lt 2048 ]; then
-        PTAU_POWER=11
-    elif [ "$CONSTRAINTS" -lt 4096 ]; then
-        PTAU_POWER=12
-    elif [ "$CONSTRAINTS" -lt 8192 ]; then
-        PTAU_POWER=13
-    elif [ "$CONSTRAINTS" -lt 16384 ]; then
-        PTAU_POWER=14
-    elif [ "$CONSTRAINTS" -lt 32768 ]; then
-        PTAU_POWER=15
-    elif [ "$CONSTRAINTS" -lt 65536 ]; then
-        PTAU_POWER=16
-    elif [ "$CONSTRAINTS" -lt 131072 ]; then
-        PTAU_POWER=17
-    elif [ "$CONSTRAINTS" -lt 262144 ]; then
-        PTAU_POWER=18
-    elif [ "$CONSTRAINTS" -lt 524288 ]; then
-        PTAU_POWER=19
-    elif [ "$CONSTRAINTS" -lt 1048576 ]; then
-        PTAU_POWER=20
-    elif [ "$CONSTRAINTS" -lt 2097152 ]; then
-        PTAU_POWER=21
-    elif [ "$CONSTRAINTS" -lt 4194304 ]; then
-        PTAU_POWER=22
-    elif [ "$CONSTRAINTS" -lt 8388608 ]; then
-        PTAU_POWER=23
-    elif [ "$CONSTRAINTS" -lt 16777216 ]; then
-        PTAU_POWER=24
-    elif [ "$CONSTRAINTS" -lt 33554432 ]; then
-        PTAU_POWER=25
-    elif [ "$CONSTRAINTS" -lt 67108864 ]; then
-        PTAU_POWER=26
-    elif [ "$CONSTRAINTS" -lt 134217728 ]; then
-        PTAU_POWER=27
-    else
-        PTAU_POWER=28
-    fi
-    echo -e "${BLUE}Constraints: $CONSTRAINTS, using ptau power: $PTAU_POWER${NC}"
-fi
+# Step 3: Download PTAU file if needed
+echo -e "${YELLOW}Step 3: Downloading PTAU file if needed...${NC}"
+echo -e "${YELLOW}Executing: npx circomkit ptau batch_main${NC}"
 
-# Step 3: Check PTAU file
-echo -e "${YELLOW}Step 3: Checking PTAU file...${NC}"
-if [ "$PTAU_POWER" -eq 28 ]; then
-    PTAU_FILE="./ptau/powersOfTau28_hez_final.ptau"
-else
-    PTAU_FILE="./ptau/powersOfTau28_hez_final_${PTAU_POWER}.ptau"
-fi
+# Capture the output to find which PTAU file was used
+PTAU_OUTPUT=$(npx circomkit ptau batch_main 2>&1 | tee /dev/tty)
+echo -e "${GREEN}✅ Download PTAU completed${NC}"
 
-if [ -f "$PTAU_FILE" ]; then
-    echo -e "${GREEN}✅ Default PTAU file found: $PTAU_FILE${NC}"
+# Extract the PTAU file path from the output
+PTAU_FILE=$(echo "$PTAU_OUTPUT" | grep -oE "PTAU ready at: (.*\.ptau)" | cut -d' ' -f4)
+
+if [ -n "$PTAU_FILE" ] && [ -f "$PTAU_FILE" ]; then
+    echo -e "${GREEN}✅ PTAU file found: $PTAU_FILE${NC}"
 else
-    echo -e "${YELLOW}⚠️  Default PTAU file not found: $PTAU_FILE${NC}"
+    echo -e "${RED}❌ Failed to determine PTAU file from circomkit output${NC}"
+    echo -e "${YELLOW}Please check the circomkit ptau command output${NC}"
+    exit 1
 fi
 
 echo ""
 
 # Step 4: Circuit setup (Key generation)
 echo -e "${YELLOW}Step 4: Circuit setup (Key generation)...${NC}"
-echo -e "${BLUE}Using PTAU: $PTAU_FILE${NC}"
-echo -e "${BLUE}Constraints: $CONSTRAINTS${NC}"
 echo ""
 
 # Check if keys already exist for current parameters
@@ -213,7 +166,7 @@ if [ -f "$PKEY_FILE" ] && [ -f "$VKEY_FILE" ]; then
     echo ""
     
     echo -e "${YELLOW}Choose an option:${NC}"
-    echo -e "  ${GREEN}1${NC}) Use existing keys (skip key generation)"
+    echo -e "  ${GREEN}1${NC}) Use existing final zkey file (recommended for production)"
     echo -e "  ${YELLOW}2${NC}) Regenerate keys (DEMO mode - not for production)"
     echo -e "  ${RED}3${NC}) Exit"
     echo ""
@@ -222,8 +175,80 @@ if [ -f "$PKEY_FILE" ] && [ -f "$VKEY_FILE" ]; then
     
     case $SETUP_CHOICE in
         1)
-            echo -e "${GREEN}✅ Using existing keys${NC}"
             echo ""
+            # Search for existing zkey files with matching parameters as hints
+            echo -e "${YELLOW}Searching for zkey files with matching parameters (nTx=$NTX, nLevels=$NLEVELS)...${NC}"
+            EXISTING_ZKEYS=$(find . -name "${NTX}_${NLEVELS}_*.zkey" -type f 2>/dev/null | grep -v "node_modules" | sort)
+            if [ -n "$EXISTING_ZKEYS" ]; then
+                echo -e "${BLUE}Found matching zkey files:${NC}"
+                echo "$EXISTING_ZKEYS" | while read -r zkey; do
+                    echo -e "  ${GREEN}$zkey${NC}"
+                done
+                echo ""
+            else
+                echo -e "${YELLOW}No zkey files found with current parameters${NC}"
+                echo ""
+            fi
+            
+            # Default to current pkey if it exists
+            if [ -f "$PKEY_FILE" ]; then
+                echo -e "${BLUE}Current key: $PKEY_FILE${NC}"
+            fi
+            
+            echo -e "${YELLOW}Enter path to final zkey file (Phase 2 complete, tab completion enabled):${NC}"
+            echo -e "${BLUE}Note: This should be a .zkey file, not a .ptau file${NC}"
+            read -e -p "Path [press Enter to use current]: " FINAL_ZKEY_PATH
+            
+            # If empty, use current pkey
+            if [ -z "$FINAL_ZKEY_PATH" ] && [ -f "$PKEY_FILE" ]; then
+                echo -e "${GREEN}✅ Using existing keys${NC}"
+                echo ""
+            else
+                if [ -f "$FINAL_ZKEY_PATH" ]; then
+                    # Check if it's actually a zkey file
+                    if [[ ! "$FINAL_ZKEY_PATH" =~ \.zkey$ ]]; then
+                        echo -e "${RED}❌ File doesn't appear to be a zkey file (expected .zkey extension)${NC}"
+                        echo -e "${RED}   You provided: $FINAL_ZKEY_PATH${NC}"
+                        echo -e "${YELLOW}   Please provide a zkey file generated from Phase 2 of the trusted setup${NC}"
+                        echo ""
+                        exit 1
+                    fi
+                    
+                    echo -e "${GREEN}✅ Final zkey file found: $FINAL_ZKEY_PATH${NC}"
+                    
+                    # Verify the zkey file
+                    echo -e "${YELLOW}Verifying zkey file...${NC}"
+                    if npx snarkjs zkey verify "build/batch_main/batch_main.r1cs" "$PTAU_FILE" "$FINAL_ZKEY_PATH" 2>&1 | grep -q "ZKey Ok!"; then
+                        echo -e "${GREEN}✅ [INFO] snarkJS: ZKey Ok!${NC}"
+                    else
+                        echo -e "${RED}❌ ZKey verification failed${NC}"
+                        exit 1
+                    fi
+                    
+                    # Check if the zkey matches current parameters by examining the filename
+                    if [[ "$FINAL_ZKEY_PATH" =~ ([0-9]+)_([0-9]+)_groth16_pkey\.zkey$ ]]; then
+                        ZKEY_NTX="${BASH_REMATCH[1]}"
+                        ZKEY_NLEVELS="${BASH_REMATCH[2]}"
+                        if [ "$ZKEY_NTX" != "$NTX" ] || [ "$ZKEY_NLEVELS" != "$NLEVELS" ]; then
+                            echo -e "${RED}❌ Warning: Selected zkey parameters (nTx=$ZKEY_NTX, nLevels=$ZKEY_NLEVELS) don't match current parameters (nTx=$NTX, nLevels=$NLEVELS)${NC}"
+                            read -p "Do you want to continue anyway? (y/N): " CONTINUE_MISMATCH
+                            if [[ ! "$CONTINUE_MISMATCH" =~ ^[Yy]$ ]]; then
+                                echo -e "${BLUE}Operation cancelled${NC}"
+                                exit 1
+                            fi
+                        fi
+                    fi
+                    
+                    SELECTED_ZKEY_FILE="$FINAL_ZKEY_PATH"
+                    USE_EXISTING_ZKEY=true
+                    
+                    echo -e "${YELLOW}Using specified zkey file...${NC}"
+                    # Continue to key generation below
+                else
+                    echo -e "${RED}❌ Zkey file not found: $FINAL_ZKEY_PATH${NC}"
+                    exit 1
+                fi
+            fi
             ;;
         2)
             echo -e "${RED}⚠️  DEMO MODE - NOT FOR PRODUCTION USE ⚠️${NC}"
@@ -231,23 +256,16 @@ if [ -f "$PKEY_FILE" ] && [ -f "$VKEY_FILE" ]; then
             echo ""
             read -p "Are you sure you want to continue? (y/N): " DEMO_CONFIRM
             if [[ "$DEMO_CONFIRM" =~ ^[Yy]$ ]]; then
-                if [ -f "$PTAU_FILE" ]; then
-                    echo -e "${YELLOW}Removing existing keys...${NC}"
-                    rm -f "$PKEY_FILE"
-                    rm -f "$VKEY_FILE"
-                    rm -f "$VERIFIER_FILE"
-                    
-                    SELECTED_PTAU_FILE="$PTAU_FILE"
-                    USE_EXISTING_ZKEY=false
-                    DEMO_MODE=true
-                    
-                    echo -e "${YELLOW}Generating new keys in DEMO mode...${NC}"
-                    # Continue to key generation below
-                else
-                    echo -e "${RED}❌ Auto-detected PTAU file not found: $PTAU_FILE${NC}"
-                    echo -e "${YELLOW}Please download the PTAU file first${NC}"
-                    echo ""
-                fi
+                echo -e "${YELLOW}Removing existing keys...${NC}"
+                rm -f "$PKEY_FILE"
+                rm -f "$VKEY_FILE"
+                rm -f "$VERIFIER_FILE"
+                
+                USE_EXISTING_ZKEY=false
+                DEMO_MODE=true
+                
+                echo -e "${YELLOW}Generating new keys in DEMO mode...${NC}"
+                # Continue to key generation below
             else
                 echo -e "${BLUE}Operation cancelled${NC}"
                 echo ""
@@ -277,13 +295,27 @@ else
         case $NEW_KEY_CHOICE in
             1)
                 echo ""
+                # Search for existing zkey files with matching parameters as hints
+                echo -e "${YELLOW}Searching for zkey files with matching parameters (nTx=$NTX, nLevels=$NLEVELS)...${NC}"
+                EXISTING_ZKEYS=$(find . -name "${NTX}_${NLEVELS}_*.zkey" -type f 2>/dev/null | grep -v "node_modules" | sort)
+                if [ -n "$EXISTING_ZKEYS" ]; then
+                    echo -e "${BLUE}Found matching zkey files:${NC}"
+                    echo "$EXISTING_ZKEYS" | while read -r zkey; do
+                        echo -e "  ${GREEN}$zkey${NC}"
+                    done
+                    echo ""
+                else
+                    echo -e "${YELLOW}No zkey files found with current parameters${NC}"
+                    echo ""
+                fi
+                
                 echo -e "${YELLOW}Enter path to final zkey file (Phase 2 complete, tab completion enabled):${NC}"
                 echo -e "${BLUE}Note: This should be a .zkey file, not a .ptau file${NC}"
                 read -e -p "Path: " FINAL_ZKEY_PATH
                 if [ -f "$FINAL_ZKEY_PATH" ]; then
                     # Check if it's actually a zkey file
                     if [[ ! "$FINAL_ZKEY_PATH" =~ \.zkey$ ]]; then
-                        echo -e "${RED}❌ Error: File doesn't appear to be a zkey file (expected .zkey extension)${NC}"
+                        echo -e "${RED}❌ File doesn't appear to be a zkey file (expected .zkey extension)${NC}"
                         echo -e "${RED}   You provided: $FINAL_ZKEY_PATH${NC}"
                         echo -e "${YELLOW}   Please provide a zkey file generated from Phase 2 of the trusted setup${NC}"
                         echo ""
@@ -308,15 +340,9 @@ else
                 echo ""
                 read -p "Are you sure you want to continue? (y/N): " DEMO_CONFIRM
                 if [[ "$DEMO_CONFIRM" =~ ^[Yy]$ ]]; then
-                    if [ -f "$PTAU_FILE" ]; then
-                        SELECTED_PTAU_FILE="$PTAU_FILE"
-                        USE_EXISTING_ZKEY=false
-                        DEMO_MODE=true
-                        break
-                    else
-                        echo -e "${RED}❌ Auto-detected PTAU file not found: $PTAU_FILE${NC}"
-                        echo ""
-                    fi
+                    USE_EXISTING_ZKEY=false
+                    DEMO_MODE=true
+                    break
                 else
                     echo -e "${BLUE}Operation cancelled${NC}"
                     echo ""
@@ -357,44 +383,79 @@ if [ ! -f "$PKEY_FILE" ] || [ ! -f "$VKEY_FILE" ]; then
         echo -e "${GREEN}✅ Key setup completed in ${DURATION} seconds${NC}"
         echo ""
         
-    else
-        # Perform circuit-specific setup (Phase 2 only - Phase 1 is the PTAU file)
-        if [ "$DEMO_MODE" = true ]; then
-            echo -e "${RED}⚠️  PERFORMING DEMO SETUP - NOT FOR PRODUCTION ⚠️${NC}"
-        fi
-        
-        echo -e "${BLUE}Creating initial zkey from PTAU (circuit-specific setup)...${NC}"
+    elif [ "$DEMO_MODE" = true ]; then
+        # Use circomkit setup command with PTAU path for DEMO mode
+        echo -e "${RED}⚠️  PERFORMING DEMO SETUP - NOT FOR PRODUCTION ⚠️${NC}"
+        echo -e "${BLUE}Generating keys using circomkit...${NC}"
         echo -e "${YELLOW}This may take a few minutes. Please wait...${NC}"
-        npx snarkjs groth16 setup "build/batch_main/batch_main.r1cs" "$SELECTED_PTAU_FILE" "build/batch_main/circuit_0000.zkey"
         
-        if [ "$DEMO_MODE" = true ]; then
-            echo -e "${BLUE}Adding DEMO contribution (unsafe)...${NC}"
-            # Use --entropy flag for non-interactive mode
-            npx snarkjs zkey contribute "build/batch_main/circuit_0000.zkey" "build/batch_main/circuit_0001.zkey" --name="Demo Contributor" -e="demo_random_$(date +%s)"
-            
-            echo -e "${BLUE}Applying random beacon phase...${NC}"
-            npx snarkjs zkey beacon "build/batch_main/circuit_0001.zkey" "$PKEY_FILE" 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n="Final Beacon"
+        # Check if PTAU file was found
+        if [ -z "$PTAU_FILE" ]; then
+            echo -e "${RED}❌ Cannot proceed without PTAU file${NC}"
+            exit 1
         fi
         
-        echo -e "${BLUE}Verifying final zkey...${NC}"
-        npx snarkjs zkey verify "build/batch_main/batch_main.r1cs" "$SELECTED_PTAU_FILE" "$PKEY_FILE"
+        # Run circomkit setup command with PTAU path
+        echo -e "${BLUE}Using PTAU: $PTAU_FILE${NC}"
+        echo -e "${YELLOW}Step 4a: Generate proving key...${NC}"
+        echo -e "${BLUE}Executing: npx circomkit setup batch_main $PTAU_FILE${NC}"
         
-        echo -e "${BLUE}Exporting verification key...${NC}"
-        npx snarkjs zkey export verificationkey "$PKEY_FILE" "$VKEY_FILE"
+        # Record start time
+        SETUP_START_TIME=$(date +%s)
         
-        # Clean up intermediate files
-        rm -f build/batch_main/circuit_000*.zkey
+        # Create a temporary file to signal completion
+        SETUP_COMPLETE_FLAG="/tmp/circomkit_setup_complete_$$"
+        
+        # Run setup command and monitor output
+        (
+            npx circomkit setup batch_main "$PTAU_FILE" 2>&1 | while IFS= read -r line; do
+                echo "$line"
+                # Check for completion patterns
+                if [[ "$line" =~ "Verifier key created:" ]] || [[ "$line" =~ "EXPORT VERIFICATION KEY FINISHED" ]]; then
+                    touch "$SETUP_COMPLETE_FLAG"
+                fi
+            done
+            # Also create flag when command exits
+            touch "$SETUP_COMPLETE_FLAG"
+        ) &
+        
+        # Wait for completion flag
+        while [ ! -f "$SETUP_COMPLETE_FLAG" ]; do
+            sleep 1
+        done
+        
+        # Clean up flag
+        rm -f "$SETUP_COMPLETE_FLAG"
+        
+        # Calculate duration
+        SETUP_END_TIME=$(date +%s)
+        SETUP_DURATION=$((SETUP_END_TIME - SETUP_START_TIME))
+        
+        echo -e "${GREEN}✅ Generate proving key completed in ${SETUP_DURATION} seconds${NC}"
+        echo ""
+        
+        # Copy generated files to parameter-specific names
+        if [ -f "build/batch_main/groth16_pkey.zkey" ]; then
+            cp "build/batch_main/groth16_pkey.zkey" "$PKEY_FILE"
+            echo -e "${GREEN}✅ Proving key saved as: $PKEY_FILE${NC}"
+        else
+            echo -e "${RED}❌ Proving key file not found${NC}"
+            exit 1
+        fi
+        
+        if [ -f "build/batch_main/groth16_vkey.json" ]; then
+            cp "build/batch_main/groth16_vkey.json" "$VKEY_FILE"
+            echo -e "${GREEN}✅ Verification key saved as: $VKEY_FILE${NC}"
+        else
+            echo -e "${RED}❌ Verification key file not found${NC}"
+            exit 1
+        fi
         
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))
         
-        if [ "$DEMO_MODE" = true ]; then
-            echo -e "${GREEN}✅ DEMO key generation completed in ${DURATION} seconds${NC}"
-            echo -e "${RED}⚠️  WARNING: These keys are NOT safe for production use!${NC}"
-        else
-            echo -e "${GREEN}✅ Trusted setup completed in ${DURATION} seconds${NC}"
-            echo -e "${GREEN}✅ Keys are suitable for production use${NC}"
-        fi
+        echo -e "${GREEN}✅ DEMO key generation completed in ${DURATION} seconds${NC}"
+        echo -e "${RED}⚠️  WARNING: These keys are NOT safe for production use!${NC}"
         echo ""
     fi
 fi
@@ -405,7 +466,7 @@ if [ -f "$VKEY_FILE" ]; then
     echo -e "${GREEN}✅ Verification key found: $VKEY_FILE${NC}"
     
     # Use the parameter-specific vkey for contract generation
-    if [ ! -f "build/batch_main/groth16_vkey.json" ]; then
+    if [ ! -f "build/batch_main/groth16_vkey.json" ] || [ "$VKEY_FILE" -nt "build/batch_main/groth16_vkey.json" ]; then
         cp "$VKEY_FILE" "build/batch_main/groth16_vkey.json"
         echo -e "${BLUE}Copied verification key for contract generation${NC}"
     fi
@@ -446,6 +507,8 @@ START_TIME=$(date +%s)
     
     # Stop tailing
     kill $TAIL_PID 2>/dev/null
+    wait $CONTRACT_PID 2>/dev/null
+    wait $TAIL_PID 2>/dev/null
     
     # Calculate duration
     END_TIME=$(date +%s)
@@ -496,12 +559,11 @@ if [ ${#MISSING_FILES[@]} -eq 0 ]; then
     echo -e "  📄 Verifier contract: ${GREEN}$VERIFIER_FILE${NC}"
     echo -e "  🔑 Proving key: ${GREEN}$PKEY_FILE${NC}"
     echo -e "  🔓 Verification key: ${GREEN}$VKEY_FILE${NC}"
-    echo -e "  📊 Circuit info: ${GREEN}build/batch_main/batch_main_artifacts.json${NC}"
     echo ""
     
     # Show file sizes
     echo -e "${BLUE}File sizes:${NC}"
-    ls -lh build/batch_main/${NTX}_${NLEVELS}_groth16_* | awk '{print "  " $9 ": " $5}'
+    ls -lh build/batch_main/${NTX}_${NLEVELS}_groth16_* 2>/dev/null | awk '{print "  " $9 ": " $5}'
     echo ""
     
     echo -e "${BLUE}Next steps:${NC}"

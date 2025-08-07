@@ -19,8 +19,6 @@ interface ISybil {
     // Initialization function
     function initialize(
         address verifier,
-        uint256 maxTx,
-        uint256 nLevel,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _adminRole

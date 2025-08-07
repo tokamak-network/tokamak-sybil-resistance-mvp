@@ -20,12 +20,7 @@ contract Sybil is
     ISybil,
     SybilHelpers
 {
-    /// @notice Structure to store verifier configuration
-    struct Verifier {
-        IVerifier verifierInterface; /// @dev Interface to the ZK verifier contract
-        uint256 maxTx; /// @dev Maximum rollup transactions in a batch: L1-tx transactions
-        uint256 nLevel; /// @dev Number of levels of the circuit
-    }
+
 
     /// @notice Structure to store user's score snapshot at a specific batch
     struct ScoreSnapshot {
@@ -90,8 +85,8 @@ contract Sybil is
     /// @notice Mapping from user address to their score snapshot
     mapping(address => ScoreSnapshot) public scoreSnapshots;
 
-    /// @notice Verifier configuration
-    Verifier public verifier;
+    /// @notice Verifier contract address
+    IVerifier public verifier;
 
     /// @notice Emitted when a new transaction is added to the queue
     /// @param lastAddedTxn Index of the transaction that was added
@@ -131,16 +126,12 @@ contract Sybil is
      * @notice Initializes the contract with the specified parameters
      * @dev This function can only be called once during the deployment of the contract
      * @param _verifier The address of the verifier contract to be used for rollup verification
-     * @param maxTx The maximum number of transactions allowed in a single batch
-     * @param nLevel The number of levels in the verification circuit
      * @param _poseidon2Elements The address of the Poseidon hash function contract for 2 elements
      * @param _poseidon3Elements The address of the Poseidon hash function contract for 3 elements
      * @param _adminRole The address that will be granted admin privileges
      */
     function initialize(
         address _verifier,
-        uint256 maxTx,
-        uint256 nLevel,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _adminRole
@@ -148,7 +139,10 @@ contract Sybil is
         __AccessControl_init();
         _grantRole(ADMIN_ROLE, _adminRole);
 
-        _initializeVerifiers(_verifier, maxTx, nLevel);
+        if (_verifier == address(0)) {
+            revert InvalidVerifierAddress();
+        }
+        verifier = IVerifier(_verifier);
 
         _initializeHelpers(_poseidon2Elements, _poseidon3Elements);
     }
@@ -319,7 +313,7 @@ contract Sybil is
 
         // Verify the proof
         if (
-            !verifier.verifierInterface.verifyProof(
+            !verifier.verifyProof(
                 proofA,
                 proofB,
                 proofC,
@@ -453,28 +447,7 @@ contract Sybil is
         lastForgedTxn = lastForgedTxn + batchSize;
     }
 
-    /**
-     * @dev Initializes the rollup verifier with the specified parameters
-     * @param _verifier The address of the verifier contract
-     * @param _maxTx The maximum number of transactions allowed in a batch
-     * @param _nLevel The number of levels in the verification circuit
-     * @dev Reverts with InvalidVerifierAddress if the verifier address is zero
-     */
-    function _initializeVerifiers(
-        address _verifier,
-        uint256 _maxTx,
-        uint256 _nLevel
-    ) internal {
-        if (_verifier == address(0)) {
-            revert InvalidVerifierAddress();
-        }
 
-        verifier = Verifier({
-            verifierInterface: IVerifier(_verifier),
-            maxTx: _maxTx,
-            nLevel: _nLevel
-        });
-    }
 
     /**
      * @dev Constructs the input for the verification circuit

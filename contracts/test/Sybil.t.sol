@@ -10,18 +10,42 @@ import "../src/Verifier.sol";
 contract MockPoseidon2 is PoseidonUnit2 {
     function poseidon(
         uint256[2] memory input
-    ) external pure override returns (uint256) {}
+    ) external pure override returns (uint256) {
+        // Create predictable hash for testing
+        // Using a simple hash function for deterministic results
+        return uint256(keccak256(abi.encodePacked(input[0], input[1]))) % (2**254);
+    }
 }
 
 contract MockPoseidon3 is PoseidonUnit3 {
     function poseidon(
         uint256[3] memory input
-    ) external pure override returns (uint256) {}
+    ) external pure override returns (uint256) {
+        // Create predictable hash for testing
+        // Using a simple hash function for deterministic results
+        return uint256(keccak256(abi.encodePacked(input[0], input[1], input[2]))) % (2**254);
+    }
 }
 
 contract MvpTest is Test {
     Sybil public sybil;
     bytes32[] public hashes;
+    
+    // Helper function to compute merkle proof manually using mock values
+    function computeValidMerkleProof(
+        uint32 score,
+        address user,
+        uint24 idx
+    ) internal pure returns (uint256 calculatedRoot) {
+        // Manually compute what the mock functions would return
+        // State hash: hash of [score, user_address]
+        uint256 stateHash = uint256(keccak256(abi.encodePacked(score, uint256(uint160(user))))) % (2**254);
+        
+        // Final node hash: hash of [idx, stateHash, 1]
+        uint256 finalNodeHash = uint256(keccak256(abi.encodePacked(idx, stateHash, uint256(1)))) % (2**254);
+
+        calculatedRoot = finalNodeHash;
+    }
 
     function setUp() public {
         PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
@@ -381,16 +405,6 @@ contract MvpTest is Test {
         }
     }
 
-    function testProveScoreMerkleProof() public {
-        uint32 numScoreRoot = 0;
-        uint24 idx = 0;
-        uint32 score = 100;
-        uint256[] memory siblings = new uint256[](2);
-
-        vm.prank(address(this));
-        sybil.proveScoreMerkleProof(numScoreRoot, idx, score, siblings);
-    }
-
     function testUpdateExplodeAmount() public {
         uint256 newExplodeAmount = 500;
         vm.prank(address(this));
@@ -426,4 +440,133 @@ contract MvpTest is Test {
     }
 
     receive() external payable {}
+
+    // Test cases for proveScoreMerkleProof function
+    function testProveScoreMerkleProof_ValidProof() public {
+        // Setup: Create a batch with score root
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value: 1 ether}();
+        }
+        
+        // Use the exact values from our test
+        uint24 userIdx = 1;
+        uint32 userScore = 100;
+        uint256 validRoot = 5822153005719094118860482251980893156416316852108698817339794517380783563720;
+        uint256[] memory siblings = new uint256[](0); // Empty siblings for root node
+        
+        uint256[2] memory proofA = [uint(0), uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        
+        // Forge a batch with the calculated valid root
+        sybil.forgeBatch(0xabc, 0, validRoot, proofA, proofB, proofC);
+        uint32 batchNum = sybil.lastForgedBatch();
+        
+        // Now this should pass the SMT verification
+        sybil.proveScoreMerkleProof(batchNum, userIdx, userScore, siblings);
+        
+        // Verify that the score was updated
+        (uint32 storedScore, uint32 storedBatch) = sybil.scoreSnapshots(address(this));
+        assertEq(storedScore, userScore);
+        assertEq(storedBatch, batchNum);
+    }
+    
+    function testProveScoreMerkleProof_ValidProofWithSiblings() public {
+        // Setup: Create a batch
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value: 1 ether}();
+        }
+        
+        // Use the exact values from our corrected debug test
+        uint256 validRoot = 21842855563204807127485794077966150885753711442717215210791799489185049670955;
+        uint256 sibling0 = 4478178226377493628777488049134962312045384511276209649537942747799428093801;
+        uint256 sibling1 = 23341275928643220258757024210462479664504739588818850675996627689624125531900;
+        
+        uint256[] memory siblings = new uint256[](2);
+        siblings[0] = sibling0;
+        siblings[1] = sibling1;
+        
+        // Forge batch with the calculated root
+        sybil.forgeBatch(0xabc, 0, validRoot, [uint(0), uint(0)], [[uint(0), uint(0)], [uint(0), uint(0)]], [uint(0), uint(0)]);
+        
+        // This should pass the SMT verification!
+        sybil.proveScoreMerkleProof(sybil.lastForgedBatch(), 2, 150, siblings);
+        
+        // Verify that the score was updated
+        (uint32 storedScore, uint32 storedBatch) = sybil.scoreSnapshots(address(this));
+        assertEq(storedScore, 150);
+        assertEq(storedBatch, sybil.lastForgedBatch());
+    }
+    
+    function testProveScoreMerkleProof_InvalidBatchNumber() public {
+        // First create a valid batch to ensure we have a real scenario
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value: 1 ether}();
+        }
+        
+        uint256[2] memory proofA = [uint(0), uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 mockScoreRoot = 0x123456789;
+        
+        sybil.forgeBatch(0xabc, 0, mockScoreRoot, proofA, proofB, proofC);
+        
+        uint24 userIdx = 1;
+        uint32 userScore = 100;
+        uint256[] memory siblings = new uint256[](1);
+        siblings[0] = 0x1;
+        
+        // Try to prove against non-existent batch (scoreRootMap[999] will be 0)
+        uint32 inValidBatchNum = 999;
+        
+        // This should fail because the proof doesn't match the scoreRoot
+        vm.expectRevert(ISybil.SmtProofInvalid.selector);
+        sybil.proveScoreMerkleProof(inValidBatchNum, userIdx, userScore, siblings);
+    }
+    
+    function testProveScoreMerkleProof_EmptySiblings() public {
+        // Setup: Create a batch
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value: 1 ether}();
+        }
+        
+        uint256[2] memory proofA = [uint(0), uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 mockScoreRoot = 0x123456789;
+        
+        sybil.forgeBatch(0xabc, 0, mockScoreRoot, proofA, proofB, proofC);
+        uint32 batchNum = sybil.lastForgedBatch();
+        
+        uint24 userIdx = 1;
+        uint32 userScore = 100;
+        uint256[] memory emptySiblings = new uint256[](0);
+        
+        vm.expectRevert(ISybil.SmtProofInvalid.selector); // Should revert due to invalid proof
+        sybil.proveScoreMerkleProof(batchNum, userIdx, userScore, emptySiblings);
+    }
+    
+    function testProveScoreMerkleProof_ZeroScore() public {
+        // Setup: Create a batch
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value: 1 ether}();
+        }
+        
+        uint256[2] memory proofA = [uint(0), uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        uint256 mockScoreRoot = 0x123456789;
+        
+        sybil.forgeBatch(0xabc, 0, mockScoreRoot, proofA, proofB, proofC);
+        uint32 batchNum = sybil.lastForgedBatch();
+        
+        uint24 userIdx = 1;
+        uint32 userScore = 0; // Zero score
+        uint256[] memory siblings = new uint256[](1);
+        siblings[0] = 0x1;
+        
+        vm.expectRevert(ISybil.SmtProofInvalid.selector); // Should revert due to invalid proof with mock
+        sybil.proveScoreMerkleProof(batchNum, userIdx, userScore, siblings);
+    }
+
 }

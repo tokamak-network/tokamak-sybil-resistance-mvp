@@ -47,8 +47,6 @@ contract Sybil is
         uint128 amount; /// @dev Transaction amount
     }
 
-    /// @dev Total bytes per transaction when encoded
-    uint256 constant _TXN_TOTALBYTES = 23;
     /// @dev Maximum transactions allowed per batch
     uint256 constant _MAX_TXNS = 5;
     /// @dev Maximum amount that can be deposited or withdrawn in a single transaction

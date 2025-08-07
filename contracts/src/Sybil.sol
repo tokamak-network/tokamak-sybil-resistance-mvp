@@ -131,7 +131,7 @@ contract Sybil is
         if (amount >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (amount + _MIN_BALANCE < info.balance) {
+        if (amount + _MIN_BALANCE > info.balance) {
             revert InsufficientBalance();
         }
 
@@ -289,7 +289,7 @@ contract Sybil is
     ) external {
         uint256[2] memory arrayState;
         arrayState[0] = score;
-        arrayState[0] = uint256(uint160(msg.sender));
+        arrayState[1] = uint256(uint160(msg.sender));
 
         uint256 stateHash = _insPoseidonUnit2.poseidon(arrayState);
         uint256 scoreRoot = scoreRootMap[numScoreRoot];

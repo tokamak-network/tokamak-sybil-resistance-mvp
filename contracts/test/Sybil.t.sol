@@ -238,6 +238,22 @@ contract MvpTest is Test {
         sybil.vouch(address(this));
     }
 
+    function testInvalidVouchWithAlreadyVouched() public {
+        vm.prank(address(this));
+        sybil.deposit{value: 1 ether}();
+
+        vm.deal(address(0x123), 1 ether);
+        vm.prank(address(0x123));
+        sybil.deposit{value: 1 ether}();
+
+        vm.prank(address(this));
+        sybil.vouch(address(0x123));
+
+        vm.expectRevert(abi.encodeWithSelector(ISybil.AlreadyVouched.selector, address(this), address(0x123)));
+        vm.prank(address(this));
+        sybil.vouch(address(0x123));
+    }
+
     function testUnvouch() public {
         vm.prank(address(this));
         sybil.deposit{value: 1 ether}();
@@ -329,8 +345,6 @@ contract MvpTest is Test {
         PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
 
         address verifier = address(0);
-        uint256 maxTx = uint(256);
-        uint256 nLevel = uint(1);
 
         Sybil newSybil = new Sybil();
         vm.expectRevert(ISybil.InvalidVerifierAddress.selector);
@@ -556,4 +570,69 @@ contract MvpTest is Test {
         sybil.proveScoreMerkleProof(batchNum, userIdx, userScore, siblings);
     }
 
+    function testWithdrawEthTransferFailed() public {
+        // Deploy a contract that rejects ETH transfers
+        EthRejectingContract rejectingContract = new EthRejectingContract();
+        
+        vm.deal(address(rejectingContract), 2 ether);
+        
+        vm.prank(address(rejectingContract));
+        sybil.deposit{value: 1 ether}();
+        
+        // this should fail because the contract rejects ETH
+        vm.expectRevert(ISybil.EthTransferFailed.selector);
+        vm.prank(address(rejectingContract));
+        sybil.withdraw(0.5 ether);
+    }
+
+    function testForgeBatchWithBatchNotFullError() public {
+        vm.prank(address(this));
+        sybil.deposit{value: 1 ether}();
+
+        vm.expectRevert(ISybil.BatchNotFull.selector);
+        sybil.forgeBatch(0xabc, 0, 0, [uint(0), uint(0)], [[uint(0), uint(0)], [uint(0), uint(0)]], [uint(0), uint(0)]);
+    }
+
+    function testGetScoreAfterProveScoreMerkleProof() public {
+        // Setup: Create a batch with score root
+        for (uint256 i = 0; i < 5; ++i) {
+            sybil.deposit{value: 1 ether}();
+        }
+        
+        // Test parameters
+        uint24 userIdx = 1;
+        uint32 expectedScore = 100;
+        uint256 validRoot = 5822153005719094118860482251980893156416316852108698817339794517380783563720;
+        uint256[] memory siblings = new uint256[](0);
+        
+        uint256[2] memory proofA = [uint(0), uint(0)];
+        uint256[2][2] memory proofB = [[uint(0), uint(0)], [uint(0), uint(0)]];
+        uint256[2] memory proofC = [uint(0), uint(0)];
+        
+        // Forge a batch with the calculated valid root
+        sybil.forgeBatch(0xabc, 0, validRoot, proofA, proofB, proofC);
+        uint32 batchNum = sybil.lastForgedBatch();
+        
+        // Verify initial score is 0
+        uint32 initialScore = sybil.getScore(address(this));
+        assertEq(initialScore, 0, "Initial score should be 0");
+        
+        sybil.proveScoreMerkleProof(batchNum, userIdx, expectedScore, siblings);
+        
+        // Test getScore returns the updated score
+        uint32 actualScore = sybil.getScore(address(this));
+        assertEq(actualScore, expectedScore, "getScore should return the proved score");
+        
+        // Verify the score snapshot was updated correctly
+        (uint32 storedScore, uint32 storedBatch) = sybil.scoreSnapshots(address(this));
+        assertEq(storedScore, expectedScore);
+        assertEq(storedBatch, batchNum);
+    }
+
+}
+
+// Contract that rejects ETH transfers
+contract EthRejectingContract {
+    // This contract has no receive() or fallback() function
+    // So it cannot receive ETH transfers, causing them to fail
 }

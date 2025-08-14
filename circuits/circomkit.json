@@ -1,0 +1,12 @@
+{
+  "version": "2.1.4",
+  "verbose": true,
+  "prime": "bn128",
+  "optimization": 1,
+  "protocol": "groth16",
+  "circuits": "./circuits.json",
+  "dirPtau": "./ptau",
+  "dirCircuits": "./circuits",
+  "dirInputs": "./inputs",
+  "dirBuild": "./build"
+}

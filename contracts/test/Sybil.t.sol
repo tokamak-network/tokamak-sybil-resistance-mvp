@@ -55,15 +55,10 @@ contract MvpTest is Test {
 
         address verifiers = address(verifierStub);
         address adminRole = address(this);
-        uint256 maxTx = uint256(256);
-        uint256 nLevels = uint256(1);
-
         sybil = new Sybil();
 
         sybil.initialize(
             verifiers,
-            maxTx,
-            nLevels,
             address(mockPoseidon2),
             address(mockPoseidon3),
             adminRole
@@ -308,8 +303,6 @@ contract MvpTest is Test {
         Verifier verifierStub = new Verifier();
 
         address verifiers = address(verifierStub);
-        uint256 maxTx = uint(256);
-        uint256 nLevels = uint(1);
 
         address invalidAddress = address(0);
 
@@ -317,8 +310,6 @@ contract MvpTest is Test {
         vm.expectRevert();
         newSybil.initialize(
             verifiers,
-            maxTx,
-            nLevels,
             invalidAddress,
             address(mockPoseidon3),
             address(this)
@@ -327,8 +318,6 @@ contract MvpTest is Test {
         vm.expectRevert();
         newSybil.initialize(
             verifiers,
-            maxTx,
-            nLevels,
             address(mockPoseidon2),
             invalidAddress,
             address(this)
@@ -347,8 +336,6 @@ contract MvpTest is Test {
         vm.expectRevert(ISybil.InvalidVerifierAddress.selector);
         newSybil.initialize(
             verifier,
-            maxTx,
-            nLevel,
             address(mockPoseidon2),
             address(mockPoseidon3),
             address(this)

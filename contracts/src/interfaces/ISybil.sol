@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.24;
 
 interface ISybil {
     error InvalidVerifierAddress();
@@ -14,12 +14,11 @@ interface ISybil {
     error NotVouched(address from, address to);
     error SelfVouch();
     error BatchNotFull();
-
+    error AlreadyVouched(address from, address to);
+    
     // Initialization function
     function initialize(
         address verifier,
-        uint256 maxTx,
-        uint256 nLevel,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _adminRole
@@ -62,5 +61,8 @@ interface ISybil {
 
     // setter functions
     function updateExplodeAmount(uint256 _explodeAmount) external;
-    
+    function updateScoringRequiredBalance(uint256 _scoringRequiredBalance) external;
+
+    // getter function
+    function getScore(address user) external view returns (uint32);
 }

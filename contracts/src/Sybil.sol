@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.24;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -8,56 +8,92 @@ import "./interfaces/IVerifier.sol";
 import "./types/SybilHelpers.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers {
-    struct Verifier {
-        IVerifier verifierInterface;
-        uint256 maxTx; // maximum rollup transactions in a batch: L1-tx transactions
-        uint256 nLevel; // number of levels of the circuit
-    }
+/**
+ * @title Sybil Resistance Contract
+ * @author Tokamak Network
+ * @notice This contract implements a sybil resistance mechanism using Zero-Knowledge proofs and vouching systems
+ * @dev This contract uses upgradeable patterns and access control for administrative functions
+ */
+contract Sybil is
+    Initializable,
+    AccessControlUpgradeable,
+    ISybil,
+    SybilHelpers
+{
 
+
+    /// @notice Structure to store user's score snapshot at a specific batch
     struct ScoreSnapshot {
-        uint32 score;
-        uint32 batchNum;
+        uint32 score; /// @dev User's score value
+        uint32 batchNum; /// @dev Batch number when the score was recorded
     }
 
+    /// @notice Structure to store account information
     struct AccountInfo {
-        uint192 balance; 
-        uint24 idx;      
+        uint192 balance; /// @dev Account balance in wei
+        uint24 idx; /// @dev Unique account index assigned during first deposit
     }
 
+    /// @notice Structure representing a transaction in the rollup
     struct Transaction {
-        uint8 identifier;
-        uint24 from;
-        uint24 to;
-        uint128 amount;
+        uint8 identifier; /// @dev Transaction type identifier (0: createAccount, 1: deposit, 2: withdraw, 3: vouch, 4: unvouch, 5: explode)
+        uint24 from; /// @dev Sender account index
+        uint24 to; /// @dev Receiver account index
+        uint128 amount; /// @dev Transaction amount
     }
-    uint256 constant _TXN_TOTALBYTES = 23; // Total bytes per transaction
-    uint256 constant _MAX_TXNS = 5; // Max transactions per batch
-    uint128 constant _LIMIT_AMOUNT = (1 << 127); // Max loadAmount per call
-    uint256 constant _RFIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
+    /// @dev Maximum transactions allowed per batch
+    uint256 constant _MAX_TXNS = 5;
+    /// @dev Maximum amount that can be deposited or withdrawn in a single transaction
+    uint128 constant _LIMIT_AMOUNT = (1 << 127);
+    /// @dev BN254 field modulus for circuit calculations
+    uint256 constant _RFIELD =
+        21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    
+    /// @notice Minimum balance that must remain in an account after deposit
     uint256 public _MIN_BALANCE = 1;
+    /// @notice Admin role identifier for access control
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
+    /// @notice Last assigned account index
     uint24 public lastIdx;
+    /// @notice Index of the last added transaction
     uint256 public lastAddedTxn;
+    /// @notice Index of the last forged transaction
     uint256 public lastForgedTxn;
+    /// @notice Number of transactions required to form a complete batch
     uint256 public batchSize = 5;
+    /// @notice Amount deducted from exploded accounts as penalty
     uint256 public explodeAmount = (1 << 50);
+    /// @notice Minimum balance required to participate in scoring
     uint256 public scoringRequiredBalance = (1 << 16);
+    /// @notice Last forged batch number
     uint32 public lastForgedBatch;
 
+    /// @notice Mapping from user address to their account information
     mapping(address => AccountInfo) public accountInfo;
+    /// @notice Mapping from batch number to account merkle root
     mapping(uint32 => uint256) public accountRootMap;
+    /// @notice Mapping from batch number to vouch merkle root
     mapping(uint32 => uint256) public vouchRootMap;
+    /// @notice Mapping from batch number to score merkle root
     mapping(uint32 => uint256) public scoreRootMap;
-    mapping(uint32 => uint256) public exitRootMap;
+    /// @notice Mapping from transaction index to transaction data
     mapping(uint256 => Transaction) public unprocessedBatchesMap;
+    /// @notice Mapping to track vouch relationships between accounts
     mapping(address => mapping(address => bool)) public vouches;
+    /// @notice Mapping from user address to their score snapshot
     mapping(address => ScoreSnapshot) public scoreSnapshots;
 
-    // Verifier
-    Verifier public verifier;
+    /// @notice Verifier contract address
+    IVerifier public verifier;
 
+    /// @notice Emitted when a new transaction is added to the queue
+    /// @param lastAddedTxn Index of the transaction that was added
+    /// @param identifier Type of transaction (0-5)
+    /// @param from Sender account index
+    /// @param to Receiver account index
+    /// @param amount Transaction amount
     event TxEvent(
         uint256 indexed lastAddedTxn,
         uint8 indexed identifier,
@@ -65,39 +101,58 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         uint24 to,
         uint256 amount
     );
-    event ForgeBatch(uint32 indexed lastForgedBatch, uint256 lastForgedTxn, uint256 batchSize);
+
+    /// @notice Emitted when a batch is successfully forged
+    /// @param lastForgedBatch Batch Number that was forged
+    /// @param lastForgedTxn Index of the last transaction in the forged batch
+    /// @param batchSize Number of transactions in the batch
+    /// @param txnData Encoded transaction data
+    event ForgeBatch(
+        uint32 indexed lastForgedBatch,
+        uint256 lastForgedTxn,
+        uint256 batchSize,
+        bytes txnData
+    );
+
+    /// @notice Emitted when explode amount is updated
+    /// @param explodeAmount New explode amount value
     event ExplodeAmountUpdated(uint256 explodeAmount);
+
+    /// @notice Emitted when scoring required balance is updated
+    /// @param newBalance New required balance for scoring
     event ScoringRequiredBalanceUpdated(uint256 newBalance);
 
     /**
-     * @dev Initializes the contract with the specified parameters.
-     * This function can only be called once during the deployment of the contract.
-     *
-     * @param _verifier The address of the verifier contract to be used for rollup verification.
-     * @param maxTx The maximum number of transactions allowed in a single batch.
-     * @param nLevel The number of levels in the verification circuit.
-     * @param _poseidon2Elements The address of the Poseidon hash function elements for 2 elements.
-     * @param _poseidon3Elements The address of the Poseidon hash function elements for 3 elements.
-     *
-     * @notice The deployer of the contract will be granted the `ADMIN_ROLE`.
+     * @notice Initializes the contract with the specified parameters
+     * @dev This function can only be called once during the deployment of the contract
+     * @param _verifier The address of the verifier contract to be used for rollup verification
+     * @param _poseidon2Elements The address of the Poseidon hash function contract for 2 elements
+     * @param _poseidon3Elements The address of the Poseidon hash function contract for 3 elements
+     * @param _adminRole The address that will be granted admin privileges
      */
     function initialize(
         address _verifier,
-        uint256 maxTx,
-        uint256 nLevel,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _adminRole
     ) public initializer {
-
         __AccessControl_init();
         _grantRole(ADMIN_ROLE, _adminRole);
 
-        _initializeVerifiers(_verifier, maxTx, nLevel);
+        if (_verifier == address(0)) {
+            revert InvalidVerifierAddress();
+        }
+        verifier = IVerifier(_verifier);
 
         _initializeHelpers(_poseidon2Elements, _poseidon3Elements);
     }
 
+    /**
+     * @notice Allows users to deposit ETH into their account
+     * @dev Creates a new account if this is the user's first deposit, otherwise adds to existing balance
+     * @dev Reverts if deposit amount exceeds limit or is below minimum balance
+     * @dev Emits a TxEvent with identifier 0 (new account) or 1 (existing account)
+     */
     function deposit() external payable {
         AccountInfo memory info = accountInfo[msg.sender];
         if (msg.value >= _LIMIT_AMOUNT) {
@@ -116,6 +171,13 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         accountInfo[msg.sender].balance = info.balance + uint192(msg.value);
     }
 
+    /**
+     * @notice Allows users to withdraw ETH from their account
+     * @dev Ensures minimum balance is maintained after withdrawal
+     * @param amount The amount of ETH to withdraw in wei
+     * @dev Reverts if withdrawal amount exceeds limit or would leave insufficient balance
+     * @dev Emits a TxEvent with identifier 2 (withdraw)
+     */
     function withdraw(uint256 amount) external {
         AccountInfo memory info = accountInfo[msg.sender];
         if (amount >= _LIMIT_AMOUNT) {
@@ -124,7 +186,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         if (amount + _MIN_BALANCE > info.balance) {
             revert InsufficientBalance();
         }
-        
+
         unchecked {
             accountInfo[msg.sender].balance = info.balance - uint192(amount);
         }
@@ -136,13 +198,19 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     }
 
     /**
-     * @dev Allows a user to vouch for another account.
-     *
-     * @param toEthAddr The index of the account that is being vouched.
+     * @notice Allows a user to vouch for another account
+     * @dev Creates a trust relationship between two accounts
+     * @param toEthAddr The address of the account being vouched for
+     * @dev Reverts if already vouched, sender has zero balance, self-vouch attempt, or receiver has zero balance
+     * @dev Emits a TxEvent with identifier 3 (vouch)
      */
     function vouch(address toEthAddr) external {
         AccountInfo memory senderInfo = accountInfo[msg.sender];
         AccountInfo memory receiverInfo = accountInfo[toEthAddr];
+        
+        if (vouches[msg.sender][toEthAddr]) {
+            revert AlreadyVouched(msg.sender, toEthAddr);
+        }
         if (senderInfo.balance == 0) {
             revert SenderHasZeroBalance();
         }
@@ -157,9 +225,11 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     }
 
     /**
-     * @dev Allows a user to remove their vouch for another account.
-     *
-     * @param toEthAddr The index of the account that is being unvouched.
+     * @notice Allows a user to remove their vouch for another account
+     * @dev Removes the trust relationship between two accounts
+     * @param toEthAddr The address of the account being unvouched
+     * @dev Reverts if no existing vouch relationship
+     * @dev Emits a TxEvent with identifier 4 (unvouch)
      */
 
     function unvouch(address toEthAddr) external {
@@ -172,14 +242,12 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     }
 
     /**
-     * @dev Allows a user to explode multiple accounts.
-     *
-     * This function enables a user to explode multiple account by providing an array of address
-     *
-     * @param toEthAddrs The array of address of the account that is being exploded.
-     *
-     * Requirement:
-     * - All address in `toEthAddrs` must be vouched.
+     * @notice Allows a user to explode multiple accounts that have vouched for them
+     * @dev Transfers a penalty amount from each exploded account to the caller
+     * @param toEthAddrs Array of addresses to explode
+     * @dev Reverts if any address in the array has not vouched for the caller
+     * @dev Removes mutual vouch relationships and transfers penalty amounts
+     * @dev Emits TxEvent with identifier 5 (explode) for each exploded account
      */
     function explodeMultiple(address[] calldata toEthAddrs) external {
         for (uint256 i = 0; i < toEthAddrs.length; ++i) {
@@ -193,33 +261,30 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         for (uint256 i = 0; i < toEthAddrs.length; ++i) {
             address toEthAddr = toEthAddrs[i];
             AccountInfo memory receiverInfo = accountInfo[toEthAddr];
-            uint192 penalty = uint192(Math.min(
-                explodeAmount,
-                receiverInfo.balance - _MIN_BALANCE
-            ));
+            uint192 penalty = uint192(
+                Math.min(explodeAmount, receiverInfo.balance - _MIN_BALANCE)
+            );
             unchecked {
                 accountInfo[toEthAddr].balance = receiverInfo.balance - penalty;
             }
             accountInfo[msg.sender].balance = senderInfo.balance + penalty;
             vouches[toEthAddr][msg.sender] = false;
             vouches[msg.sender][toEthAddr] = false;
-            _addTx(5, senderInfo.idx, receiverInfo.idx, 0);
+            _addTx(5, senderInfo.idx, receiverInfo.idx, uint128(penalty));
         }
     }
 
     /**
-     * @dev Processes a batch of transactions and verifies the associated proof.
-     *
-     * @param newAccountRoot The new account root to be set for the batch.
-     * @param newVouchRoot The new vouch root to be set for the batch.
-     * @param newScoreRoot The new score root to be set for the batch.
-     * @param proofA The first part of the proof used for verification.
-     * @param proofB The second part of the proof used for verification.
-     * @param proofC The third part of the proof used for verification.
-     *
-     * @notice The function will revert if the provided proof is invalid.
-     *
-     * @dev Emits a {ForgeBatch} event indicating the new batch has been forged.
+     * @notice Processes a batch of transactions and verifies the associated ZK proof
+     * @dev Verifies the state transition using zero-knowledge proofs
+     * @param newAccountRoot The new account merkle root after processing the batch
+     * @param newVouchRoot The new vouch merkle root after processing the batch
+     * @param newScoreRoot The new score merkle root after processing the batch
+     * @param proofA First component of the ZK proof
+     * @param proofB Second component of the ZK proof
+     * @param proofC Third component of the ZK proof
+     * @dev Reverts if batch is not full or proof verification fails
+     * @dev Updates the merkle roots and emits ForgeBatch event
      */
     function forgeBatch(
         uint256 newAccountRoot,
@@ -232,15 +297,23 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         if (lastAddedTxn < lastForgedTxn + batchSize) {
             revert BatchNotFull();
         }
+
+        Transaction[] memory transactions = new Transaction[](batchSize);
+        for (uint256 i = 0; i < _MAX_TXNS; ++i) {
+            transactions[i] = unprocessedBatchesMap[lastForgedTxn + i];
+        }
+        bytes memory txnData = abi.encode(transactions);
+
         uint256 input = _constructCircuitInput(
             newAccountRoot,
             newVouchRoot,
-            newScoreRoot
+            newScoreRoot,
+            txnData
         );
 
         // Verify the proof
         if (
-            !verifier.verifierInterface.verifyProof(
+            !verifier.verifyProof(
                 proofA,
                 proofB,
                 proofC,
@@ -256,10 +329,20 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         accountRootMap[lastForgedBatch] = newAccountRoot;
         vouchRootMap[lastForgedBatch] = newVouchRoot;
         scoreRootMap[lastForgedBatch] = newScoreRoot;
-        
-        emit ForgeBatch(lastForgedBatch, lastForgedTxn, batchSize);
+
+        emit ForgeBatch(lastForgedBatch, lastForgedTxn, batchSize, txnData);
     }
 
+    /**
+     * @notice Proves a user's score using a Merkle proof against a specific batch's score root
+     * @dev Verifies the user's score using sparse Merkle tree verification
+     * @param numScoreRoot The batch number containing the score root to verify against
+     * @param idx The user's account index in the tree
+     * @param score The claimed score value
+     * @param siblings Array of sibling hashes for the Merkle proof
+     * @dev Reverts if the Merkle proof verification fails
+     * @dev Updates the user's score snapshot upon successful verification
+     */
     function proveScoreMerkleProof(
         uint32 numScoreRoot,
         uint24 idx,
@@ -268,7 +351,7 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     ) external {
         uint256[2] memory arrayState;
         arrayState[0] = score;
-        arrayState[0] = uint256(uint160(msg.sender));
+        arrayState[1] = uint256(uint160(msg.sender));
 
         uint256 stateHash = _insPoseidonUnit2.poseidon(arrayState);
         uint256 scoreRoot = scoreRootMap[numScoreRoot];
@@ -281,12 +364,15 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         scoreSnapshots[msg.sender].score = score;
     }
 
+    function updateScore(address user, uint32 score) external {
+        scoreSnapshots[user].score = score;
+    }
+
     /**
-     * @dev Updates the amount used for the explode operation.
-     *
-     * @param _explodeAmount The new amount to be set.
-     *
-     * @notice This function can only be called by an account with the `ADMIN_ROLE`.
+     * @notice Updates the amount used for the explode operation
+     * @dev Only callable by accounts with ADMIN_ROLE
+     * @param _explodeAmount The new explode penalty amount
+     * @dev Emits ExplodeAmountUpdated event
      */
     function updateExplodeAmount(
         uint256 _explodeAmount
@@ -295,6 +381,12 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         emit ExplodeAmountUpdated(explodeAmount);
     }
 
+    /**
+     * @notice Updates the minimum balance required for scoring participation
+     * @dev Only callable by accounts with ADMIN_ROLE
+     * @param _scoringRequiredBalance The new minimum balance requirement
+     * @dev Emits ScoringRequiredBalanceUpdated event
+     */
     function updateScoringRequiredBalance(
         uint256 _scoringRequiredBalance
     ) external onlyRole(ADMIN_ROLE) {
@@ -303,23 +395,29 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     }
 
     /**
-     * @dev Retrieves the length of the transaction queue.
-     *
-     * @return The number of batches in the transaction queue.
+     * @notice Retrieves the number of transactions waiting to be processed
+     * @return The length of the transaction queue (pending transactions)
      */
     function getQueueLength() external view returns (uint256) {
         return lastAddedTxn - lastForgedTxn;
     }
 
     /**
-     * @dev Adds a transaction to the current filling batch.
-     *
-     * @param identifier It is used to identify the type of transaction.
-     * @param from The Ethereum address who initiated the transaction.
-     * @param to The receipient address associated with the transaction.
-     * @param amount The amount of Ether.
-     *
-     * @dev Emits a {TxEvent} event.
+     * @notice Retrieves a user's current score
+     * @param user The address of the user
+     * @return score The user's current score value
+     */
+    function getScore(address user) external view returns (uint32 score) {
+        return scoreSnapshots[user].score;
+    }
+
+    /**
+     * @dev Adds a transaction to the current filling batch
+     * @param identifier Transaction type identifier (0-5)
+     * @param from The sender's account index
+     * @param to The recipient's account index  
+     * @param amount The transaction amount
+     * @dev Emits a TxEvent with transaction details
      */
     function _addTx(
         uint8 identifier,
@@ -339,7 +437,8 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
     }
 
     /**
-     * @dev Clears the processed batch from the transaction queue.
+     * @dev Clears the processed batch from the transaction queue
+     * @dev Deletes the transaction data and updates the lastForgedTxn pointer
      */
     function _clearBatchFromQueue() internal {
         for (uint256 i = 0; i < _MAX_TXNS; ++i) {
@@ -348,54 +447,25 @@ contract Sybil is Initializable, AccessControlUpgradeable, ISybil, SybilHelpers 
         lastForgedTxn = lastForgedTxn + batchSize;
     }
 
-    /**
-     * @dev Initializes the rollup verifier with the specified parameters.
-     *
-     * @param _verifier The address of the verifier contract to be used.
-     * @param _maxTx The maximum number of transactions allowed in a batch.
-     * @param _nLevel The number of levels in the verification circuit.
-     *
-     * @dev Reverts with `InvalidVerifierAddress` if the provided verifier address is zero.
-     */
-    function _initializeVerifiers(
-        address _verifier,
-        uint256 _maxTx,
-        uint256 _nLevel
-    ) internal {
-        if (_verifier == address(0)) {
-            revert InvalidVerifierAddress();
-        }
 
-        verifier = Verifier({
-            verifierInterface: IVerifier(_verifier),
-            maxTx: _maxTx,
-            nLevel: _nLevel
-        });
-    }
 
     /**
-     * @dev Constructs the input for the verification circuit.
-     *
-     * @param newAccountRoot The new account root to be included in the input.
-     * @param newVouchRoot The new vouch root to be included in the input.
-     * @param newScoreRoot The new score root to be included in the input.
-     *
-     * @return The hashed input for the verification circuit, reduced modulo `_RFIELD`.
+     * @dev Constructs the input for the verification circuit
+     * @param newAccountRoot The new account root after state transition
+     * @param newVouchRoot The new vouch root after state transition
+     * @param newScoreRoot The new score root after state transition
+     * @param txnData The encoded transaction data for the batch
+     * @return The hashed input for circuit verification, reduced modulo _RFIELD
      */
     function _constructCircuitInput(
         uint256 newAccountRoot,
         uint256 newVouchRoot,
-        uint256 newScoreRoot
+        uint256 newScoreRoot,
+        bytes memory txnData
     ) internal view returns (uint256) {
         uint256 oldAccountRoot = accountRootMap[lastForgedBatch];
         uint256 oldVouchRoot = vouchRootMap[lastForgedBatch];
         uint256 oldScoreRoot = scoreRootMap[lastForgedBatch];
-        Transaction[] memory transactions = new Transaction[](batchSize);
-        for (uint256 i = 0; i < _MAX_TXNS; ++i) {
-            transactions[i] = unprocessedBatchesMap[lastForgedTxn + i];
-        }
-
-        bytes memory txnData = abi.encode(transactions);
 
         bytes memory inputBytes = abi.encodePacked(
             oldAccountRoot,

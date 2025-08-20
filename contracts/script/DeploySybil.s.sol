@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity 0.8.24;
 
 import "forge-std/Script.sol";
 import {Sybil} from "../src/Sybil.sol";
@@ -9,8 +9,6 @@ contract FunctionScript is Script {
 
     function run() external {
         address verifier = vm.envAddress("VERIFIER");
-        uint256 maxTx = vm.envUint("MAXTX");
-        uint256 nLevel = vm.envUint("NLEVEL");
 
         // Specify Poseidon contract addresses
         address poseidon2Elements = vm.envAddress("POSEIDON2ELEMENTS");
@@ -24,8 +22,6 @@ contract FunctionScript is Script {
         // Calling initialize at the time of deployment
         sybilContract.initialize(
             verifier,
-            maxTx,
-            nLevel,
             poseidon2Elements,
             poseidon3Elements,
             adminRole

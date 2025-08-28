@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "verifier": "bash scripts/generate-verifier.sh"
+    "verifier": "bash scripts/generate-verifier.sh",
+    "test": "mocha",
+    "test:all": "mocha test/*.test.js --timeout 100000",
+    "test:working": "node test/run-working-tests.js"
   },
   "keywords": [],
   "author": "",

@@ -12,19 +12,17 @@ template DualMux(){
     out[1] <== (in[0] - in[1])*s + in[1];
 }
 
-template GetMerkleRoot(k){
-    // k is depth of tree
-
+template GetMerkleRoot(MERKLE_TREE_DEPTH){
     signal input leaf;
-    signal input paths2_root[k];
-    signal input paths2_root_pos[k];
+    signal input paths2_root[MERKLE_TREE_DEPTH];
+    signal input paths2_root_pos[MERKLE_TREE_DEPTH];
 
     signal output out;
 
-    component selectors[k];
-    component hashers[k];
+    component selectors[MERKLE_TREE_DEPTH];
+    component hashers[MERKLE_TREE_DEPTH];
 
-    for(var i = 0; i < k; i++){
+    for(var i = 0; i < MERKLE_TREE_DEPTH; i++){
         selectors[i] = DualMux();
         selectors[i].in[0] <== i == 0 ? leaf : hashers[i-1].out;
         selectors[i].in[1] <== paths2_root[i];
@@ -35,5 +33,5 @@ template GetMerkleRoot(k){
         hashers[i].inputs[1] <== selectors[i].out[1];
     }
 
-    out <== hashers[k-1].out;
+    out <== hashers[MERKLE_TREE_DEPTH-1].out;
 }

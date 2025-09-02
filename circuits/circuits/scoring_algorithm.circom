@@ -2,10 +2,10 @@ pragma circom 2.0.0;
 
 /**
 * all inputs are scaled up 10^6 since circom only accepts integers as inputs 
-* @param num_verts - number of vertices in part of graph where scoring algorithm will be run
-* @param num_subsets - number of subsets of vertices used in calculating score
-* @input weights[num_verts][num_verts] - {Array(Uint180)} - scaled integer representing stake on a link
-* @input subsets[num_verts][num_subsets] - {Bool} - Boolean of whether a particular vertex is an element of a particular subset 
+* @param NUM_VERTS - number of vertices in part of graph where scoring algorithm will be run
+* @param NUM_SUBSETS - number of subsets of vertices used in calculating score
+* @input weights[NUM_VERTS][NUM_VERTS] - {Array(Uint180)} - scaled integer representing stake on a link
+* @input subsets[NUM_VERTS][NUM_SUBSETS] - {Bool} - Boolean of whether a particular vertex is an element of a particular subset 
 
 **/
 template Num2Bits(n) {
@@ -36,33 +36,33 @@ template LessThan(n) {
     out <== 1-n2b.out[n];
 }
 
-template ScoringAlgorithm (num_verts , num_subsets) {
-	signal input subsets[num_verts][num_subsets];
-	signal input weights[num_verts][num_verts];
-	signal output scores[num_verts];
+template ScoringAlgorithm (NUM_VERTS , NUM_SUBSETS) {
+	signal input subsets[NUM_VERTS][NUM_SUBSETS];
+	signal input weights[NUM_VERTS][NUM_VERTS];
+	signal output scores[NUM_VERTS];
 
-    signal bdry[num_subsets];
-    signal bdry_checks[num_subsets];
-	signal scaled_bdry[num_subsets];
-	signal subset_indicator[num_subsets][num_verts][num_verts];
-	signal weighted_subset_indicator[num_subsets][num_verts][num_verts];
-	signal selector[num_verts][num_subsets];
-	signal minimizing_vector[num_verts][num_subsets];
+    signal bdry[NUM_SUBSETS];
+    signal bdry_checks[NUM_SUBSETS];
+	signal scaled_bdry[NUM_SUBSETS];
+	signal subset_indicator[NUM_SUBSETS][NUM_VERTS][NUM_VERTS];
+	signal weighted_subset_indicator[NUM_SUBSETS][NUM_VERTS][NUM_VERTS];
+	signal selector[NUM_VERTS][NUM_SUBSETS];
+	signal minimizing_vector[NUM_VERTS][NUM_SUBSETS];
 
-	component lt[num_verts][num_subsets];
+	component lt[NUM_VERTS][NUM_SUBSETS];
 
     var sum = 0;
     var size = 0;
     var rem = 0;
 
-	for (var a = 0; a<num_subsets; a+=1){  
+	for (var a = 0; a<NUM_SUBSETS; a+=1){  
 
 	    sum = 0;
 	    size = 0;
 
-	    for (var i = 0; i<num_verts; i+=1){
+	    for (var i = 0; i<NUM_VERTS; i+=1){
 
-		    for (var j = 0; j<num_verts; j+=1){
+		    for (var j = 0; j<NUM_VERTS; j+=1){
 
 		      subset_indicator[a][i][j] <== subsets[i][a]*(1-subsets[j][a]);
 		      weighted_subset_indicator[a][i][j] <== subset_indicator[a][i][j]*weights[i][j];
@@ -82,7 +82,7 @@ template ScoringAlgorithm (num_verts , num_subsets) {
     }
 
 
-    for(var k = 0; k<num_verts; k+=1){
+    for(var k = 0; k<NUM_VERTS; k+=1){
         lt[k][0] = LessThan(5);
         lt[k][0].in[1] <== 31;
         lt[k][0].in[0] <== scaled_bdry[0];
@@ -91,7 +91,7 @@ template ScoringAlgorithm (num_verts , num_subsets) {
 
 
 
-        for(var b = 1; b<num_subsets; b+=1){
+        for(var b = 1; b<NUM_SUBSETS; b+=1){
            lt[k][b] = LessThan(5);
            lt[k][b].in[1] <== minimizing_vector[k][b-1];
            lt[k][b].in[0] <== scaled_bdry[b];
@@ -99,7 +99,7 @@ template ScoringAlgorithm (num_verts , num_subsets) {
            minimizing_vector[k][b] <== (scaled_bdry[b]-minimizing_vector[k][b-1])*selector[k][b] + minimizing_vector[k][b-1];
         }
 
-        scores[k] <== minimizing_vector[k][num_subsets-1];
+        scores[k] <== minimizing_vector[k][NUM_SUBSETS-1];
         log(scores[k]);
     }
     

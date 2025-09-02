@@ -4,9 +4,7 @@ include "./get_merkle_root.circom";
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/eddsaposeidon.circom";
 
-template SingleTx(k){
-    // k is the depth of accounts tree
-
+template SingleTx(ACCOUNT_TREE_DEPTH){
     // accounts tree info
     signal input accounts_root;
     signal input intermediate_root;
@@ -33,10 +31,10 @@ template SingleTx(k){
     signal input signature_R8x;
     signal input signature_R8y;
     signal input signature_S;
-    signal input sender_proof[k];
-    signal input sender_proof_pos[k];
-    signal input receiver_proof[k];
-    signal input receiver_proof_pos[k];
+    signal input sender_proof[ACCOUNT_TREE_DEPTH];
+    signal input sender_proof_pos[ACCOUNT_TREE_DEPTH];
+    signal input receiver_proof[ACCOUNT_TREE_DEPTH];
+    signal input receiver_proof_pos[ACCOUNT_TREE_DEPTH];
     signal input enabled;
     //@TODO: add vouch field
     //@TODO: add score field
@@ -45,14 +43,14 @@ template SingleTx(k){
     //@TODO: signal output new_vouch_root;
 
     // verify sender account exists in accounts_root
-    component senderExistence = LeafExistence(k,5);
+    component senderExistence = LeafExistence(ACCOUNT_TREE_DEPTH,5);
     senderExistence.preimage[0] <== sender_pubkey[0];
     senderExistence.preimage[1] <== sender_pubkey[1];
     senderExistence.preimage[2] <== sender_balance;
     senderExistence.preimage[3] <== sender_ethAddr;
     senderExistence.preimage[4] <== sender_nonce;
     senderExistence.root <== accounts_root;
-    for(var i = 0; i < k; i++){
+    for(var i = 0; i < ACCOUNT_TREE_DEPTH; i++){
         senderExistence.paths2_root_pos[i] <== sender_proof_pos[i];
         senderExistence.paths2_root[i] <== sender_proof[i];
     }
@@ -82,9 +80,9 @@ template SingleTx(k){
     newSenderLeaf.inputs[3] <== sender_ethAddr;
     newSenderLeaf.inputs[4] <== sender_nonce + 1;
 
-    component compute_intermediate_root = GetMerkleRoot(k);
+    component compute_intermediate_root = GetMerkleRoot(ACCOUNT_TREE_DEPTH);
     compute_intermediate_root.leaf <== newSenderLeaf.out;
-    for(var i = 0; i < k; i++){
+    for(var i = 0; i < ACCOUNT_TREE_DEPTH; i++){
         compute_intermediate_root.paths2_root_pos[i] <== sender_proof_pos[i];
         compute_intermediate_root.paths2_root[i] <== sender_proof[i];
     }
@@ -93,14 +91,14 @@ template SingleTx(k){
     compute_intermediate_root.out === intermediate_root;
 
     // verify receiver account exists in intermediate_root
-    component receiverExistence = LeafExistence(k,5);
+    component receiverExistence = LeafExistence(ACCOUNT_TREE_DEPTH,5);
     receiverExistence.preimage[0] <== receiver_pubkey[0];
     receiverExistence.preimage[1] <== receiver_pubkey[1];
     receiverExistence.preimage[2] <== receiver_balance;
     receiverExistence.preimage[3] <== receiver_ethAddr;
     receiverExistence.preimage[4] <== receiver_nonce;
     receiverExistence.root <== intermediate_root;
-    for(var i = 0; i < k; i++){
+    for(var i = 0; i < ACCOUNT_TREE_DEPTH; i++){
         receiverExistence.paths2_root_pos[i] <== receiver_proof_pos[i];
         receiverExistence.paths2_root[i] <== receiver_proof[i];
     }
@@ -113,9 +111,9 @@ template SingleTx(k){
     newReceiverLeaf.inputs[4] <== receiver_nonce;
 
     // update accounts_root
-    component compute_final_root = GetMerkleRoot(k);
+    component compute_final_root = GetMerkleRoot(ACCOUNT_TREE_DEPTH);
     compute_final_root.leaf <== newReceiverLeaf.out;
-    for(var i = 0; i < k; i++){
+    for(var i = 0; i < ACCOUNT_TREE_DEPTH; i++){
         compute_final_root.paths2_root_pos[i] <== receiver_proof_pos[i];
         compute_final_root.paths2_root[i] <== receiver_proof[i];
     }

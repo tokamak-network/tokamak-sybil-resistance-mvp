@@ -337,7 +337,7 @@ contract Sybil is
      * @notice Proves a user's score using a Merkle proof against a specific batch's score root
      * @dev Verifies the user's score using sparse Merkle tree verification
      * @param numScoreRoot The batch number containing the score root to verify against
-     * @param idx The user's account index in the tree
+     * @param targetIdx The user's account index in the tree
      * @param score The claimed score value
      * @param siblings Array of sibling hashes for the Merkle proof
      * @dev Reverts if the Merkle proof verification fails
@@ -345,10 +345,13 @@ contract Sybil is
      */
     function proveScoreMerkleProof(
         uint32 numScoreRoot,
-        uint24 idx,
+        uint24 targetIdx,
         uint32 score,
         uint256[] calldata siblings
     ) external {
+        if (accountInfo[msg.sender].idx != targetIdx) {
+            revert IncorrectAccountIndex();
+        }
         uint256[2] memory arrayState;
         arrayState[0] = score;
         arrayState[1] = uint256(uint160(msg.sender));
@@ -356,7 +359,7 @@ contract Sybil is
         uint256 stateHash = _insPoseidonUnit2.poseidon(arrayState);
         uint256 scoreRoot = scoreRootMap[numScoreRoot];
 
-        if (!_smtVerifier(scoreRoot, siblings, idx, stateHash)) {
+        if (!_smtVerifier(scoreRoot, siblings, targetIdx, stateHash)) {
             revert SmtProofInvalid();
         }
 

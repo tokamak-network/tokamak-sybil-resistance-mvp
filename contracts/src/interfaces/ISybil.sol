@@ -15,6 +15,7 @@ interface ISybil {
     error SelfVouch();
     error BatchNotFull();
     error AlreadyVouched(address from, address to);
+    error IncorrectAccountIndex();
     
     // Initialization function
     function initialize(

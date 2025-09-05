@@ -1,8 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.24;
 
+error InvalidPoseidon1Address();
 error InvalidPoseidon2Address();
 error InvalidPoseidon3Address();
+
+/**
+ * @dev Interface poseidon hash function 1 elements
+ */
+interface PoseidonUnit1 {
+    function poseidon(uint256[1] memory) external pure returns (uint256);
+}
 
 /**
  * @dev Interface poseidon hash function 2 elements
@@ -22,6 +30,7 @@ interface PoseidonUnit3 {
  * @dev Sybil helper functions
  */
 contract SybilHelpers {
+    PoseidonUnit1 _insPoseidonUnit1;
     PoseidonUnit2 _insPoseidonUnit2;
     PoseidonUnit3 _insPoseidonUnit3;
 
@@ -30,9 +39,13 @@ contract SybilHelpers {
 
      */
     function _initializeHelpers(
+        address _poseidon1Elements,
         address _poseidon2Elements,
         address _poseidon3Elements
     ) internal {
+        if (_poseidon1Elements == address(0)) {
+            revert InvalidPoseidon1Address();
+        }
         if (_poseidon2Elements == address(0)) {
             revert InvalidPoseidon2Address();
         }
@@ -40,6 +53,7 @@ contract SybilHelpers {
             revert InvalidPoseidon3Address();
         }
 
+        _insPoseidonUnit1 = PoseidonUnit1(_poseidon1Elements);
         _insPoseidonUnit2 = PoseidonUnit2(_poseidon2Elements);
         _insPoseidonUnit3 = PoseidonUnit3(_poseidon3Elements);
     }

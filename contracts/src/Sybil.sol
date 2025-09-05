@@ -21,7 +21,6 @@ contract Sybil is
     SybilHelpers
 {
 
-
     /// @notice Structure to store user's score snapshot at a specific batch
     struct ScoreSnapshot {
         uint32 score; /// @dev User's score value
@@ -126,12 +125,14 @@ contract Sybil is
      * @notice Initializes the contract with the specified parameters
      * @dev This function can only be called once during the deployment of the contract
      * @param _verifier The address of the verifier contract to be used for rollup verification
+     * @param _poseidon1Elements The address of the Poseidon hash function contract for 1 element
      * @param _poseidon2Elements The address of the Poseidon hash function contract for 2 elements
      * @param _poseidon3Elements The address of the Poseidon hash function contract for 3 elements
      * @param _adminRole The address that will be granted admin privileges
      */
     function initialize(
         address _verifier,
+        address _poseidon1Elements,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _adminRole
@@ -144,7 +145,7 @@ contract Sybil is
         }
         verifier = IVerifier(_verifier);
 
-        _initializeHelpers(_poseidon2Elements, _poseidon3Elements);
+        _initializeHelpers(_poseidon1Elements, _poseidon2Elements, _poseidon3Elements);
     }
 
     /**
@@ -352,11 +353,9 @@ contract Sybil is
         if (accountInfo[msg.sender].idx != targetIdx) {
             revert IncorrectAccountIndex();
         }
-        uint256[2] memory arrayState;
+        uint256[1] memory arrayState;
         arrayState[0] = score;
-        arrayState[1] = uint256(uint160(msg.sender));
-
-        uint256 stateHash = _insPoseidonUnit2.poseidon(arrayState);
+        uint256 stateHash = _insPoseidonUnit1.poseidon(arrayState);
         uint256 scoreRoot = scoreRootMap[numScoreRoot];
 
         if (!_smtVerifier(scoreRoot, siblings, targetIdx, stateHash)) {

@@ -366,6 +366,15 @@ contract Sybil is
         scoreSnapshots[msg.sender].score = score;
     }
 
+    function demoSmTVerifier(
+        uint256 scoreRoot,
+        uint256[] calldata siblings,
+        uint256 targetIdx,
+        uint256 stateHash
+    ) external view returns (bool) {
+        return _smtVerifier(scoreRoot, siblings, targetIdx, stateHash);
+    }
+
     function updateScore(address user, uint32 score) external {
         scoreSnapshots[user].score = score;
     }

@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import "forge-std/Script.sol";
-import { CummulativeScore } from "../src/CummulativeScore.sol";
+import { CumulativeScore } from "../src/CumulativeScore.sol";
 
 contract DeployStakingInterface is Script {
 
@@ -15,7 +15,7 @@ contract DeployStakingInterface is Script {
         vm.startBroadcast();
         
         // Deploy the Staking contract
-        CummulativeScore stakingContract = new CummulativeScore(
+        CumulativeScore stakingContract = new CumulativeScore(
             depositManager,
             sybilContract,
             adminRole

@@ -1,10 +1,10 @@
-# CummulativeScore Contract
+# CumulativeScore Contract
 
 This contract demonstrates how to interface with the [Tokamak Network's DepositManager](https://github.com/tokamak-network/ton-staking-v2) `accStaked` function and combines it with Sybil resistance scores to provide cumulative scoring.
 
 ## Overview
 
-The `CummulativeScore` contract provides a clean interface to calculate cumulative scores by combining:
+The `CumulativeScore` contract provides a clean interface to calculate cumulative scores by combining:
 - **Staking scores** from the DepositManager contract (1 WTON = 1 score point)
 - **Sybil resistance scores** from the Sybil contract
 
@@ -54,15 +54,15 @@ The contract automatically converts the 27-decimal format returned by DepositMan
 ### Deploy using Forge
 
 ```bash
-# Deploy CummulativeScore contract
-forge script script/DeployCummulativeScore.s.sol:DeployStakingInterface --rpc-url $RPC_URL --broadcast --verify
+# Deploy CumulativeScore contract
+forge script script/DeployCumulativeScore.s.sol:DeployStakingInterface --rpc-url $RPC_URL --broadcast --verify
 ```
 
 ### Verify Contract
 
 ```bash
 forge verify-contract <CONTRACT_ADDRESS> \
-  src/CummulativeScore.sol:CummulativeScore \
+  src/CumulativeScore.sol:CumulativeScore \
   --etherscan-api-key <API_KEY> \
   --rpc-url <RPC_URL> \
   --compiler-version 0.8.24 \
@@ -73,7 +73,7 @@ forge verify-contract <CONTRACT_ADDRESS> \
 
 ```
 ┌─────────────────┐    queries   ┌─────────────────┐
-│ CummulativeScore│ ──────────> │ DepositManager  │
+│ CumulativeScore│ ──────────> │ DepositManager  │
 │                 │             │ (staking data)  │
 │                 │    queries   ├─────────────────┤
 │                 │ ──────────> │ Sybil Contract  │

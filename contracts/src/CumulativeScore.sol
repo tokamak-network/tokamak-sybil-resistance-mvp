@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/ISybil.sol";
 
 /**
- * @title CummulativeScore
+ * @title CumulativeScore
  * @author Aryan Soni
  * @notice This contract demonstrates how to interface with the DepositManager's accStaked function
  * @dev This contract provides read access to staking information from the DepositManager
@@ -19,7 +19,7 @@ interface IDepositManager {
     function accUnstaked(address layer2, address account) external view returns (uint256 wtonAmount);
 }
 
-contract CummulativeScore is AccessControl {
+contract CumulativeScore is AccessControl {
 
     /// @notice Admin role identifier for access control
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -57,9 +57,9 @@ contract CummulativeScore is AccessControl {
         address _sybilContract,
         address _adminRole
     ) {
-        require(_depositManager != address(0), "CummulativeScore: DepositManager cannot be zero address");
-        require(_sybilContract != address(0), "CummulativeScore: Sybil contract cannot be zero address");
-        require(_adminRole != address(0), "CummulativeScore: Admin role cannot be zero address");
+        require(_depositManager != address(0), "CumulativeScore: DepositManager cannot be zero address");
+        require(_sybilContract != address(0), "CumulativeScore: Sybil contract cannot be zero address");
+        require(_adminRole != address(0), "CumulativeScore: Admin role cannot be zero address");
         
         _grantRole(ADMIN_ROLE, _adminRole);
         _grantRole(DEFAULT_ADMIN_ROLE, _adminRole);
@@ -77,7 +77,7 @@ contract CummulativeScore is AccessControl {
      * @dev Only callable by accounts with ADMIN_ROLE
      */
     function updateDepositManager(address _newDepositManager) external onlyRole(ADMIN_ROLE) {
-        require(_newDepositManager != address(0), "CummulativeScore: DepositManager cannot be zero address");
+        require(_newDepositManager != address(0), "CumulativeScore: DepositManager cannot be zero address");
         
         address oldManager = depositManager;
         depositManager = _newDepositManager;
@@ -91,7 +91,7 @@ contract CummulativeScore is AccessControl {
      * @dev Only callable by accounts with ADMIN_ROLE
      */
     function updateSybilContract(address _newSybilContract) external onlyRole(ADMIN_ROLE) {
-        require(_newSybilContract != address(0), "CummulativeScore: Sybil contract cannot be zero address");
+        require(_newSybilContract != address(0), "CumulativeScore: Sybil contract cannot be zero address");
         
         address oldSybil = sybilContract;
         sybilContract = _newSybilContract;
@@ -105,7 +105,7 @@ contract CummulativeScore is AccessControl {
      * @return balance The total cumulative score (staking + sybil) for the account
      */
     function balanceOf(address account) external view returns (uint256 balance) {
-        require(account != address(0), "CummulativeScore: Account cannot be zero address");
+        require(account != address(0), "CumulativeScore: Account cannot be zero address");
         
         // Get staking score (1 WTON = 1 score point)
         uint256 stakingScore = IDepositManager(depositManager).accStakedAccount(account) / 10**27;
@@ -124,8 +124,8 @@ contract CummulativeScore is AccessControl {
      * @return balance The amount of WTON staked by the account in the layer2 (in whole tokens)
      */
     function stakingLayer2BalanceOf(address layer2, address account) external view returns (uint256 balance) {
-        require(layer2 != address(0), "CummulativeScore: Layer2 cannot be zero address");
-        require(account != address(0), "CummulativeScore: Account cannot be zero address");
+        require(layer2 != address(0), "CumulativeScore: Layer2 cannot be zero address");
+        require(account != address(0), "CumulativeScore: Account cannot be zero address");
         
         return IDepositManager(depositManager).accStaked(layer2, account) / 10**27;
     }
@@ -145,14 +145,14 @@ contract CummulativeScore is AccessControl {
         view 
         returns (uint256[] memory balances) 
     {
-        require(layer2 != address(0), "CummulativeScore: Layer2 cannot be zero address");
-        require(accounts.length > 0, "CummulativeScore: Accounts array cannot be empty");
+        require(layer2 != address(0), "CumulativeScore: Layer2 cannot be zero address");
+        require(accounts.length > 0, "CumulativeScore: Accounts array cannot be empty");
         
         balances = new uint256[](accounts.length);
         IDepositManager manager = IDepositManager(depositManager);
         
         for (uint256 i = 0; i < accounts.length; i++) {
-            require(accounts[i] != address(0), "CummulativeScore: Account cannot be zero address");
+            require(accounts[i] != address(0), "CumulativeScore: Account cannot be zero address");
             balances[i] = manager.accStaked(layer2, accounts[i]) / 10**27;
         }
     }
@@ -164,8 +164,8 @@ contract CummulativeScore is AccessControl {
      * @return hasBalance True if the account has staked tokens, false otherwise
      */
     function hasBalance(address layer2, address account) external view returns (bool) {
-        require(layer2 != address(0), "CummulativeScore: Layer2 cannot be zero address");
-        require(account != address(0), "CummulativeScore: Account cannot be zero address");
+        require(layer2 != address(0), "CumulativeScore: Layer2 cannot be zero address");
+        require(account != address(0), "CumulativeScore: Account cannot be zero address");
         
         uint256 stakedAmount = IDepositManager(depositManager).accStaked(layer2, account) / 10**27;
         return stakedAmount > 0;
@@ -179,8 +179,8 @@ contract CummulativeScore is AccessControl {
      * @dev 1 WTON = 1 score point, so if staked = 100 WTON and sybil score = 50, total = 150
      */
     function totalLayer2BalanceOf(address layer2, address account) external view returns (uint256 totalBalance) {
-        require(layer2 != address(0), "CummulativeScore: Layer2 cannot be zero address");
-        require(account != address(0), "CummulativeScore: Account cannot be zero address");
+        require(layer2 != address(0), "CumulativeScore: Layer2 cannot be zero address");
+        require(account != address(0), "CumulativeScore: Account cannot be zero address");
         
         // Get staking score (1 WTON = 1 score point)
         uint256 stakingScore = IDepositManager(depositManager).accStaked(layer2, account) / 10**27;
@@ -208,7 +208,7 @@ contract CummulativeScore is AccessControl {
             uint256 totalBalance
         ) 
     {
-        require(account != address(0), "CummulativeScore: Account cannot be zero address");
+        require(account != address(0), "CumulativeScore: Account cannot be zero address");
         
         // Get staking balance (1 WTON = 1 score point)
         stakingBalance = IDepositManager(depositManager).accStakedAccount(account) / 10**27;
@@ -231,15 +231,15 @@ contract CummulativeScore is AccessControl {
         view 
         returns (uint256[] memory totalBalances) 
     {
-        require(layer2 != address(0), "CummulativeScore: Layer2 cannot be zero address");
-        require(accounts.length > 0, "CummulativeScore: Accounts array cannot be empty");
+        require(layer2 != address(0), "CumulativeScore: Layer2 cannot be zero address");
+        require(accounts.length > 0, "CumulativeScore: Accounts array cannot be empty");
         
         totalBalances = new uint256[](accounts.length);
         IDepositManager manager = IDepositManager(depositManager);
         ISybil sybil = ISybil(sybilContract);
         
         for (uint256 i = 0; i < accounts.length; i++) {
-            require(accounts[i] != address(0), "CummulativeScore: Account cannot be zero address");
+            require(accounts[i] != address(0), "CumulativeScore: Account cannot be zero address");
             
             uint256 stakingScore = manager.accStaked(layer2, accounts[i]) / 10**27;
             uint32 sybilScore = sybil.getScore(accounts[i]);

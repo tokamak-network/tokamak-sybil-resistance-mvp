@@ -375,6 +375,25 @@ contract Sybil is
         return _smtVerifier(scoreRoot, siblings, targetIdx, stateHash);
     }
 
+
+    function proveScoreMerkleProofDebug(
+        uint32 numScoreRoot,
+        uint24 targetIdx,
+        uint32 score,
+        uint256[] calldata siblings
+    ) external {
+        uint256[1] memory arrayState;
+        arrayState[0] = score;
+        uint256 stateHash = _insPoseidonUnit1.poseidon(arrayState);
+        uint256 scoreRoot = scoreRootMap[numScoreRoot];
+        bool result = _smtVerifierDebug(scoreRoot, siblings, targetIdx, stateHash);
+        if (result) {
+        scoreSnapshots[msg.sender].batchNum = numScoreRoot;
+        scoreSnapshots[msg.sender].score = score;
+        }
+
+    }
+
     function updateScore(address user, uint32 score) external {
         scoreSnapshots[user].score = score;
     }

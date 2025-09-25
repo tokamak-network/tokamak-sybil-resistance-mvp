@@ -11,10 +11,11 @@ circuits/build/
 
 #setup
 *.ptau
-
+tmp
 #zkey
 *.zkey
 verification_key.json
+# verifier.sol
 # verifier.sol
 
 #proof
@@ -24,3 +25,11 @@ public.json
 
 # Circom test circuits
 *.test.circom
+
+#.env
+sequencer/.env
+
+# etc
+.DS_Store
+var
+pgdata

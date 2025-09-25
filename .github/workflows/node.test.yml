@@ -1,0 +1,73 @@
+name: "SYB Node test"
+
+on:
+  push:
+    branches-ignore:
+      - "main"
+      - "develop"
+    paths:
+      - "sequencer/**"
+  workflow_dispatch:
+
+jobs:
+  syb-node-test:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: statedb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.5"
+          check-latest: true
+          cache-dependency-path: |
+            ./sequencer/go.sum
+
+      - name: Install dependencies
+        run: |
+          cd ./sequencer
+          go mod tidy
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install golanci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
+
+      - name: Run golangci-lint on sequencer
+        run: |
+          cd ./sequencer
+          golangci-lint run ./...
+
+      - name: Run node tests
+        run: |
+          cd ./sequencer
+          task test-node
+        env:
+          PGHOST: "localhost"
+          PGPORT: "5432"
+          PGUSER: "postgres"
+          PGPASSWORD: "postgres"
+          PGDATABASE: "statedb"
+          KEYSTORE_PATH: "./var/tokamak/ethkeystore"
+          KEYSTORE_PASSWORD: "123"
+          CI: true

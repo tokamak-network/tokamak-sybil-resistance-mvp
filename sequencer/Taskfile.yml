@@ -1,0 +1,56 @@
+version: '3'
+
+tasks:
+  run-seq:
+    dotenv: [".env"]
+    cmds:
+      - go run main.go run --cfg cfg.toml
+
+  run-serveapi:
+    dotenv: [".env"]
+    cmds:
+      - go run main.go serveapi --cfg cfg.toml
+
+  run-migrate:
+    dotenv: [".env"]
+    cmds:
+      - go run main.go migrate
+
+  test-historydb:
+    dotenv: [".env"]
+    cmds:
+      - go test ./database/historydb -v -count=1
+  
+  test-til:
+    dotenv: [".env"]
+    cmds:
+      - go test ./test/til -v -count=1
+
+  test-synchronizer:
+    dotenv: [".env"]
+    cmds:
+      - go test ./synchronizer -v -count=1
+  
+  test-statedb:
+    dotenv: [".env"]
+    cmds:
+      - go test ./database/statedb -v
+
+  test-api:
+    dotenv: [".env"]
+    cmds:
+      - go test ./api -v
+
+  test-node:
+    dotenv: [".env"]
+    cmds:
+      - go test ./ -v -count=1
+  
+  test-seq:
+    cmds:
+      - task: test-node
+      - task: test-synchronizer
+      - task: test-historydb
+      - task: test-til
+      - task: test-statedb
+      - task: test-api

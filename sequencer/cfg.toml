@@ -1,0 +1,119 @@
+[API]
+Address = "0.0.0.0:5000"
+Explorer = true
+UpdateMetricsInterval = "10s"
+UpdateRecommendedFeeInterval = "15s"
+MaxSQLConnections = 100
+SQLConnectionTimeout = "2s"
+ReadTimeout = "30s"
+WriteTimeout = "30s"
+CoordinatorNetwork = true
+FindPeersCoordinatorNetworkInterval = "180s"
+
+[StateDB]
+### Path where the synchronizer StateDB is stored
+Path = "./var/tokamak/statedb"
+### Number of checkpoints to keep
+Keep = 256
+
+[Web3]
+### Url of the web3 ethereum-node RPC server. Only geth is officially supported
+URL = "https://ethereum-sepolia-rpc.publicnode.com"
+
+[Synchronizer]
+### Interval between attempts to synchronize a new block from an ethereum node
+SyncLoopInterval = "1s"
+### Threshold of a number of Ethereum blocks left to synchronize, such that if there are more blocks to sync than the defined value synchronizer can aggressively skip calling UpdateEth to save network bandwidth and time. After reaching the threshold UpdateEth is called on each block. This value only affects the reported % of synchronization of blocks and batches, nothing else.
+StatsUpdateBlockNumDiffThreshold = 100
+### While having more blocks to sync than updateEthBlockNumThreshold, UpdateEth will be called once in a defined number of blocks. This value only affects the reported % of synchronization of blocks and batches, nothing else
+StatsUpdateFrequencyDivider = 100
+
+[SmartContracts]
+## Smart contract address of the rollup contract
+Rollup   = "0x443dA87f25a49c27a11f61918eC74E414b92C4B3"
+
+[Coordinator]
+## Ethereum address that the coordinator is using to forge batches
+ForgerAddress = "0x7ebd0f4de5e4139b1c07fc4acfa4422c3f4347ed"
+### Minimum balance the forger address needs to start the coordinator in wei. If It is set to 0, the coordinator will not check the balance
+#MinimumForgeAddressBalance = "0"
+### Number of confirmation blocks to be sure that the tx has been mined correctly
+ConfirmBlocks = 5
+### Portion of the range before the L1Batch timeout that will trigger a schedule to forge an L1Batch
+L1BatchTimeoutPerc = 0.00001
+### Number of delay blocks to wait before starting the pipeline when a slot in which the coordinator can forge is reached
+#StartSlotBlocksDelay = 0
+### Number of blocks ahead used to decide when to stop scheduling new batches
+#ScheduleBatchBlocksAheadCheck = 0
+### Number of marging blocks used to decide when to stop sending batches to the smart contract
+#SendBatchBlocksMarginCheck = 0
+### Interval between calls to the ProofServer to check the status
+ProofServerPollInterval = "1s"
+### Interval between forge retries after an error
+ForgeRetryInterval = "10s"
+### Interval between calls to the main handler of a synced block after an error
+SyncRetryInterval = "1s"
+#Delay after which a batch is forged if the slot is already committed.  If It is set to "0s", the coordinator will continuously forge at the maximum rate
+#ForgeDelay = "600s"
+### Delay after a forged batch if there are no txs to forge. If It is set to 0s, the coordinator will continuously forge even if the batches are empty
+#ForgeNoTxsDelay = "86400s"
+### Enables the coordinator to forge in slots if the empty slots reach the slot deadline
+#MustForgeAtSlotDeadline = true
+### It will make the coordinator forge at most one batch per slot, only if there are included txs in that batch, or pending l1UserTxs in the smart contract.  Setting this parameter overrides `ForgeDelay`, `ForgeNoTxsDelay`, `MustForgeAtSlotDeadline` and `IgnoreSlotCommitment`.
+#IgnoreSlotCommitment = true
+### This parameter will make the coordinator forge at most one batch per slot, only if there are included txs in that batch, or pending l1UserTxs in the smart contract.  Setting this parameter overrides `ForgeDelay`, `ForgeNoTxsDelay`, `MustForgeAtSlotDeadline` and `IgnoreSlotCommitment`.
+#ForgeOncePerSlotIfTxs = false
+### Waiting time for proover
+ProverWaitReadTimeout = "20s"
+
+[Coordinator.TxSelector]
+### Path where the TxSelector StateDB is stored
+Path = "./var/tokamak/txselector"
+
+[Coordinator.BatchBuilder]
+### Path where the BatchBuilder StateDB is stored
+Path = "./var/tokamak/batchbuilder"
+
+[Coordinator.ServerProofs]
+## Server proof API URLs
+URLs = ["http://localhost:3000"]
+
+[Coordinator.Circuit]
+## Maximum number of txs supported by the circuit
+MaxTx = 100
+## Maximum number of merkle tree levels supported by the circuit
+NLevels = 5
+
+[Coordinator.EthClient]
+### Interval between receipt checks of ethereum transactions in the TxManager
+CheckLoopInterval = "500ms"
+### Number of attempts to do an eth client RPC call before giving up
+Attempts = 4
+### Delay between attempts do do an eth client RPC call
+AttemptsDelay = "500ms"
+### Timeout after which a non-mined ethereum transaction will be resent (reusing the nonce) with a newly calculated gas price
+TxResendTimeout = "2m"
+### Disables reusing nonces of pending transactions for new replacement transactions
+#NoReuseNonce = false
+### Maximum gas price allowed for ethereum transactions in gwei
+MaxGasPrice = 500
+### Minimum gas price allowed for ethereum transactions in gwei
+MinGasPrice = 5
+### Percentage increased of gas price set in an ethereum transaction from the suggested gas price by the ethereum node
+#GasPriceIncPerc = 5
+
+[Coordinator.EthClient.ForgeBatchGasCost]
+### Gas needed to forge an empty batch
+Fixed = 900000
+### Gas needed per L1 tx
+L1UserTx = 15000
+### Gas needed for a coordinator L1 tx
+L1CoordTx = 7000
+
+#[Coordinator.Debug]
+### If this parameter is set, specifies the path where batchInfo is stored in JSON in every step/update of the pipeline
+#BatchPath = "./var/tokamak/batchesdebug"
+### If lightScrypt is set, uses light parameters for the ethereum keystore encryption algorithm
+#LightScrypt = false
+### RollupVerifierIndex is the index of the verifier to use in the Rollup smart contract. The verifier chosen by index must match with the Circuit parameters
+#RollupVerifierIndex = 0

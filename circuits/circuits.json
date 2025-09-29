@@ -1,0 +1,17 @@
+{
+    "singleTx": {
+        "file": "circuits/singleTx",
+        "template": "SingleTx",
+        "params": [1]
+    },
+    "scoring": {
+        "file": "circuits/scoring_algorithm",
+        "template": "ScoringAlgorithm",
+        "params": [7, 63]
+    },
+    "prove_score_inclusion": {
+        "file": "circuits/prove_score_inclusion",
+        "template": "ProveScoreInclusion",
+        "params": [2]
+    }
+}

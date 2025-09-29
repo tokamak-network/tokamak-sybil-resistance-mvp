@@ -1,5 +1,9 @@
+#node_modules
+node_modules/
+
 #scoring_algorithm_js
 circuits/scoring_algorithm_js/
+circuits/build/
 
 #circom
 *.r1cs
@@ -12,11 +16,15 @@ tmp
 *.zkey
 verification_key.json
 # verifier.sol
+# verifier.sol
 
 #proof
 proof.json
 public.json
 *.wtns
+
+# Circom test circuits
+*.test.circom
 
 #.env
 sequencer/.env

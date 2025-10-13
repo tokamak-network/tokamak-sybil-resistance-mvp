@@ -122,8 +122,10 @@ contract Sybil is
     event ScoringRequiredBalanceUpdated(uint256 newBalance);
 
     /// @notice Emitted when a user's score is verified
+    /// @param user The address of the user
+    /// @param score The user's new score value
     /// @param batchNum The batch number containing the score root to verify against
-    event ProveScore(uint32 batchNum);
+    event ProveScore(address user, uint32 score, uint32 batchNum);
 
     /**
      * @notice Initializes the contract with the specified parameters
@@ -368,7 +370,7 @@ contract Sybil is
 
         scoreSnapshots[msg.sender].batchNum = batchNum;
         scoreSnapshots[msg.sender].score = score;
-        emit ProveScore(batchNum);
+        emit ProveScore(msg.sender, score, batchNum);
     }
 
     function demoSmTVerifier(

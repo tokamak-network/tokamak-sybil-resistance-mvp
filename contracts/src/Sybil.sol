@@ -121,6 +121,10 @@ contract Sybil is
     /// @param newBalance New required balance for scoring
     event ScoringRequiredBalanceUpdated(uint256 newBalance);
 
+    /// @notice Emitted when a user's score is verified
+    /// @param batchNum The batch number containing the score root to verify against
+    event ProveScore(uint32 batchNum);
+
     /**
      * @notice Initializes the contract with the specified parameters
      * @dev This function can only be called once during the deployment of the contract
@@ -337,7 +341,7 @@ contract Sybil is
     /**
      * @notice Proves a user's score using a Merkle proof against a specific batch's score root
      * @dev Verifies the user's score using sparse Merkle tree verification
-     * @param numScoreRoot The batch number containing the score root to verify against
+     * @param batchNum The batch number containing the score root to verify against
      * @param targetIdx The user's account index in the tree
      * @param score The claimed score value
      * @param siblings Array of sibling hashes for the Merkle proof
@@ -345,7 +349,7 @@ contract Sybil is
      * @dev Updates the user's score snapshot upon successful verification
      */
     function proveScoreMerkleProof(
-        uint32 numScoreRoot,
+        uint32 batchNum,
         uint24 targetIdx,
         uint32 score,
         uint256[] calldata siblings
@@ -356,14 +360,15 @@ contract Sybil is
         uint256[1] memory arrayState;
         arrayState[0] = score;
         uint256 stateHash = _insPoseidonUnit1.poseidon(arrayState);
-        uint256 scoreRoot = scoreRootMap[numScoreRoot];
+        uint256 scoreRoot = scoreRootMap[batchNum];
 
         if (!_smtVerifier(scoreRoot, siblings, targetIdx, stateHash)) {
             revert SmtProofInvalid();
         }
 
-        scoreSnapshots[msg.sender].batchNum = numScoreRoot;
+        scoreSnapshots[msg.sender].batchNum = batchNum;
         scoreSnapshots[msg.sender].score = score;
+        emit ProveScore(batchNum);
     }
 
     function demoSmTVerifier(

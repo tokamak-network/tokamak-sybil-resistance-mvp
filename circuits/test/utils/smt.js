@@ -74,6 +74,13 @@ class SmtTree {
 
         return siblings;
     }
+
+    getEmptySiblings(n) {
+        if (!this.initialized) {
+            throw new Error("SMT must be initialized before calling getEmptySiblings");
+        }
+        return Array(n).fill(this.Fr.toString(this.Fr.zero));
+    }
 }
 
 /**

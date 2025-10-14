@@ -8,6 +8,9 @@ template BatchMain(nTx, nLevels) {
     // Public output signals
     signal output hashGlobalInputs;
 
+    // Public input
+    signal input explodeAmount;
+
     // Private signals that participate in hash inputs
     signal input oldLastIdx;
     signal input oldAccountRoot;

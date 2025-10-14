@@ -12,6 +12,6 @@
     "prove_score_inclusion": {
         "file": "circuits/prove_score_inclusion",
         "template": "ProveScoreInclusion",
-        "params": [2]
+        "params": [4]
     }
 }

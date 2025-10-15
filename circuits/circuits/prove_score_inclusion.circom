@@ -12,6 +12,9 @@ template ProveScoreInclusion(nLevels) {
     signal input root;
     signal input siblings[nLevels];
 
+    // public output
+    signal output publicRoot;
+
     // Instantiate the SMTVerifier from circomlib
     component verifier = SMTVerifier(nLevels);
 
@@ -27,4 +30,6 @@ template ProveScoreInclusion(nLevels) {
     verifier.key <== idx;
     verifier.value <== score;
     verifier.fnc <== 0; // fnc to use inclusion proof
+
+    publicRoot <== root;
 }

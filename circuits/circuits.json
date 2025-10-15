@@ -1,17 +1,12 @@
 {
-    "singleTx": {
-        "file": "circuits/singleTx",
-        "template": "SingleTx",
-        "params": [1]
-    },
-    "scoring": {
-        "file": "circuits/scoring_algorithm",
-        "template": "ScoringAlgorithm",
-        "params": [7, 63]
-    },
-    "prove_score_inclusion": {
-        "file": "circuits/prove_score_inclusion",
-        "template": "ProveScoreInclusion",
-        "params": [4]
-    }
+  "batch_main": {
+    "file": "main/batch_main",
+    "template": "BatchMain",
+    "params": [16, 1]
+  },
+  "prove_score_inclusion": {
+    "file": "main/prove_score_inclusion",
+    "template": "ProveScoreInclusion",
+    "params": [4]
+  }
 }

@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { execCommand } from './utils/helpers.mjs'
-import { log } from './utils/logger.mjs'
+import { execCommand } from './helpers.mjs'
+import { log } from './logger.mjs'
 
 // Download PTAU file if not exists
 export async function downloadPtau(ptauFile, projectDir) {

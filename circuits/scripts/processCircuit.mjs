@@ -1,8 +1,8 @@
 import { compileCircuit } from './compileCircuit.mjs'
 import { getCircuitInfo } from './utils/getCircuitInfo.mjs'
-import { downloadPtau } from './downloadPtau.mjs'
 import { generateKeys } from './generateKeys.mjs'
 import { generateVerifierContract } from './generateVerifierContract.mjs'
+import { downloadPtau } from './utils/downloadPtau.mjs'
 import { getPtauFile } from './utils/helpers.mjs'
 import { log, colors } from './utils/logger.mjs'
 

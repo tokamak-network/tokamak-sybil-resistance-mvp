@@ -15,7 +15,7 @@ import { wasm as tester } from "circom_tester";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import { compressTxData } from "../utils/test-utils.js";
+import { compressTxData } from "../utils/testUtils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

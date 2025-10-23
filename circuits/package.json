@@ -6,7 +6,9 @@
   "scripts": {
     "verifier": "node scripts/generateVerifier.mjs",
     "verifier:old": "bash scripts/generate-verifier.sh",
-    "test": "mocha test"
+    "test": "mocha 'test/**/*.test.js' --timeout 120000",
+    "test:rollup": "mocha 'test/rollup/**/*.test.js' --timeout 60000",
+    "test:watch": "mocha 'test/unit/**/*.test.js' --watch"
   },
   "keywords": [],
   "author": "",

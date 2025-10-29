@@ -49,11 +49,11 @@ contract Sybil is
     uint256 constant _RFIELD =
         21888242871839275222246405745257275088548364400416034343698204186575808495617;
     
-    /// @notice Minimum balance that must remain in an account after deposit
-    uint256 public _MIN_BALANCE = 1;
     /// @notice Admin role identifier for access control
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
+    /// @notice Minimum balance that must remain in an account after deposit
+    uint256 public minBalance;
     /// @notice Last assigned account index
     uint24 public lastIdx;
     /// @notice Index of the last added transaction
@@ -61,11 +61,11 @@ contract Sybil is
     /// @notice Index of the last forged transaction
     uint256 public lastForgedTxn;
     /// @notice Number of transactions required to form a complete batch
-    uint256 public batchSize = 5;
+    uint256 public batchSize;
     /// @notice Amount deducted from exploded accounts as penalty
-    uint256 public explodeAmount = (1 << 50);
+    uint256 public explodeAmount;
     /// @notice Minimum balance required to participate in scoring
-    uint256 public scoringRequiredBalance = (1 << 16);
+    uint256 public scoringRequiredBalance;
     /// @notice Last forged batch number
     uint32 public lastForgedBatch;
 
@@ -152,6 +152,12 @@ contract Sybil is
         verifier = IVerifier(_verifier);
 
         _initializeHelpers(_poseidon1Elements, _poseidon2Elements, _poseidon3Elements);
+        
+        // Initialize values
+        minBalance = 1;
+        batchSize = 5;
+        explodeAmount = (1 << 50);
+        scoringRequiredBalance = (1 << 16);
     }
 
     /**
@@ -165,7 +171,7 @@ contract Sybil is
         if (msg.value >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (msg.value < _MIN_BALANCE) {
+        if (msg.value < minBalance) {
             revert InsufficientETH();
         }
         if (info.balance == 0) {
@@ -190,7 +196,7 @@ contract Sybil is
         if (amount >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (amount + _MIN_BALANCE > info.balance) {
+        if (amount + minBalance > info.balance) {
             revert InsufficientBalance();
         }
 
@@ -269,7 +275,7 @@ contract Sybil is
             address toEthAddr = toEthAddrs[i];
             AccountInfo memory receiverInfo = accountInfo[toEthAddr];
             uint192 penalty = uint192(
-                Math.min(explodeAmount, receiverInfo.balance - _MIN_BALANCE)
+                Math.min(explodeAmount, receiverInfo.balance - minBalance)
             );
             unchecked {
                 accountInfo[toEthAddr].balance = receiverInfo.balance - penalty;

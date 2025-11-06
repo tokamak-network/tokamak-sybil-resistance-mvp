@@ -110,7 +110,8 @@ describe("NodeHasher circuit test", function () {
    * [X] hash a vertex with degree 59 (current maximum degree)
    * [X] hash a vertex with degree 29 (14+15)
    * INVALID
-   * [X] fail with degree 60
+   * [X] fail with nbr_arr not ascending
+   * [X] fail with degree 60 (exceed padLength)
    *
    */
 

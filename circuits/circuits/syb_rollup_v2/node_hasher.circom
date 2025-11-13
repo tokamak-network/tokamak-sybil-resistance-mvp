@@ -3,46 +3,42 @@ pragma circom 2.0.0;
 include "../../node_modules/circomlib/circuits/poseidon.circom";
 include "../../node_modules/circomlib/circuits/comparators.circom";
 
-// NodeHasher: Computes NodeHash_G(v) for a vertex in the GraphTree
+// NodeHasher: Computes NbrHash_G(v) for a vertex in the GraphTree
 //
-// NodeHash Algorithm:
-// - First block B_0: [v, d, u_0, ..., u_13]  (14 neighbors)
+// NbrHash Algorithm (based on NbrData_G(v) = [d, u_0, u_1, ..., u_{d-1}]):
+// - First block B_0: [d, u_0, ..., u_14]  (15 neighbors)
 // - acc = Poseidon_16(B_0)
 // - For remaining neighbors, process in chunks of 15:
-//   - B_b = [acc, u_14+(b-1)*15, ..., u_14+(b-1)*15+14]
+//   - B_b = [acc, u_15+(b-1)*15, ..., u_15+(b-1)*15+14]
 //   - acc = Poseidon_16(B_b)
 //
 // Key Features:
 // - Enforces that nbr_arr[i] == 0 when i >= d (proper padding verification)
 // - Enforces strictly ascending order: nbr_arr[i] < nbr_arr[i+1] for i in 0..d-2
-// - NO domain separation tags
-// - First block: 14 neighbors, Continuation blocks: 15 neighbors each
+// - All blocks: 15 neighbors each
 //
 // Parameters:
 //   maxDeg - Maximum degree a node can have (fixed at compile time)
 //
 // Inputs:
-//   v - Vertex ID
 //   d - Degree of vertex (number of actual neighbors)
 //   nbr_arr[padLen] - Neighbor array MUST be padded with zeros when i >= d
-//                     where padLen = 14 + 15*numR
+//                     where padLen = 15*numR, numR = ceil(maxDeg/15)
 //
 // Output:
-//   hash - NodeHash_G(v)
+//   hash - NbrHash_G(v)
 //
 template NodeHasher(maxDeg) {
     assert(maxDeg >= 1);
-    // TODO: do we need to check anything with maxDeg?
-
-    signal input v;               // Vertex ID
+    
     signal input d;               // Degree (actual number of neighbors)
 
-    // Calculate number of continuation rounds needed
-    // numR = ceil((maxDeg - 14) / 15)
-    var numR = maxDeg <= 14 ? 0 : (maxDeg - 14 + 14) \ 15;
+    // Calculate number of rounds needed
+    // numR = ceil(maxDeg / 15)
+    var numR = (maxDeg + 14) \ 15;
 
-    // padLen = 14 + 15 * numR (exactly fits into numR + 1 hashing rounds)
-    var padLen = 14 + 15 * numR;
+    // padLen = 15 * numR (exactly fits into numR hashing rounds)
+    var padLen = 15 * numR;
 
     signal input nbr_arr[padLen]; // Neighbor array (must be properly padded)
     signal output hash;
@@ -84,31 +80,30 @@ template NodeHasher(maxDeg) {
         }
     }
 
-    // HASHING: First block [v, d, nbr[0..13]]
+    // HASHING: First block B_0 = [d, nbr[0..14]] (15 neighbors)
     component firstHash = Poseidon(16);
-    firstHash.inputs[0] <== v;
-    firstHash.inputs[1] <== d;
-    for (var i = 0; i < 14; i++) {
-        firstHash.inputs[2 + i] <== nbr_arr[i];
+    firstHash.inputs[0] <== d;
+    for (var i = 0; i < 15; i++) {
+        firstHash.inputs[1 + i] <== nbr_arr[i];
     }
 
     // HASHING: Continuation blocks (15 neighbors each)
-    signal acc[numR + 1];
+    signal acc[numR];
     acc[0] <== firstHash.out;
 
-    component contHash[numR];
-    for (var round = 0; round < numR; round++) {
-        contHash[round] = Poseidon(16);
-        contHash[round].inputs[0] <== acc[round];
+    component contHash[numR - 1];
+    for (var round = 1; round < numR; round++) {
+        contHash[round - 1] = Poseidon(16);
+        contHash[round - 1].inputs[0] <== acc[round - 1];
 
-        var startIdx = 14 + round * 15;
+        var startIdx = 15 + (round - 1) * 15;
         for (var i = 0; i < 15; i++) {
             var idx = startIdx + i;
-            contHash[round].inputs[1 + i] <== nbr_arr[idx];
+            contHash[round - 1].inputs[1 + i] <== nbr_arr[idx];
         }
 
-        acc[round + 1] <== contHash[round].out;
+        acc[round] <== contHash[round - 1].out;
     }
 
-    hash <== acc[numR];
+    hash <== acc[numR - 1];
 }

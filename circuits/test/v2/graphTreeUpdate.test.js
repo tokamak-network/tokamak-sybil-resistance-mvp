@@ -111,11 +111,26 @@ describe("GraphTreeUpdate circuit test", function () {
     return padded.map((x) => x.toString());
   }
 
+  /**
+   * TEST CASES
+   * 
+   * VALID UPDATES
+   * [X] update GraphTree when adding edge {1,2} (no existing edges)
+   * [X] update GraphTree when adding edge {2,5} with existing edges
+   * 
+   * INVALID UPDATES - Precondition Failures
+   * [X] fail when u equals v (no self-loops)
+   * [X] fail when u or v is 0 (reserved index)
+   * [X] fail when u or v exceeds 2^nLevels (out of tree bounds)
+   * [X] fail when newDegU != oldDegU + 1 (invalid degree increment for U)
+   * [X] fail when newDegV != oldDegV + 1 (invalid degree increment for V)
+   * [X] fail when degree exceeds maxDeg
+   */
 
-  it("should update GraphTree when adding edge {0,1}", async () => {
-    // Initial state: vertices 0 and 1 have no edges
-    const u = 0;
-    const v = 1;
+  it("should update GraphTree when adding edge {1,2}", async () => {
+    // Initial state: vertices 1 and 2 have no edges
+    const u = 1;
+    const v = 2;
 
     // Old state (before adding edge)
     const oldDegU = 0;
@@ -123,11 +138,11 @@ describe("GraphTreeUpdate circuit test", function () {
     const oldNbrArrU = [];
     const oldNbrArrV = [];
 
-    // New state (after adding edge {0,1})
+    // New state (after adding edge {1,2})
     const newDegU = 1;
     const newDegV = 1;
-    const newNbrArrU = [1]; // vertex 0 now connected to vertex 1
-    const newNbrArrV = [0]; // vertex 1 now connected to vertex 0
+    const newNbrArrU = [2]; // vertex 1 now connected to vertex 2
+    const newNbrArrV = [1]; // vertex 2 now connected to vertex 1
 
     // Compute hashes
     const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
@@ -188,11 +203,13 @@ describe("GraphTreeUpdate circuit test", function () {
     console.log(`  Expected new root: ${expectedNewRoot.slice(0, 20)}...`);
 
     assert.equal(circuitNewRoot, expectedNewRoot);
-    console.log("  ✓ GraphTree updated correctly for edge {0,1}");
+    console.log("  ✓ GraphTree updated correctly for edge {1,2}");
   });
 
+  
+
   it("should update GraphTree when adding edge {2,5} with existing edges", async () => {
-    // Vertex 2 already has edges to [0, 3]
+    // Vertex 2 already has edges to [1, 3]
     // Vertex 5 already has edges to [1, 4]
     // Now adding edge {2,5}
     const u = 2;
@@ -201,14 +218,14 @@ describe("GraphTreeUpdate circuit test", function () {
     // Old state (before adding edge)
     const oldDegU = 2;
     const oldDegV = 2;
-    const oldNbrArrU = [0, 3];
+    const oldNbrArrU = [1, 3];
     const oldNbrArrV = [1, 4];
 
     // New state (after adding edge {2,5})
     const newDegU = 3;
     const newDegV = 3;
-    const newNbrArrU = [0, 3, 5]; // Added 5
-    const newNbrArrV = [1, 4, 5]; // Added 2 (but wait, should be sorted, so [1, 2, 4])
+    const newNbrArrU = [1, 3, 5]; // Added 5
+    const newNbrArrV = [1, 4, 5]; // Added 2 (should be sorted, so [1, 2, 4])
 
     // Fix: neighbors must be sorted
     const newNbrArrVSorted = [1, 2, 4];
@@ -317,6 +334,115 @@ describe("GraphTreeUpdate circuit test", function () {
     }
   });
 
+  it("should fail when newDegU != oldDegU + 1", async () => {
+    const u = 3;
+    const v = 7;
+
+    const oldDegU = 2;
+    const oldDegV = 1;
+    const oldNbrArrU = [1, 5];
+    const oldNbrArrV = [2];
+
+    const newDegU = 4; // Invalid! Should be 3 (oldDegU + 1), but claiming 4
+    const newDegV = 2; // Valid
+    const newNbrArrU = [1, 5, 7];
+    const newNbrArrV = [2, 3];
+
+    // Build tree
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(u, oldHashU);
+    await tree.insert(v, oldHashV);
+
+    const oldRoot = await tree.getRoot();
+    const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
+    const siblingsV = ensureSiblingsLength(await tree.getSiblings(v));
+
+    const input = {
+      u: u.toString(),
+      v: v.toString(),
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(), // Claiming 4 instead of 3!
+      newDegV: newDegV.toString(),
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU),
+      newNbrArrV: padNeighbors(newNbrArrV),
+      siblingsU: siblingsU,
+      siblingsV: siblingsV,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    try {
+      await circuit.calculateWitness(input, true);
+      assert.fail("Should have failed with newDegU != oldDegU + 1");
+    } catch (error) {
+      assert(error.message.includes("Assert Failed"));
+      console.log(`  ✓ Correctly rejected newDegU=${newDegU} when oldDegU=${oldDegU} (expected ${oldDegU + 1})`);
+    }
+  });
+
+  it("should fail when newDegV != oldDegV + 1", async () => {
+    const u = 4;
+    const v = 8;
+
+    const oldDegU = 1;
+    const oldDegV = 3;
+    const oldNbrArrU = [2];
+    const oldNbrArrV = [1, 5, 9];
+
+    const newDegU = 2; // Valid
+    const newDegV = 5; // Invalid! Should be 4 (oldDegV + 1), but claiming 5
+    const newNbrArrU = [2, 8];
+    const newNbrArrV = [1, 4, 5, 9];
+
+    // Build tree
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(u, oldHashU);
+    await tree.insert(v, oldHashV);
+
+    const oldRoot = await tree.getRoot();
+    const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
+
+    // Update U first
+    const newHashU = BigInt(computeNbrHash(newDegU, newNbrArrU));
+    await tree.update(u, newHashU);
+
+    const siblingsV = ensureSiblingsLength(await tree.getSiblings(v));
+
+    const input = {
+      u: u.toString(),
+      v: v.toString(),
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(),
+      newDegV: newDegV.toString(), // Claiming 5 instead of 4!
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU),
+      newNbrArrV: padNeighbors(newNbrArrV),
+      siblingsU: siblingsU,
+      siblingsV: siblingsV,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    try {
+      await circuit.calculateWitness(input, true);
+      assert.fail("Should have failed with newDegV != oldDegV + 1");
+    } catch (error) {
+      assert(error.message.includes("Assert Failed"));
+      console.log(`  ✓ Correctly rejected newDegV=${newDegV} when oldDegV=${oldDegV} (expected ${oldDegV + 1})`);
+    }
+  });
+
   it("should fail when degree exceeds maxDeg", async () => {
     const u = 7;
     const v = 8;
@@ -368,6 +494,116 @@ describe("GraphTreeUpdate circuit test", function () {
     } catch (error) {
       assert(error.message.includes("Assert Failed"));
       console.log("  ✓ Correctly rejected degree > maxDeg");
+    }
+  });
+
+  it("should fail if u or v is 0 (reserved index)", async () => {
+    const u = 0; // Invalid - index 0 is reserved!
+    const v = 5; // Valid
+    
+    const oldDegU = 0;
+    const oldDegV = 0;
+    const oldNbrArrU = [];
+    const oldNbrArrV = [];
+
+    const newDegU = 1;
+    const newDegV = 1;
+    const newNbrArrU = [v];
+    const newNbrArrV = [u];
+
+    // Build tree with old hashes
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(v, oldHashV);
+
+    const oldRoot = await tree.getRoot();
+    // Dummy siblings for u (which is invalid)
+    const siblingsU = Array(N_LEVELS + 1).fill("0");
+    const siblingsV = ensureSiblingsLength(await tree.getSiblings(v));
+
+    const input = {
+      u: u.toString(), // 0 - reserved/invalid!
+      v: v.toString(),
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(),
+      newDegV: newDegV.toString(),
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU),
+      newNbrArrV: padNeighbors(newNbrArrV),
+      siblingsU: siblingsU,
+      siblingsV: siblingsV,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    try {
+      await circuit.calculateWitness(input, true);
+      assert.fail("Should have failed with u=0 (reserved index)");
+    } catch (error) {
+      assert(error.message.includes("Assert Failed"));
+      console.log("  ✓ Correctly rejected u=0 (reserved index)");
+    }
+  });
+
+  it("should fail if u or v exceeds 2^nLevels", async () => {
+    const maxVertexId = Math.pow(2, N_LEVELS) - 1; // Max valid ID is 15 for nLevels=4
+    const invalidVertexId = Math.pow(2, N_LEVELS); // 16 - exceeds max (15)
+    
+    const u = 9; // Valid
+    const v = invalidVertexId; // Invalid!
+    
+    const oldDegU = 0;
+    const oldDegV = 0;
+    const oldNbrArrU = [];
+    const oldNbrArrV = [];
+
+    const newDegU = 1;
+    const newDegV = 1;
+    const newNbrArrU = [v];
+    const newNbrArrV = [u];
+
+    // Build tree with old hashes
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(u, oldHashU);
+    // Note: v is out of bounds, so we can't actually insert it in the tree
+    // But we'll provide a dummy hash for testing
+    const _ = oldHashV;
+
+    const oldRoot = await tree.getRoot();
+    const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
+    // For v, we'll provide dummy siblings
+    const siblingsV = Array(N_LEVELS + 1).fill("0");
+
+    const input = {
+      u: u.toString(),
+      v: v.toString(), // Out of bounds!
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(),
+      newDegV: newDegV.toString(),
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU),
+      newNbrArrV: padNeighbors(newNbrArrV),
+      siblingsU: siblingsU,
+      siblingsV: siblingsV,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    try {
+      await circuit.calculateWitness(input, true);
+      assert.fail(`Should have failed with v=${invalidVertexId} exceeding max ${maxVertexId}`);
+    } catch (error) {
+      assert(error.message.includes("Assert Failed"));
+      console.log(`  ✓ Correctly rejected v=${invalidVertexId} > max ${maxVertexId}`);
     }
   });
 });

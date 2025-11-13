@@ -68,25 +68,48 @@ template GraphTreeUpdate(nLevels, maxDeg) {
     uNotEqV.in[1] <== v;
     uNotEqV.out === 0; // Must be different
     
-    // 2. Check newDegU = oldDegU + 1
+    // 2. Check 0 < u < N (where N = 2^nLevels)
+    var N = 1 << nLevels; // 2^nLevels
+    component checkUGreaterZero = GreaterThan(32);
+    checkUGreaterZero.in[0] <== u;
+    checkUGreaterZero.in[1] <== 0;
+    checkUGreaterZero.out === 1; // u > 0
+    
+    component checkULessThanN = LessThan(32);
+    checkULessThanN.in[0] <== u;
+    checkULessThanN.in[1] <== N;
+    checkULessThanN.out === 1; // u < N
+    
+    // 3.  Check 0 < v < N (where N = 2^nLevels)
+    component checkVGreaterZero = GreaterThan(32);
+    checkVGreaterZero.in[0] <== v;
+    checkVGreaterZero.in[1] <== 0;
+    checkVGreaterZero.out === 1; // v > 0
+    
+    component checkVLessThanN = LessThan(32);
+    checkVLessThanN.in[0] <== v;
+    checkVLessThanN.in[1] <== N;
+    checkVLessThanN.out === 1; // v < N
+
+    // 4. Check newDegU = oldDegU + 1
     newDegU === oldDegU + 1;
     
-    // 3. Check newDegV = oldDegV + 1
+    // 5. Check newDegV = oldDegV + 1
     newDegV === oldDegV + 1;
     
-    // 4. Check newDegU <= maxDeg
+    // 6. Check newDegU <= maxDeg
     component checkMaxDegU = LessEqThan(32);
     checkMaxDegU.in[0] <== newDegU;
     checkMaxDegU.in[1] <== maxDeg;
     checkMaxDegU.out === 1;
     
-    // 5. Check newDegV <= maxDeg
+    // 7. Check newDegV <= maxDeg
     component checkMaxDegV = LessEqThan(32);
     checkMaxDegV.in[0] <== newDegV;
     checkMaxDegV.in[1] <== maxDeg;
     checkMaxDegV.out === 1;
     
-    // COMPUTE OLD HASHES (before adding edge)
+    // ===== COMPUTE OLD HASHES (before adding edge) =====
     
     component oldHashU = NodeHasher(maxDeg);
     oldHashU.d <== oldDegU;
@@ -100,7 +123,7 @@ template GraphTreeUpdate(nLevels, maxDeg) {
         oldHashV.nbr_arr[i] <== oldNbrArrV[i];
     }
     
-    //COMPUTE NEW HASHES (after adding edge)
+    // ===== COMPUTE NEW HASHES (after adding edge) =====
     
     component newHashU = NodeHasher(maxDeg);
     newHashU.d <== newDegU;
@@ -114,7 +137,7 @@ template GraphTreeUpdate(nLevels, maxDeg) {
         newHashV.nbr_arr[i] <== newNbrArrV[i];
     }
     
-    // UPDATE MERKLE TREE
+    // ===== UPDATE MERKLE TREE =====
     
     // First update: Update vertex u's leaf
     // Function: UPDATE (fnc = [0, 1])

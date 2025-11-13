@@ -1,20 +1,28 @@
-const fs = require("fs");
-const path = require("path");
-const { describe, it, before, after } = require("mocha");
-const { strict: assert } = require("assert");
-const { wasm: tester } = require("circom_tester");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { describe, it, before, after } from "mocha";
+import { strict as assert } from "assert";
+import { wasm as tester } from "circom_tester";
+import { SmtTree, generateRandomSmt } from "./utils/smt.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const N_LEVELS = 4;
+const NUM_TESTCASES = 10;
 
 describe("ProveScoreMerkleProof circuit test", function () {
     this.timeout(100000);
 
     let circuit;
     let circuitTmpPath;
+    let smts;
 
     before(async () => {
         const circuitSrc = `
             pragma circom 2.0.0;
             include "../circuits/prove_score_inclusion.circom";
-            component main = ProveScoreInclusion(2);
+            component main = ProveScoreInclusion(4);
         `;
         circuitTmpPath = path.join(__dirname, "prove-score-merkle-proof-temp.circom");
         fs.writeFileSync(circuitTmpPath, circuitSrc, "utf8");
@@ -25,6 +33,10 @@ describe("ProveScoreMerkleProof circuit test", function () {
         });
         await circuit.loadConstraints();
         console.log("Constraints:", circuit.constraints.length);
+
+        // generate x random SMT trees
+        // each SMT has different data.
+        smts = await generateRandomSmt(N_LEVELS, NUM_TESTCASES);
     });
 
     after(() => {
@@ -33,88 +45,143 @@ describe("ProveScoreMerkleProof circuit test", function () {
         }
     });
 
-    it("should fail with invalid idx", async () => {
-        const input = {
-            idx: "20",
-            score: "88", 
-            root: "8199520123371559548495425428157097842501569495702004037304582533739096128775", // Correct root but wrong score
-            siblings: ["0", "0"]
-        };
 
-        try {
-            const w = await circuit.calculateWitness(input, true);
-            await circuit.checkConstraints(w);
-            assert.fail("Expected circuit to fail but it passed");
-        } catch (error) {
-            console.log("Invalid SMT data correctly failed - circuit constraints violated");
-            assert(error.message.includes("Assert Failed"), "Expected assert failure");
-        }
-    });
-
-    it ("should fail with invalid score", async () => {
-        const input = {
-            idx: "8",
-            score: "16",
-            root: "8199520123371559548495425428157097842501569495702004037304582533739096128775",
-            siblings: ["0", "0"]
-        };
-
-        try {
-            const w = await circuit.calculateWitness(input, true);
-            await circuit.checkConstraints(w);
-            assert.fail("Expected circuit to fail but it passed");
-        } catch (error) {
-            console.log("Invalid SMT data correctly failed - circuit constraints violated");
-            assert(error.message.includes("Assert Failed"), "Expected assert failure");
-        }
-    })
-
-    it("should fail with completely wrong root", async () => {
-        const input = {
-            idx: "8",
-            score: "88",
-            root: "123456789", // Completely wrong root
-            siblings: ["0", "0"]
-        };
-
-        try {
-            const w = await circuit.calculateWitness(input, true);
-            await circuit.checkConstraints(w);
-            assert.fail("Expected circuit to fail but it passed");
-        } catch (error) {
-            console.log("Wrong root correctly failed - circuit constraints violated");
-            assert(error.message.includes("Assert Failed"), "Expected assert failure");
-        }
-    });
-
-    it("should prove score inclusion with valid SMT data", async () => {
-        // Using valid SMT test data from test_data.json 
-        // This tests inclusion of key=8, value=88 in an SMT tree
-        const input = {
-            idx: "8",
-            score: "88", 
-            root: "8199520123371559548495425428157097842501569495702004037304582533739096128775",
-            siblings: ["0", "0"]
-        };
-
-        const w = await circuit.calculateWitness(input, true);
-        await circuit.checkConstraints(w);
+    it("should verify a simple single entry SMT", async () => {
+        const smt = new SmtTree(N_LEVELS);
+        await smt.init();
         
-        console.log("Score inclusion proof successful - circuit constraints satisfied");
+        const testKey = 123n;
+        const testScore = 456n;
+        await smt.insert(testKey, testScore);
+        const siblings = await smt.getSiblings(testKey);
+
+        const root = await smt.getRoot();
+        
+        const w = await circuit.calculateWitness({
+            idx: testKey.toString(),
+            score: testScore.toString(),
+            root: smt.Fr.toObject(root),
+            siblings: siblings
+        }, true);
+        
+        await circuit.checkConstraints(w);
     });
 
-    it("should prove inclusion of another valid entry", async () => {
-        // Another valid SMT entry: key=9, value=99
-        const input = {
-            idx: "9",
-            score: "99",
-            root: "9586840611691950490797560970510543395125579325564362838402424088587314740100", 
-            siblings: ["0", "0"]
-        };
+    // testing with undetermined data
+    it("should verify 10 random SMT trees with valid proofs", async () => {
+        for (let i = 0; i < smts.length; i++) {
+            const smt = smts[i];
+            const keys = smt.keys;
+            const scores = smt.scores;
+      
+            try {
+                // Pick a random key to test from this SMT
+                const testIndex = Math.floor(Math.random() * keys.length);
+                const testKey = keys[testIndex];
+                const testScore = scores[testIndex];
 
-        const w = await circuit.calculateWitness(input, true);
-        await circuit.checkConstraints(w);
+                // Get proof for the test key
+                const siblings = await smt.getSiblings(testKey);
+                const root = await smt.getRoot();
+
+                // Verify the proof
+                const w = await circuit.calculateWitness({
+                    idx: testKey.toString(),
+                    score: testScore.toString(),
+                    root: smt.Fr.toObject(root),
+                    siblings: siblings
+                }, true);
+
+                await circuit.checkConstraints(w);
+            } catch (error) {
+                throw new Error(
+                    `SMT ${i} failed verification for undetermined data: ${error.message}`
+                );
+            }
+        }
+    });
+
+    it("should fail with invalid proof (wrong siblings)", async () => {
+        const smt = new SmtTree(N_LEVELS);
+        await smt.init();
         
-        console.log("Second inclusion proof successful - circuit constraints satisfied");
+        const testKey = 123n;
+        const testScore = 456n;
+        await smt.insert(testKey, testScore);
+        
+        const root = await smt.getRoot();
+        const Fr = smt.Fr;
+        
+        // Use wrong siblings
+        const wrongSiblings = [999, 888, 777, 666];
+        
+        try {
+            await circuit.calculateWitness({
+                idx: testKey.toString(),
+                score: testScore.toString(),
+                root: Fr.toObject(root),
+                siblings: wrongSiblings
+            }, true);
+            throw new Error("Should have failed with wrong siblings");
+        } catch (error) {
+            assert(error.message.includes("Assert Failed"), `Expected circuit to reject with Assert Failed, but got: ${error.message}`);
+        }
+    });
+
+    it("should fail with wrong score", async () => {
+        const smt = new SmtTree(N_LEVELS);
+        await smt.init();
+        
+        const testKey = 123n;
+        const testScore = 456n;
+        await smt.insert(testKey, testScore);
+        
+        const siblings = await smt.getSiblings(testKey);        
+        const root = await smt.getRoot();
+        
+        try {
+            await circuit.calculateWitness({
+                idx: testKey.toString(),
+                score: "999", // Wrong score
+                root: smt.Fr.toObject(root),
+                siblings: siblings
+            }, true);
+            throw new Error("Should have failed with wrong score");
+        } catch (error) {
+            assert(error.message.includes("Assert Failed"), `Expected circuit to reject with Assert Failed, but got: ${error.message}`);
+        }
+    });
+
+    it("should handle multiple entries in same SMT", async () => {
+        const smt = new SmtTree(N_LEVELS);
+        await smt.init();
+        
+        // Insert multiple entries
+        const entries = [
+            { key: 1n, score: 100n },
+            { key: 2n, score: 200n },
+            { key: 3n, score: 300n }
+        ];
+        
+        for (const entry of entries) {
+            await smt.insert(entry.key, entry.score);
+        }
+        
+        // Test each entry
+        for (const entry of entries) {
+            const siblings = await smt.getSiblings(entry.key);            
+            const root = await smt.getRoot();
+            
+            const w = await circuit.calculateWitness({
+                idx: entry.key.toString(),
+                score: entry.score.toString(),
+                root: smt.Fr.toObject(root),
+                siblings: siblings
+            }, true);
+            
+            await circuit.checkConstraints(w);
+        }
+        
+        console.log("✓ Multiple entries in same SMT verified successfully");
     });
 });

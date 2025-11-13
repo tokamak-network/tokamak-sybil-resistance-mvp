@@ -68,10 +68,10 @@ describe("NodeHasher circuit test", function () {
       paddedNbrs.push(0);
     }
 
-    console.log(`  Computing NbrHash for degree ${d}`);
-    console.log(
-      `  Neighbors: [${neighbors.join(", ")}]${neighbors.length < PAD_LEN ? " + padding" : ""}`,
-    );
+    // console.log(`  Computing NbrHash for degree ${d}`);
+    // console.log(
+    //   `  Neighbors: [${neighbors.join(", ")}]${neighbors.length < PAD_LEN ? " + padding" : ""}`,
+    // );
 
     // First block: B_0 = [d, nbr[0..14]] (15 neighbors)
     const firstBlock = [d];
@@ -81,7 +81,7 @@ describe("NodeHasher circuit test", function () {
 
     // accumulator
     let acc = poseidon.F.toString(poseidon(firstBlock));
-    console.log(`  Block 0 hash: ${acc.slice(0, 20)}...`);
+    // console.log(`  Block 0 hash: ${acc.slice(0, 20)}...`);
 
     // Continuation blocks (15 neighbors each)
     const numR = Math.ceil(MAX_DEG / 15);
@@ -96,10 +96,10 @@ describe("NodeHasher circuit test", function () {
       }
 
       acc = poseidon.F.toString(poseidon(block));
-      console.log(`  Block ${round} hash: ${acc.slice(0, 20)}...`);
+      // console.log(`  Block ${round} hash: ${acc.slice(0, 20)}...`);
     }
 
-    console.log(`  Final hash: ${acc}`);
+    // console.log(`  Final hash: ${acc}`);
     return acc;
   }
 
@@ -134,10 +134,8 @@ describe("NodeHasher circuit test", function () {
     await circuit.checkConstraints(w);
 
     const circuitOutput = w[1].toString();
-    console.log(`  Circuit output: ${circuitOutput}`);
 
     assert.equal(circuitOutput, expectedHash);
-    console.log("  ✓ Hash verified for degree 0");
   });
 
   it("should hash a vertex with degree 1", async () => {
@@ -161,7 +159,6 @@ describe("NodeHasher circuit test", function () {
     const circuitOutput = w[1].toString();
 
     assert.equal(circuitOutput, expectedHash);
-    console.log("  ✓ Hash verified for degree 1");
   });
 
   it("should hash a vertex with degree 5 (within first block)", async () => {
@@ -185,7 +182,6 @@ describe("NodeHasher circuit test", function () {
     const circuitOutput = w[1].toString();
 
     assert.equal(circuitOutput, expectedHash);
-    console.log("  ✓ Hash verified for degree 5");
   });
 
   it("should hash a vertex with degree 15 (exactly fills first block)", async () => {
@@ -209,7 +205,6 @@ describe("NodeHasher circuit test", function () {
     const circuitOutput = w[1].toString();
 
     assert.equal(circuitOutput, expectedHash);
-    console.log("  ✓ Hash verified for degree 15");
   });
 
   it("should hash a vertex with degree 20 (needs 2 blocks)", async () => {
@@ -236,7 +231,6 @@ describe("NodeHasher circuit test", function () {
     const circuitOutput = w[1].toString();
 
     assert.equal(circuitOutput, expectedHash);
-    console.log("  ✓ Hash verified for degree 20");
   });
 
   it("should hash a vertex with degree 60 (maximum degree, perfect fit)", async () => {
@@ -257,7 +251,6 @@ describe("NodeHasher circuit test", function () {
     const circuitOutput = w[1].toString();
 
     assert.equal(circuitOutput, expectedHash);
-    console.log("  ✓ Hash verified for degree 60 (perfect block fit)");
   });
 
   it("should hash a vertex with degree 30 (boundary: 15*2)", async () => {
@@ -282,7 +275,6 @@ describe("NodeHasher circuit test", function () {
     const circuitOutput = w[1].toString();
 
     assert.equal(circuitOutput, expectedHash);
-    console.log("  ✓ Hash verified for degree 30");
   });
 
   it("should fail with nbr_arr is not ascending", async () => {

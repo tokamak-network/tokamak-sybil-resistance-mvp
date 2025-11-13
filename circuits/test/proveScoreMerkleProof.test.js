@@ -181,7 +181,5 @@ describe("ProveScoreMerkleProof circuit test", function () {
             
             await circuit.checkConstraints(w);
         }
-        
-        console.log("✓ Multiple entries in same SMT verified successfully");
     });
 });

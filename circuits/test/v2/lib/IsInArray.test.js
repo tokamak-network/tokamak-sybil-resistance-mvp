@@ -55,7 +55,6 @@ describe("IsInArray template test", function () {
     // Check output: out should be 0 (target not in array)
     const out = w[1];
     assert.equal(out.toString(), "0");
-    console.log(`  ✓ Correctly accepted target=${target} not in array (output: out=0)`);
   });
 
   it("should pass when array contains zeros and target is non-zero", async () => {
@@ -73,7 +72,6 @@ describe("IsInArray template test", function () {
     // Check output: out should be 0 (target not in array)
     const out = w[1];
     assert.equal(out.toString(), "0");
-    console.log("  ✓ Correctly handled padded array with zeros (output: out=0)");
   });
 
   it("should return 1 when target is in array (beginning)", async () => {
@@ -91,7 +89,6 @@ describe("IsInArray template test", function () {
     // Check output: out should be 1 (target found once)
     const out = w[1];
     assert.equal(out.toString(), "1");
-    console.log(`  ✓ Correctly detected target=${target} at beginning (output: out=1)`);
   });
 
   it("should return 1 when target is in array (middle)", async () => {
@@ -109,7 +106,6 @@ describe("IsInArray template test", function () {
     // Check output: out should be 1 (target found once)
     const out = w[1];
     assert.equal(out.toString(), "1");
-    console.log(`  ✓ Correctly detected target=${target} in middle (output: out=1)`);
   });
 
   it("should return 1 when target is in array (end)", async () => {
@@ -127,7 +123,6 @@ describe("IsInArray template test", function () {
     // Check output: out should be 1 (target found once)
     const out = w[1];
     assert.equal(out.toString(), "1");
-    console.log(`  ✓ Correctly detected target=${target} at end (output: out=1)`);
   });
 
   // This case is solved by NodeHasher's strictly ascending check. so no need to check here.
@@ -146,8 +141,6 @@ describe("IsInArray template test", function () {
     // Check output: out should be 4 (target found 4 times)
     const out = w[1];
     assert.equal(out.toString(), "4");
-    console.log(`  ✓ Correctly counted target=${target} appearing 4 times (output: out=4)`);
-    console.log(`    Note: In practice, NodeHasher prevents duplicates via strictly ascending check`);
   });
 });
 

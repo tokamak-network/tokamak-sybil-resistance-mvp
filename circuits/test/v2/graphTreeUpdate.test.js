@@ -151,11 +151,6 @@ describe("GraphTreeUpdate circuit test", function () {
     const newHashU = BigInt(computeNbrHash(newDegU, newNbrArrU));
     const newHashV = BigInt(computeNbrHash(newDegV, newNbrArrV));
 
-    console.log(`  Old hash U: ${oldHashU.toString().slice(0, 20)}...`);
-    console.log(`  Old hash V: ${oldHashV.toString().slice(0, 20)}...`);
-    console.log(`  New hash U: ${newHashU.toString().slice(0, 20)}...`);
-    console.log(`  New hash V: ${newHashV.toString().slice(0, 20)}...`);
-
     // Build initial tree with old hashes at leaves 0 and 1
     const tree = new SmtTree(N_LEVELS);
     await tree.init();
@@ -163,7 +158,6 @@ describe("GraphTreeUpdate circuit test", function () {
     await tree.insert(v, oldHashV);
 
     const oldRoot = await tree.getRoot();
-    console.log(`  Old root: ${F.toString(oldRoot).slice(0, 20)}...`);
 
     // Get Merkle proof for U from original tree
     const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
@@ -196,15 +190,12 @@ describe("GraphTreeUpdate circuit test", function () {
     await circuit.checkConstraints(w);
 
     const circuitNewRoot = w[1].toString();
-    console.log(`  Circuit new root: ${circuitNewRoot.slice(0, 20)}...`);
 
     // Compute expected new root by updating V (U already updated for proof generation)
     await tree.update(v, newHashV);
     const expectedNewRoot = F.toString(await tree.getRoot());
-    console.log(`  Expected new root: ${expectedNewRoot.slice(0, 20)}...`);
 
     assert.equal(circuitNewRoot, expectedNewRoot);
-    console.log("  ✓ GraphTree updated correctly for edge {1,2}");
   });
 
   
@@ -282,7 +273,6 @@ describe("GraphTreeUpdate circuit test", function () {
     const expectedNewRoot = F.toString(await tree.getRoot());
 
     assert.equal(circuitNewRoot, expectedNewRoot);
-    console.log("  ✓ GraphTree updated correctly for edge {2,5}");
   });
 
   it("should fail when u equals v", async () => {
@@ -331,7 +321,6 @@ describe("GraphTreeUpdate circuit test", function () {
       assert.fail("Should have failed with u == v");
     } catch (error) {
       assert(error.message.includes("Assert Failed"));
-      console.log("  ✓ Correctly rejected u == v");
     }
   });
 
@@ -383,7 +372,6 @@ describe("GraphTreeUpdate circuit test", function () {
       assert.fail("Should have failed with newDegU != oldDegU + 1");
     } catch (error) {
       assert(error.message.includes("Assert Failed"));
-      console.log(`  ✓ Correctly rejected newDegU=${newDegU} when oldDegU=${oldDegU} (expected ${oldDegU + 1})`);
     }
   });
 
@@ -440,7 +428,6 @@ describe("GraphTreeUpdate circuit test", function () {
       assert.fail("Should have failed with newDegV != oldDegV + 1");
     } catch (error) {
       assert(error.message.includes("Assert Failed"));
-      console.log(`  ✓ Correctly rejected newDegV=${newDegV} when oldDegV=${oldDegV} (expected ${oldDegV + 1})`);
     }
   });
 
@@ -494,7 +481,6 @@ describe("GraphTreeUpdate circuit test", function () {
       assert.fail("Should have failed with degree > maxDeg");
     } catch (error) {
       assert(error.message.includes("Assert Failed"));
-      console.log("  ✓ Correctly rejected degree > maxDeg");
     }
   });
 
@@ -546,7 +532,6 @@ describe("GraphTreeUpdate circuit test", function () {
       assert.fail("Should have failed with u=0 (reserved index)");
     } catch (error) {
       assert(error.message.includes("Assert Failed"));
-      console.log("  ✓ Correctly rejected u=0 (reserved index)");
     }
   });
 
@@ -605,7 +590,6 @@ describe("GraphTreeUpdate circuit test", function () {
       assert.fail("Should have failed with duplicate edge");
     } catch (error) {
       assert(error.message.includes("Assert Failed"));
-      console.log("  ✓ Correctly rejected duplicate edge {6,10}");
     }
   });
 
@@ -663,7 +647,6 @@ describe("GraphTreeUpdate circuit test", function () {
       assert.fail(`Should have failed with v=${invalidVertexId} exceeding max ${maxVertexId}`);
     } catch (error) {
       assert(error.message.includes("Assert Failed"));
-      console.log(`  ✓ Correctly rejected v=${invalidVertexId} > max ${maxVertexId}`);
     }
   });
 });

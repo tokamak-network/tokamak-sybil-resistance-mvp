@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "verifier": "bash scripts/generate-verifier.sh"
+    "verifier": "bash scripts/generate-verifier.sh",
+    "test:all": "mocha test/*.test.js && mocha test/**/*.test.js",
+    "test": "mocha"
   },
   "keywords": [],
   "author": "",

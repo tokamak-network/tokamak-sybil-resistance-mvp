@@ -125,6 +125,7 @@ describe("GraphTreeUpdate circuit test", function () {
    * [X] fail when newDegU != oldDegU + 1 (invalid degree increment for U)
    * [X] fail when newDegV != oldDegV + 1 (invalid degree increment for V)
    * [X] fail when degree exceeds maxDeg
+   * [X] fail when edge already exists (duplicate edge prevention)
    */
 
   it("should update GraphTree when adding edge {1,2}", async () => {
@@ -549,6 +550,65 @@ describe("GraphTreeUpdate circuit test", function () {
     }
   });
 
+  it("should fail when edge already exists", async () => {
+    const u = 6;
+    const v = 10;
+
+    // Old state: edge {6,10} ALREADY EXISTS
+    const oldDegU = 2;
+    const oldDegV = 1;
+    const oldNbrArrU = [3, 10]; // v=10 is already in u's neighbor list!
+    const oldNbrArrV = [6]; // u=6 is already in v's neighbor list!
+
+    // Attempting to add edge {6,10} again (duplicate!)
+    const newDegU = 3;
+    const newDegV = 2;
+    const newNbrArrU = [3, 10, 10]; // Trying to add 10 again
+    const newNbrArrV = [6, 6]; // Trying to add 6 again
+
+    // Build tree
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(u, oldHashU);
+    await tree.insert(v, oldHashV);
+
+    const oldRoot = await tree.getRoot();
+    const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
+
+    // Update U first
+    const newHashU = BigInt(computeNbrHash(newDegU, newNbrArrU));
+    await tree.update(u, newHashU);
+
+    const siblingsV = ensureSiblingsLength(await tree.getSiblings(v));
+
+    const input = {
+      u: u.toString(),
+      v: v.toString(),
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(),
+      newDegV: newDegV.toString(),
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU),
+      newNbrArrV: padNeighbors(newNbrArrV),
+      siblingsU: siblingsU,
+      siblingsV: siblingsV,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    try {
+      await circuit.calculateWitness(input, true);
+      assert.fail("Should have failed with duplicate edge");
+    } catch (error) {
+      assert(error.message.includes("Assert Failed"));
+      console.log("  ✓ Correctly rejected duplicate edge {6,10}");
+    }
+  });
+
   it("should fail if u or v exceeds 2^nLevels", async () => {
     const maxVertexId = Math.pow(2, N_LEVELS) - 1; // Max valid ID is 15 for nLevels=4
     const invalidVertexId = Math.pow(2, N_LEVELS); // 16 - exceeds max (15)
@@ -607,4 +667,3 @@ describe("GraphTreeUpdate circuit test", function () {
     }
   });
 });
-

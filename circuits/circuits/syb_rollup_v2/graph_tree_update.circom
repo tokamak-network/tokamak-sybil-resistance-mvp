@@ -3,6 +3,7 @@ pragma circom 2.0.0;
 include "../../node_modules/circomlib/circuits/smt/smtprocessor.circom";
 include "../../node_modules/circomlib/circuits/comparators.circom";
 include "./node_hasher.circom";
+include "./lib/is_in_array.circom";
 
 // GraphTreeUpdate: Updates the GraphTree when adding an edge {u,v}
 //
@@ -108,6 +109,24 @@ template GraphTreeUpdate(nLevels, maxDeg) {
     checkMaxDegV.in[0] <== newDegV;
     checkMaxDegV.in[1] <== maxDeg;
     checkMaxDegV.out === 1;
+    
+    // 8. Check that edge {u,v} does NOT already exist
+    // Verify v is NOT in u's old neighbor list
+    component isVInUOldNbr = IsInArray(padLen);
+    for (var i = 0; i < padLen; i++) {
+        isVInUOldNbr.arr[i] <== oldNbrArrU[i];
+    }
+    isVInUOldNbr.target <== v;
+    isVInUOldNbr.out === 0;
+    
+    // 9. Check that edge {u,v} does NOT already exist
+    // Verify u is NOT in v's old neighbor list
+    component isUInVOldNbr = IsInArray(padLen);
+    for (var i = 0; i < padLen; i++) {
+        isUInVOldNbr.arr[i] <== oldNbrArrV[i];
+    }
+    isUInVOldNbr.target <== u;
+    isUInVOldNbr.out === 0;
     
     // ===== COMPUTE OLD HASHES (before adding edge) =====
     

@@ -1,0 +1,374 @@
+import fs from "fs";
+import path from "path";
+import { describe, it, before, after } from "mocha";
+import assert from "assert";
+import { wasm as tester } from "circom_tester";
+import { buildPoseidon } from "circomlibjs";
+import { fileURLToPath } from "url";
+import { SmtTree } from "../utils/smt.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+describe("GraphTreeUpdate circuit test", function () {
+  this.timeout(300000);
+
+  const N_LEVELS = 4; // Tree depth (supports 2^4 = 16 vertices)
+  const MAX_DEG = 15 * 4; // Maximum degree: 60
+  let circuit;
+  let circuitTmpPath;
+  let poseidon;
+  let F;
+
+  // Calculate padLen based on maxDeg
+  function calculatePadLen(maxDeg) {
+    const numR = Math.ceil(maxDeg / 15);
+    return 15 * numR;
+  }
+
+  const PAD_LEN = calculatePadLen(MAX_DEG);
+
+  before(async () => {
+    // Initialize Poseidon hasher
+    poseidon = await buildPoseidon();
+    F = poseidon.F;
+
+    // Create circuit with nLevels=4, maxDeg=60
+    const circuitSrc = `
+            pragma circom 2.0.0;
+            include "../circuits/syb_rollup_v2/graph_tree_update.circom";
+            component main = GraphTreeUpdate(${N_LEVELS}, ${MAX_DEG});
+        `;
+    circuitTmpPath = path.join(__dirname, "graph-tree-update-temp.circom");
+    fs.writeFileSync(circuitTmpPath, circuitSrc, "utf8");
+
+    circuit = await tester(circuitTmpPath, {
+      reduceConstraints: false,
+      include: path.join(__dirname, "../"),
+    });
+    await circuit.loadConstraints();
+    console.log(`\n✓ GraphTreeUpdate circuit compiled`);
+    console.log(`  nLevels=${N_LEVELS}, maxDeg=${MAX_DEG}`);
+    console.log(`  padLen=${PAD_LEN}`);
+    console.log(`  Constraints: ${circuit.constraints.length}\n`);
+  });
+
+  after(() => {
+    if (fs.existsSync(circuitTmpPath)) {
+      fs.unlinkSync(circuitTmpPath);
+    }
+  });
+
+  // Helper function to compute NbrHash
+  function computeNbrHash(d, neighbors) {
+    const paddedNbrs = [...neighbors];
+    while (paddedNbrs.length < PAD_LEN) {
+      paddedNbrs.push(0);
+    }
+
+    // First block: B_0 = [d, nbr[0..14]] (15 neighbors)
+    const firstBlock = [d];
+    for (let i = 0; i < 15; i++) {
+      firstBlock.push(paddedNbrs[i] || 0);
+    }
+
+    let acc = F.toString(poseidon(firstBlock));
+
+    // Continuation blocks (15 neighbors each)
+    const numR = Math.ceil(MAX_DEG / 15);
+
+    for (let round = 1; round < numR; round++) {
+      const block = [BigInt(acc)];
+      const startIdx = 15 + (round - 1) * 15;
+
+      for (let i = 0; i < 15; i++) {
+        const idx = startIdx + i;
+        block.push(paddedNbrs[idx] || 0);
+      }
+
+      acc = F.toString(poseidon(block));
+    }
+
+    return acc;
+  }
+
+  // Helper to pad neighbor array
+  function padNeighbors(neighbors) {
+    const padded = [...neighbors];
+    while (padded.length < PAD_LEN) {
+      padded.push(0);
+    }
+    return padded.map((x) => x.toString());
+  }
+
+  // Helper to ensure siblings array has exactly nLevels + 1 elements
+  // SmtTree.getSiblings returns nLevels elements, but SMTProcessor needs nLevels + 1
+  function ensureSiblingsLength(siblings) {
+    const padded = [...siblings];
+    while (padded.length < N_LEVELS + 1) {
+      padded.push(0);
+    }
+    return padded.map((x) => x.toString());
+  }
+
+
+  it("should update GraphTree when adding edge {0,1}", async () => {
+    // Initial state: vertices 0 and 1 have no edges
+    const u = 0;
+    const v = 1;
+
+    // Old state (before adding edge)
+    const oldDegU = 0;
+    const oldDegV = 0;
+    const oldNbrArrU = [];
+    const oldNbrArrV = [];
+
+    // New state (after adding edge {0,1})
+    const newDegU = 1;
+    const newDegV = 1;
+    const newNbrArrU = [1]; // vertex 0 now connected to vertex 1
+    const newNbrArrV = [0]; // vertex 1 now connected to vertex 0
+
+    // Compute hashes
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+    const newHashU = BigInt(computeNbrHash(newDegU, newNbrArrU));
+    const newHashV = BigInt(computeNbrHash(newDegV, newNbrArrV));
+
+    console.log(`  Old hash U: ${oldHashU.toString().slice(0, 20)}...`);
+    console.log(`  Old hash V: ${oldHashV.toString().slice(0, 20)}...`);
+    console.log(`  New hash U: ${newHashU.toString().slice(0, 20)}...`);
+    console.log(`  New hash V: ${newHashV.toString().slice(0, 20)}...`);
+
+    // Build initial tree with old hashes at leaves 0 and 1
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(u, oldHashU);
+    await tree.insert(v, oldHashV);
+
+    const oldRoot = await tree.getRoot();
+    console.log(`  Old root: ${F.toString(oldRoot).slice(0, 20)}...`);
+
+    // Get Merkle proof for U from original tree
+    const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
+
+    // Update U to get intermediate tree state
+    await tree.update(u, newHashU);
+
+    // Get Merkle proof for V from tree after U update
+    const siblingsV = ensureSiblingsLength(await tree.getSiblings(v));
+
+    // Prepare circuit input
+    const input = {
+      u: u.toString(),
+      v: v.toString(),
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(),
+      newDegV: newDegV.toString(),
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU),
+      newNbrArrV: padNeighbors(newNbrArrV),
+      siblingsU: siblingsU,
+      siblingsV: siblingsV,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    // Calculate witness
+    const w = await circuit.calculateWitness(input, true);
+    await circuit.checkConstraints(w);
+
+    const circuitNewRoot = w[1].toString();
+    console.log(`  Circuit new root: ${circuitNewRoot.slice(0, 20)}...`);
+
+    // Compute expected new root by updating V (U already updated for proof generation)
+    await tree.update(v, newHashV);
+    const expectedNewRoot = F.toString(await tree.getRoot());
+    console.log(`  Expected new root: ${expectedNewRoot.slice(0, 20)}...`);
+
+    assert.equal(circuitNewRoot, expectedNewRoot);
+    console.log("  ✓ GraphTree updated correctly for edge {0,1}");
+  });
+
+  it("should update GraphTree when adding edge {2,5} with existing edges", async () => {
+    // Vertex 2 already has edges to [0, 3]
+    // Vertex 5 already has edges to [1, 4]
+    // Now adding edge {2,5}
+    const u = 2;
+    const v = 5;
+
+    // Old state (before adding edge)
+    const oldDegU = 2;
+    const oldDegV = 2;
+    const oldNbrArrU = [0, 3];
+    const oldNbrArrV = [1, 4];
+
+    // New state (after adding edge {2,5})
+    const newDegU = 3;
+    const newDegV = 3;
+    const newNbrArrU = [0, 3, 5]; // Added 5
+    const newNbrArrV = [1, 4, 5]; // Added 2 (but wait, should be sorted, so [1, 2, 4])
+
+    // Fix: neighbors must be sorted
+    const newNbrArrVSorted = [1, 2, 4];
+
+    // Compute hashes
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+    const newHashU = BigInt(computeNbrHash(newDegU, newNbrArrU));
+    const newHashV = BigInt(computeNbrHash(newDegV, newNbrArrVSorted));
+
+    // Build initial tree with old hashes
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(u, oldHashU);
+    await tree.insert(v, oldHashV);
+
+    const oldRoot = await tree.getRoot();
+
+    // Get Merkle proof for U from original tree
+    const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
+
+    // Update U to get intermediate tree state
+    await tree.update(u, newHashU);
+
+    // Get Merkle proof for V from tree after U update
+    const siblingsV = ensureSiblingsLength(await tree.getSiblings(v));
+
+    // Prepare circuit input
+    const input = {
+      u: u.toString(),
+      v: v.toString(),
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(),
+      newDegV: newDegV.toString(),
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU),
+      newNbrArrV: padNeighbors(newNbrArrVSorted),
+      siblingsU: siblingsU,
+      siblingsV: siblingsV,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    // Calculate witness
+    const w = await circuit.calculateWitness(input, true);
+    await circuit.checkConstraints(w);
+
+    const circuitNewRoot = w[1].toString();
+
+    // Compute expected new root by updating V (U already updated for proof generation)
+    await tree.update(v, newHashV);
+    const expectedNewRoot = F.toString(await tree.getRoot());
+
+    assert.equal(circuitNewRoot, expectedNewRoot);
+    console.log("  ✓ GraphTree updated correctly for edge {2,5}");
+  });
+
+  it("should fail when u equals v", async () => {
+    const u = 3;
+    const v = 3; // Same as u!
+
+    const oldDegU = 1;
+    const oldDegV = 1;
+    const oldNbrArrU = [5];
+    const oldNbrArrV = [5];
+
+    const newDegU = 2;
+    const newDegV = 2;
+    const newNbrArrU = [3, 5];
+    const newNbrArrV = [3, 5];
+
+    // Build tree
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(u, oldHashU);
+
+    const oldRoot = await tree.getRoot();
+    const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
+
+    const input = {
+      u: u.toString(),
+      v: v.toString(),
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(),
+      newDegV: newDegV.toString(),
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU),
+      newNbrArrV: padNeighbors(newNbrArrV),
+      siblingsU: siblingsU,
+      siblingsV: siblingsU,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    try {
+      await circuit.calculateWitness(input, true);
+      assert.fail("Should have failed with u == v");
+    } catch (error) {
+      assert(error.message.includes("Assert Failed"));
+      console.log("  ✓ Correctly rejected u == v");
+    }
+  });
+
+  it("should fail when degree exceeds maxDeg", async () => {
+    const u = 7;
+    const v = 8;
+
+    const oldDegU = MAX_DEG; // Already at max!
+    const oldDegV = 0;
+    const oldNbrArrU = Array.from({ length: MAX_DEG }, (_, i) => i + 1);
+    const oldNbrArrV = [];
+
+    const newDegU = MAX_DEG + 1; // Exceeds max!
+    const newDegV = 1;
+    // Keep newNbrArrU at MAX_DEG length (can't exceed padLen in the input)
+    // but claim degree is MAX_DEG + 1
+    const newNbrArrU = oldNbrArrU; // Still MAX_DEG elements
+    const newNbrArrV = [u];
+
+    // Build tree
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(u, oldHashU);
+    await tree.insert(v, oldHashV);
+
+    const oldRoot = await tree.getRoot();
+    const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
+    const siblingsV = ensureSiblingsLength(await tree.getSiblings(v));
+
+    const input = {
+      u: u.toString(),
+      v: v.toString(),
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(),
+      newDegV: newDegV.toString(),
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU),
+      newNbrArrV: padNeighbors(newNbrArrV),
+      siblingsU: siblingsU,
+      siblingsV: siblingsV,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    try {
+      await circuit.calculateWitness(input, true);
+      assert.fail("Should have failed with degree > maxDeg");
+    } catch (error) {
+      assert(error.message.includes("Assert Failed"));
+      console.log("  ✓ Correctly rejected degree > maxDeg");
+    }
+  });
+});
+

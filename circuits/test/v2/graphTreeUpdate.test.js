@@ -126,6 +126,7 @@ describe("GraphTreeUpdate circuit test", function () {
    * [X] fail when newDegV != oldDegV + 1 (invalid degree increment for V)
    * [X] fail when degree exceeds maxDeg
    * [X] fail when edge already exists (duplicate edge prevention)
+   * [X] fail when neighbor array contains duplicates (NodeHasher strictly ascending check)
    */
 
   it("should update GraphTree when adding edge {1,2}", async () => {
@@ -593,6 +594,60 @@ describe("GraphTreeUpdate circuit test", function () {
     }
   });
 
+  it("should fail when neighbor array contains duplicates", async () => {
+    const u = 3;
+    const v = 8;
+
+    const oldDegU = 2;
+    const oldDegV = 1;
+    const oldNbrArrU = [1, 5];
+    const oldNbrArrV = [2];
+
+    const newDegU = 3;
+    const newDegV = 2;
+    // Invalid! newNbrArrU contains duplicate: [1, 5, 5] (not strictly ascending)
+    const newNbrArrU = [1, 5, 5]; // Duplicate 5!
+    const newNbrArrV = [2, 3];
+
+    // Build tree
+    const oldHashU = BigInt(computeNbrHash(oldDegU, oldNbrArrU));
+    const oldHashV = BigInt(computeNbrHash(oldDegV, oldNbrArrV));
+
+    const tree = new SmtTree(N_LEVELS);
+    await tree.init();
+    await tree.insert(u, oldHashU);
+    await tree.insert(v, oldHashV);
+
+    const oldRoot = await tree.getRoot();
+    const siblingsU = ensureSiblingsLength(await tree.getSiblings(u));
+
+    // Update U first
+    const siblingsV = ensureSiblingsLength(await tree.getSiblings(v));
+
+    const input = {
+      u: u.toString(),
+      v: v.toString(),
+      oldDegU: oldDegU.toString(),
+      oldDegV: oldDegV.toString(),
+      newDegU: newDegU.toString(),
+      newDegV: newDegV.toString(),
+      oldNbrArrU: padNeighbors(oldNbrArrU),
+      oldNbrArrV: padNeighbors(oldNbrArrV),
+      newNbrArrU: padNeighbors(newNbrArrU), // Contains duplicate!
+      newNbrArrV: padNeighbors(newNbrArrV),
+      siblingsU: siblingsU,
+      siblingsV: siblingsV,
+      oldRoot: F.toString(oldRoot),
+    };
+
+    try {
+      await circuit.calculateWitness(input, true);
+      assert.fail("Should have failed with duplicate elements in neighbor array");
+    } catch (error) {
+      assert(error.message.includes("Assert Failed"));
+    }
+  });
+
   it("should fail if u or v exceeds 2^nLevels", async () => {
     const maxVertexId = Math.pow(2, N_LEVELS) - 1; // Max valid ID is 15 for nLevels=4
     const invalidVertexId = Math.pow(2, N_LEVELS); // 16 - exceeds max (15)
@@ -649,4 +704,5 @@ describe("GraphTreeUpdate circuit test", function () {
       assert(error.message.includes("Assert Failed"));
     }
   });
+  
 });

@@ -8,33 +8,37 @@
  * Output: ../data/nodeHasherTestVectors.json
  */
 
-const fs = require("fs");
-const path = require("path");
-const { buildPoseidon } = require("circomlibjs");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { buildPoseidon } from "circomlibjs";
 
-const MAX_DEG = 14 + 15 * 3; // Maximum degree: 14 + 15*3 = 59
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const MAX_DEG = 15 * 4; // Maximum degree: 15*4 = 60
 
 // Calculate padLen based on maxDeg
 function calculatePadLen(maxDeg) {
-  const numR = maxDeg <= 14 ? 0 : Math.ceil((maxDeg - 14) / 15);
-  return 14 + 15 * numR;
+  const numR = Math.ceil(maxDeg / 15);
+  return 15 * numR;
 }
 
 const PAD_LEN = calculatePadLen(MAX_DEG);
 
-// Helper function to compute NodeHash (same as in nodeHasher.test.js)
-function computeNodeHash(poseidon, v, d, neighbors) {
+// Helper function to compute NbrHash (same as in nodeHasher.test.js)
+function computeNbrHash(poseidon, d, neighbors) {
   // Pad neighbors array to PAD_LEN
   const paddedNbrs = [...neighbors];
   while (paddedNbrs.length < PAD_LEN) {
     paddedNbrs.push(0);
   }
 
-  console.log(`Computing NodeHash for vertex ${v}, degree ${d}`);
+  console.log(`Computing NbrHash for degree ${d}`);
 
-  // First block: [v, d, nbr[0..13]] (14 neighbors)
-  const firstBlock = [v, d];
-  for (let i = 0; i < 14; i++) {
+  // First block: B_0 = [d, nbr[0..14]] (15 neighbors)
+  const firstBlock = [d];
+  for (let i = 0; i < 15; i++) {
     firstBlock.push(paddedNbrs[i] || 0);
   }
 
@@ -42,11 +46,11 @@ function computeNodeHash(poseidon, v, d, neighbors) {
   let acc = poseidon.F.toString(poseidon(firstBlock));
 
   // Continuation blocks (15 neighbors each)
-  const numR = MAX_DEG <= 14 ? 0 : Math.ceil((MAX_DEG - 14) / 15);
+  const numR = Math.ceil(MAX_DEG / 15);
 
-  for (let round = 0; round < numR; round++) {
+  for (let round = 1; round < numR; round++) {
     const block = [BigInt(acc)];
-    const startIdx = 14 + round * 15;
+    const startIdx = 15 + (round - 1) * 15;
 
     for (let i = 0; i < 15; i++) {
       const idx = startIdx + i;
@@ -70,7 +74,7 @@ async function generateTestVectors() {
       maxDeg: MAX_DEG,
       padLen: PAD_LEN,
       description:
-        "Test vectors for NodeHasher algorithm - Cross-verification between Circom and Go",
+        "Test vectors for NbrHash algorithm - Cross-verification between Circom and Go",
       generatedAt: new Date().toISOString(),
       generator: "test/scripts/generateTestVectors.js",
     },
@@ -81,115 +85,95 @@ async function generateTestVectors() {
   console.log("\n=== Test Case 1: Degree 0 ===");
   testVectors.testCases.push({
     name: "degree_0_no_neighbors",
-    v: 42,
     d: 0,
     neighbors: [],
-    expectedHash: computeNodeHash(poseidon, 42, 0, []),
+    expectedHash: computeNbrHash(poseidon, 0, []),
   });
 
   // Test case 2: Degree 1
   console.log("\n=== Test Case 2: Degree 1 ===");
   testVectors.testCases.push({
     name: "degree_1",
-    v: 10,
     d: 1,
     neighbors: [25],
-    expectedHash: computeNodeHash(poseidon, 10, 1, [25]),
+    expectedHash: computeNbrHash(poseidon, 1, [25]),
   });
 
   // Test case 3: Degree 5 (within first block)
   console.log("\n=== Test Case 3: Degree 5 ===");
   testVectors.testCases.push({
     name: "degree_5_first_block",
-    v: 7,
     d: 5,
     neighbors: [1, 3, 8, 12, 15],
-    expectedHash: computeNodeHash(poseidon, 7, 5, [1, 3, 8, 12, 15]),
+    expectedHash: computeNbrHash(poseidon, 5, [1, 3, 8, 12, 15]),
   });
 
-  // Test case 4: Degree 14 (exactly fills first block)
-  console.log("\n=== Test Case 4: Degree 14 ===");
-  const neighbors14 = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28];
+  // Test case 4: Degree 15 (exactly fills first block)
+  console.log("\n=== Test Case 4: Degree 15 ===");
+  const neighbors15 = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
   testVectors.testCases.push({
-    name: "degree_14_full_first_block",
-    v: 5,
-    d: 14,
-    neighbors: neighbors14,
-    expectedHash: computeNodeHash(poseidon, 5, 14, neighbors14),
+    name: "degree_15_full_first_block",
+    d: 15,
+    neighbors: neighbors15,
+    expectedHash: computeNbrHash(poseidon, 15, neighbors15),
   });
 
-  // Test case 5: Degree 20 (needs 1 continuation block)
+  // Test case 5: Degree 20 (needs 2 blocks)
   console.log("\n=== Test Case 5: Degree 20 ===");
   const neighbors20 = [
     1, 2, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39,
   ];
   testVectors.testCases.push({
-    name: "degree_20_one_continuation",
-    v: 99,
+    name: "degree_20_two_blocks",
     d: 20,
     neighbors: neighbors20,
-    expectedHash: computeNodeHash(poseidon, 99, 20, neighbors20),
+    expectedHash: computeNbrHash(poseidon, 20, neighbors20),
   });
 
-  // Test case 6: Degree 29 (boundary: 14 + 15)
-  console.log("\n=== Test Case 6: Degree 29 ===");
-  const neighbors29 = Array.from({ length: 29 }, (_, i) => (i + 1) * 10);
+  // Test case 6: Degree 30 (boundary: 15*2)
+  console.log("\n=== Test Case 6: Degree 30 ===");
+  const neighbors30 = Array.from({ length: 30 }, (_, i) => (i + 1) * 10);
   testVectors.testCases.push({
-    name: "degree_29_boundary",
-    v: 123,
-    d: 29,
-    neighbors: neighbors29,
-    expectedHash: computeNodeHash(poseidon, 123, 29, neighbors29),
+    name: "degree_30_boundary",
+    d: 30,
+    neighbors: neighbors30,
+    expectedHash: computeNbrHash(poseidon, 30, neighbors30),
   });
 
-  // Test case 7: Degree 59 (maximum degree, perfect fit)
-  console.log("\n=== Test Case 7: Degree 59 ===");
-  const neighbors59 = Array.from({ length: 59 }, (_, i) => i + 1);
+  // Test case 7: Degree 60 (maximum degree, perfect fit)
+  console.log("\n=== Test Case 7: Degree 60 ===");
+  const neighbors60 = Array.from({ length: 60 }, (_, i) => i + 1);
   testVectors.testCases.push({
-    name: "degree_59_maximum",
-    v: 0,
-    d: 59,
-    neighbors: neighbors59,
-    expectedHash: computeNodeHash(poseidon, 0, 59, neighbors59),
+    name: "degree_60_maximum",
+    d: 60,
+    neighbors: neighbors60,
+    expectedHash: computeNbrHash(poseidon, 60, neighbors60),
   });
 
   // Additional test cases with different patterns
-  console.log("\n=== Test Case 8: Large vertex ID ===");
+  console.log("\n=== Test Case 8: Large neighbor IDs ===");
   testVectors.testCases.push({
-    name: "large_vertex_id",
-    v: 999999,
+    name: "large_neighbor_ids",
     d: 3,
     neighbors: [1000000, 1000001, 1000002],
-    expectedHash: computeNodeHash(
-      poseidon,
-      999999,
-      3,
-      [1000000, 1000001, 1000002],
-    ),
+    expectedHash: computeNbrHash(poseidon, 3, [1000000, 1000001, 1000002]),
   });
 
-  console.log("\n=== Test Case 9: Degree 44 (14 + 15*2) ===");
-  const neighbors44 = Array.from({ length: 44 }, (_, i) => i * 2);
+  console.log("\n=== Test Case 9: Degree 45 (15*3) ===");
+  const neighbors45 = Array.from({ length: 45 }, (_, i) => i * 2);
   testVectors.testCases.push({
-    name: "degree_44_two_continuations",
-    v: 777,
-    d: 44,
-    neighbors: neighbors44,
-    expectedHash: computeNodeHash(poseidon, 777, 44, neighbors44),
+    name: "degree_45_three_blocks",
+    d: 45,
+    neighbors: neighbors45,
+    expectedHash: computeNbrHash(poseidon, 45, neighbors45),
   });
 
   console.log("\n=== Test Case 10: Sparse neighbors ===");
   testVectors.testCases.push({
     name: "sparse_neighbors",
-    v: 50,
     d: 7,
     neighbors: [100, 200, 300, 400, 500, 600, 700],
-    expectedHash: computeNodeHash(
-      poseidon,
-      50,
-      7,
-      [100, 200, 300, 400, 500, 600, 700],
-    ),
+    expectedHash: computeNbrHash(poseidon, 7, [100, 200, 300, 400, 500, 600, 700]),
   });
 
   // Save to JSON file in data directory

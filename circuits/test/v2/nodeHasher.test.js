@@ -1,10 +1,13 @@
-const fs = require("fs");
-const path = require("path");
-const { describe, it, before, after } = require("mocha");
-const { strict: assert } = require("assert");
-const { wasm: tester } = require("circom_tester");
-const { buildPoseidon } = require("circomlibjs");
-const { log } = require("console");
+import fs from "fs";
+import path from "path";
+import { describe, it, before, after } from "mocha";
+import assert from "assert";
+import { wasm as tester } from "circom_tester";
+import { buildPoseidon } from "circomlibjs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 describe("NodeHasher circuit test", function () {
   this.timeout(200000);

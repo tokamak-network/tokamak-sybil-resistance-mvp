@@ -13,6 +13,12 @@ contract DeployPoseidon is Script {
         commands[0] = "node";
         commands[1] = "./deployment/deployPoseidon.js"; 
         
+        // Deploy Poseidon with 1 element
+        commands[2] = "1";  // For 1 element
+        bytes memory output1 = vm.ffi(commands);    // Call FFI to deploy Poseidon with 1 element
+        address addr1 = bytesToAddress(output1);
+        console.log("Poseidon Contract with 1 element deployed at:", addr1);
+
         // Deploy Poseidon with 2 elements
         commands[2] = "2";  // For 2 elements
         bytes memory output2 = vm.ffi(commands);    // Call FFI to deploy Poseidon with 2 elements

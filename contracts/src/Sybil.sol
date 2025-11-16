@@ -21,7 +21,6 @@ contract Sybil is
     SybilHelpers
 {
 
-
     /// @notice Structure to store user's score snapshot at a specific batch
     struct ScoreSnapshot {
         uint32 score; /// @dev User's score value
@@ -50,11 +49,11 @@ contract Sybil is
     uint256 constant _RFIELD =
         21888242871839275222246405745257275088548364400416034343698204186575808495617;
     
-    /// @notice Minimum balance that must remain in an account after deposit
-    uint256 public _MIN_BALANCE = 1;
     /// @notice Admin role identifier for access control
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
+    /// @notice Minimum balance that must remain in an account after deposit
+    uint256 public minBalance;
     /// @notice Last assigned account index
     uint24 public lastIdx;
     /// @notice Index of the last added transaction
@@ -62,11 +61,11 @@ contract Sybil is
     /// @notice Index of the last forged transaction
     uint256 public lastForgedTxn;
     /// @notice Number of transactions required to form a complete batch
-    uint256 public batchSize = 5;
+    uint256 public batchSize;
     /// @notice Amount deducted from exploded accounts as penalty
-    uint256 public explodeAmount = (1 << 50);
+    uint256 public explodeAmount;
     /// @notice Minimum balance required to participate in scoring
-    uint256 public scoringRequiredBalance = (1 << 16);
+    uint256 public scoringRequiredBalance;
     /// @notice Last forged batch number
     uint32 public lastForgedBatch;
 
@@ -122,16 +121,24 @@ contract Sybil is
     /// @param newBalance New required balance for scoring
     event ScoringRequiredBalanceUpdated(uint256 newBalance);
 
+    /// @notice Emitted when a user's score is verified
+    /// @param user The address of the user
+    /// @param score The user's new score value
+    /// @param batchNum The batch number containing the score root to verify against
+    event ProveScore(address user, uint32 score, uint32 batchNum);
+
     /**
      * @notice Initializes the contract with the specified parameters
      * @dev This function can only be called once during the deployment of the contract
      * @param _verifier The address of the verifier contract to be used for rollup verification
+     * @param _poseidon1Elements The address of the Poseidon hash function contract for 1 element
      * @param _poseidon2Elements The address of the Poseidon hash function contract for 2 elements
      * @param _poseidon3Elements The address of the Poseidon hash function contract for 3 elements
      * @param _adminRole The address that will be granted admin privileges
      */
     function initialize(
         address _verifier,
+        address _poseidon1Elements,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _adminRole
@@ -144,7 +151,13 @@ contract Sybil is
         }
         verifier = IVerifier(_verifier);
 
-        _initializeHelpers(_poseidon2Elements, _poseidon3Elements);
+        _initializeHelpers(_poseidon1Elements, _poseidon2Elements, _poseidon3Elements);
+        
+        // Initialize values
+        minBalance = 1;
+        batchSize = 5;
+        explodeAmount = (1 << 50);
+        scoringRequiredBalance = (1 << 16);
     }
 
     /**
@@ -158,7 +171,7 @@ contract Sybil is
         if (msg.value >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (msg.value < _MIN_BALANCE) {
+        if (msg.value < minBalance) {
             revert InsufficientETH();
         }
         if (info.balance == 0) {
@@ -183,7 +196,7 @@ contract Sybil is
         if (amount >= _LIMIT_AMOUNT) {
             revert LimitAmountExceeded();
         }
-        if (amount + _MIN_BALANCE > info.balance) {
+        if (amount + minBalance > info.balance) {
             revert InsufficientBalance();
         }
 
@@ -262,7 +275,7 @@ contract Sybil is
             address toEthAddr = toEthAddrs[i];
             AccountInfo memory receiverInfo = accountInfo[toEthAddr];
             uint192 penalty = uint192(
-                Math.min(explodeAmount, receiverInfo.balance - _MIN_BALANCE)
+                Math.min(explodeAmount, receiverInfo.balance - minBalance)
             );
             unchecked {
                 accountInfo[toEthAddr].balance = receiverInfo.balance - penalty;
@@ -336,32 +349,62 @@ contract Sybil is
     /**
      * @notice Proves a user's score using a Merkle proof against a specific batch's score root
      * @dev Verifies the user's score using sparse Merkle tree verification
-     * @param numScoreRoot The batch number containing the score root to verify against
-     * @param idx The user's account index in the tree
+     * @param batchNum The batch number containing the score root to verify against
+     * @param targetIdx The user's account index in the tree
      * @param score The claimed score value
      * @param siblings Array of sibling hashes for the Merkle proof
      * @dev Reverts if the Merkle proof verification fails
      * @dev Updates the user's score snapshot upon successful verification
      */
     function proveScoreMerkleProof(
-        uint32 numScoreRoot,
-        uint24 idx,
+        uint32 batchNum,
+        uint24 targetIdx,
         uint32 score,
         uint256[] calldata siblings
     ) external {
-        uint256[2] memory arrayState;
+        if (accountInfo[msg.sender].idx != targetIdx) {
+            revert IncorrectAccountIndex();
+        }
+        uint256[1] memory arrayState;
         arrayState[0] = score;
-        arrayState[1] = uint256(uint160(msg.sender));
+        uint256 stateHash = _insPoseidonUnit1.poseidon(arrayState);
+        uint256 scoreRoot = scoreRootMap[batchNum];
 
-        uint256 stateHash = _insPoseidonUnit2.poseidon(arrayState);
-        uint256 scoreRoot = scoreRootMap[numScoreRoot];
-
-        if (!_smtVerifier(scoreRoot, siblings, idx, stateHash)) {
+        if (!_smtVerifier(scoreRoot, siblings, targetIdx, stateHash)) {
             revert SmtProofInvalid();
         }
 
+        scoreSnapshots[msg.sender].batchNum = batchNum;
+        scoreSnapshots[msg.sender].score = score;
+        emit ProveScore(msg.sender, score, batchNum);
+    }
+
+    function demoSmTVerifier(
+        uint256 scoreRoot,
+        uint256[] calldata siblings,
+        uint256 targetIdx,
+        uint256 stateHash
+    ) external view returns (bool) {
+        return _smtVerifier(scoreRoot, siblings, targetIdx, stateHash);
+    }
+
+
+    function proveScoreMerkleProofDebug(
+        uint32 numScoreRoot,
+        uint24 targetIdx,
+        uint32 score,
+        uint256[] calldata siblings
+    ) external {
+        uint256[1] memory arrayState;
+        arrayState[0] = score;
+        uint256 stateHash = _insPoseidonUnit1.poseidon(arrayState);
+        uint256 scoreRoot = scoreRootMap[numScoreRoot];
+        bool result = _smtVerifierDebug(scoreRoot, siblings, targetIdx, stateHash);
+        if (result) {
         scoreSnapshots[msg.sender].batchNum = numScoreRoot;
         scoreSnapshots[msg.sender].score = score;
+        }
+
     }
 
     function updateScore(address user, uint32 score) external {

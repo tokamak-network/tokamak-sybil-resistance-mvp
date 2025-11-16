@@ -11,6 +11,7 @@ contract FunctionScript is Script {
         address verifier = vm.envAddress("VERIFIER");
 
         // Specify Poseidon contract addresses
+        address poseidon1Elements = vm.envAddress("POSEIDON1ELEMENTS");
         address poseidon2Elements = vm.envAddress("POSEIDON2ELEMENTS");
         address poseidon3Elements = vm.envAddress("POSEIDON3ELEMENTS");
         address adminRole = msg.sender;
@@ -22,6 +23,7 @@ contract FunctionScript is Script {
         // Calling initialize at the time of deployment
         sybilContract.initialize(
             verifier,
+            poseidon1Elements,
             poseidon2Elements,
             poseidon3Elements,
             adminRole

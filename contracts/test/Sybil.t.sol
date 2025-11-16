@@ -7,6 +7,16 @@ import "../src/interfaces/ISybil.sol";
 import "../src/Verifier.sol";
 
 
+contract MockPoseidon1 is PoseidonUnit1 {
+    function poseidon(
+        uint256[1] memory input
+    ) external pure override returns (uint256) {
+        // Create predictable hash for testing
+        // Using a simple hash function for deterministic results
+        return uint256(keccak256(abi.encodePacked(input[0]))) % (2**254);
+    }
+}
+
 contract MockPoseidon2 is PoseidonUnit2 {
     function poseidon(
         uint256[2] memory input
@@ -48,6 +58,7 @@ contract MvpTest is Test {
     }
 
     function setUp() public {
+        PoseidonUnit1 mockPoseidon1 = new MockPoseidon1();
         PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
         PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
 
@@ -59,6 +70,7 @@ contract MvpTest is Test {
 
         sybil.initialize(
             verifiers,
+            address(mockPoseidon1),
             address(mockPoseidon2),
             address(mockPoseidon3),
             adminRole
@@ -314,6 +326,7 @@ contract MvpTest is Test {
     }
 
     function testInitializeWithInvalidPoseidonAddresses() public {
+        PoseidonUnit1 mockPoseidon1 = new MockPoseidon1();
         PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
         PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
         Verifier verifierStub = new Verifier();
@@ -327,6 +340,7 @@ contract MvpTest is Test {
         newSybil.initialize(
             verifiers,
             invalidAddress,
+            address(mockPoseidon2),
             address(mockPoseidon3),
             address(this)
         );
@@ -334,13 +348,15 @@ contract MvpTest is Test {
         vm.expectRevert();
         newSybil.initialize(
             verifiers,
-            address(mockPoseidon2),
+            address(mockPoseidon1),
             invalidAddress,
+            address(mockPoseidon3),
             address(this)
         );
     }
 
     function testInitializeWithInvalidVerifierAddresses() public {
+        PoseidonUnit1 mockPoseidon1 = new MockPoseidon1();
         PoseidonUnit2 mockPoseidon2 = new MockPoseidon2();
         PoseidonUnit3 mockPoseidon3 = new MockPoseidon3();
 
@@ -350,6 +366,7 @@ contract MvpTest is Test {
         vm.expectRevert(ISybil.InvalidVerifierAddress.selector);
         newSybil.initialize(
             verifier,
+            address(mockPoseidon1),
             address(mockPoseidon2),
             address(mockPoseidon3),
             address(this)

@@ -15,10 +15,12 @@ interface ISybil {
     error SelfVouch();
     error BatchNotFull();
     error AlreadyVouched(address from, address to);
+    error IncorrectAccountIndex();
     
     // Initialization function
     function initialize(
         address verifier,
+        address _poseidon1Elements,
         address _poseidon2Elements,
         address _poseidon3Elements,
         address _adminRole

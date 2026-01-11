@@ -1,56 +1,59 @@
-const fs = require("fs");
-const path = require("path");
-const { describe, it, before, after } = require("mocha");
-const { strict: assert } = require("assert");
-const { wasm: tester } = require("circom_tester");
-const { newMemEmptyTrie } = require("circomlibjs");
-const { Scalar, F } = require("ffjavascript");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { describe, it, before, after } from "mocha";
+import { strict as assert } from "assert";
+import { wasm as tester } from "circom_tester";
+import { SmtTree } from "./utils/smt.js";
 
-/**
- * empty siblings array for empty SMT tree.
- * use 0 for all levels.
- */
-function getEmptySiblings(n, F) {
-    return Array(n).fill(F.toString(F.zero));
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const N_LEVELS = 16;
+const N_TX = 1;
 
-describe("BatchMain advanced input test (nTx=1, nLevels=16)", function () {
+describe("BatchMain advanced input test (N_TX=1, N_LEVELS=16)", function () {
     this.timeout(100000);
 
     let circuit;
-    const nTx = 1;
-    const nLevels = 16;
     let circuitTmpPath;
-    
-    // SMT related variables
     let smt;
-    let F;
+    let Fr;
+
+    // Helper function to encode transaction data
+    // txData format: txnType (8 bits) | fromIdx (nLevels bits) | toIdx (nLevels bits) | amount (128 bits)
+    function encodeTxData(txnType, fromIdx, toIdx, amount) {
+        const txnTypeBig = BigInt(txnType);
+        const fromIdxBig = BigInt(fromIdx);
+        const toIdxBig = BigInt(toIdx);
+        const amountBig = BigInt(amount);
+
+        // Pack: amount << (8 + nLevels + nLevels) | toIdx << (8 + nLevels) | fromIdx << 8 | txnType
+        const packed = (amountBig << BigInt(8 + N_LEVELS + N_LEVELS)) |
+                       (toIdxBig << BigInt(8 + N_LEVELS)) |
+                       (fromIdxBig << BigInt(8)) |
+                       txnTypeBig;
+        return packed.toString();
+    }
 
     function getBaseInput() {
         return {
             // public
-            EXPLODE_AMOUNT: "1",
+            explodeAmount: "1",
 
             // private
             oldLastIdx: "1",
-            oldAccountRoot: F.toString(F.zero),
-            oldVouchRoot: F.toString(F.zero),
+            oldAccountRoot: Fr.toString(Fr.zero),
+            oldVouchRoot: Fr.toString(Fr.zero),
+            oldScoreRoot: Fr.toString(Fr.zero),
+            newScoreRoot: Fr.toString(Fr.zero),
 
             // tx signals
-            txCompressedData: ["0"],
-            fromIdx: ["0"],
-            auxFromIdx: ["0"],
-            toIdx: ["0"],
-            amountF: ["0"],
-            loadAmountF: ["0"],
-            fromEthAddr: ["0"],
-            toEthAddr: ["0"],
-            newAccount: ["0"],
+            txData: ["0"],
 
             // account state 1
             balance1: ["0"],
             ethAddr1: ["0"],
-            siblings1: [getEmptySiblings(nLevels + 1, F)],
+            siblings1: [smt.getEmptySiblings(N_LEVELS + 1)],
             isOld0_1: ["1"],
             oldKey1: ["0"],
             oldValue1: ["0"],
@@ -58,33 +61,28 @@ describe("BatchMain advanced input test (nTx=1, nLevels=16)", function () {
             // account state 2
             balance2: ["0"],
             ethAddr2: ["0"],
-            siblings2: [getEmptySiblings(nLevels + 1, F)],
-            newExit: ["0"],
+            siblings2: [smt.getEmptySiblings(N_LEVELS + 1)],
             isOld0_2: ["1"],
             oldKey2: ["0"],
             oldValue2: ["0"],
 
             // vouch states
-            siblings3: [getEmptySiblings(2 * nLevels + 1, F)],
+            siblings3: [smt.getEmptySiblings(2 * N_LEVELS + 1)],
             isOld0_3: ["1"],
             oldKey3: ["0"],
             oldValue3: ["0"],
-
-            siblings4: [getEmptySiblings(2 * nLevels + 1, F)],
-            isOld0_4: ["1"],
-            oldKey4: ["0"],
-            oldValue4: ["0"],
         };
     }
 
     before(async () => {
-        smt = await newMemEmptyTrie();
-        F = smt.F;
+        smt = new SmtTree(N_LEVELS);
+        await smt.init();
+        Fr = smt.Fr;
 
         const circuitSrc = `
             pragma circom 2.0.0;
             include "../circuits/syb_rollup/batch-main.circom";
-            component main{public [EXPLODE_AMOUNT]} = BatchMain(${nTx}, ${nLevels});
+            component main{public [explodeAmount]} = BatchMain(${N_TX}, ${N_LEVELS});
         `;
         circuitTmpPath = path.join(__dirname, "batch-main-temp.circom");
         fs.writeFileSync(circuitTmpPath, circuitSrc, "utf8");
@@ -105,16 +103,9 @@ describe("BatchMain advanced input test (nTx=1, nLevels=16)", function () {
 
     it("createAccountDeposit", async () => {
         const input = getBaseInput();
-        // Tx data: createAccountDeposit
-        input.txCompressedData[0] = "0";
-        input.fromIdx[0] = "0";
-        input.toIdx[0] = "0";
-        input.newAccount[0] = "1";
-        input.auxFromIdx[0] = "2";
-        input.loadAmountF[0] = "500";
-        input.amountF[0] = "0";
-        input.fromEthAddr[0] = "123";
-        input.toEthAddr[0] = "0";
+
+        // Tx data: createAccountDeposit (txnType=0, fromIdx=0, toIdx=0, amount=500)
+        input.txData[0] = encodeTxData(0, 0, 0, 500);
 
         const w = await circuit.calculateWitness(input, true);
         await circuit.checkConstraints(w);
